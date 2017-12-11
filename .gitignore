@@ -1,4 +1,4 @@
 _build/
-archive/
+archive/*
 mincamlc
 min-ml
