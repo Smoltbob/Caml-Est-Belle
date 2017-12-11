@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>java-tree</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.line-block{white-space: pre-line;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="trees-in-java">Trees in Java</h1>
+<h2 id="the-expression-problem">The expression problem</h2>
+<p>Compilers use tree structures in order to represent programs and manipulate them. There are different ways of defining such structures, usually dictated by the programming language. Actually the question of what is the best programming paradigm to address these questions has been a debated topic among programming languages enthusiasts (see the <a href="https://en.wikipedia.org/wiki/Expression_problem">expression problem</a>).</p>
+<p>We won’t dwelve too much into the benefits of each approach. Instead, we’ll just the different options if you choose to do the compiler in Java.</p>
+<p>Let us consider simple arithmetic expressions defined by the following abstract syntax:</p>
+<pre><code>Exp ::= Exp + Exp
+     |  Exp * Exp
+     |  Num</code></pre>
+<p>The abstract syntax naturally defines a tree structure. OCaml is very well-suited for this kind of data structures.</p>
+<pre><code>type exp = Plus of exp * exp
+         | Mult of exp * exp 
+         | Num of int</code></pre>
+<p>We can easily write a recursive evaluation function that works by case on the tree structure.</p>
+<pre><code>let rec eval e =
+  match e with
+  | Plus (e1, e2) -&gt; (eval e1) + (eval e2)
+  | Mult (e1, e2) -&gt; (eval e1) * (eval e2)
+  | Num n -&gt; n</code></pre>
+<p>Usually, in a compiler, many such functions will be needed. Typechecker, printers, transformers…</p>
+<p>In object-oriented languages such as Java, it is not as straighfoward and several solutions are possible. We’ll go through different solutions, from simple to complex.</p>
+<h2 id="trees">Trees</h2>
+<p>Common to all these solutions is to define one concrete class for each case, and one abstract class for each non-terminal of the grammar.</p>
+<pre><code>abstract class Exp { }
+
+class Plus extends Exp {
+    Exp e1;
+    Exp e2;
+}
+
+class Mult extends Exp {
+    Exp e1;
+    Exp e2;
+}
+
+class Num extends Exp {
+    Integer n;
+}</code></pre>
+<h2 id="adding-evaluation-methods">Adding evaluation methods</h2>
+<h3 id="case-analysis">Case analysis</h3>
+<p>We can mimic the OCaml function using the <code>instanceof</code> operator.</p>
+<pre><code>static Integer eval(Exp exp) {
+  if (exp instanceof Plus) {
+      Plus e = (Plus) e;
+      return eval(e.e1) + eval(e.e2);
+  } else if (exp instanceof Mult) {
+      Mult e = (Mult) e;
+      return eval(e.e1) + eval(e.e2);
+  } else if (exp instanceof Num) {
+      Num e = (Num) e;
+      return e.n;
+  }</code></pre>
+<p>One weakness of this representation is the use of dynamic casts that can cause runtime errors. Programming errors (such as missing a case or trying to cast to the wrong instance won’t be caught at compile time). In comparison, the OCaml version provides much better compile-time garantees. This representation is used in the first edition of <a href="https://www.cs.princeton.edu/~appel/modern/java/">Modern Compiler Implementation in Java</a>.</p>
+<h2 id="interpreter-pattern">Interpreter pattern</h2>
+<p>An other solution closer to the object-oriented philosophy is given by the <em>interpreter</em> pattern.</p>
+<pre><code>abstract class Exp { 
+  Integer evaluate();
+}
+
+class Plus extends Exp {
+    Exp e1;
+    Exp e2;
+
+    Integer evaluate() {
+      return e1.evaluate() + e2.evaluate();
+    }
+}
+
+class Mult extends Exp {
+    Exp e1;
+    Exp e2;
+
+    Integer evaluate() {
+      return e1.evaluate() * e2.evaluate();
+    }
+}
+
+class Num extends Exp {
+    Integer n;
+
+    Integer evaluate() {
+      return n;
+    }
+}</code></pre>
+<p>This doesn’t suffer from the dynamic cast problem. Instead, it uses dynamic- binding to choose the right version of the <code>evaluate()</code> method.</p>
+<p>Still, this is not fully satisfactory. This solution lacks modularity as the evaluation function behavior is spread across multiple classes. Moreover <code>Exp</code> has to be recompiled whenever a new behavior is added.</p>
+<h2 id="visitor-pattern">Visitor pattern</h2>
+<p>Our final solution is the <em>visitor</em> pattern.</p>
+<pre><code>abstract class Exp {
+    abstract Integer accept(Visitor v);
+}
+
+class Plus extends Exp {
+    Exp e1;
+    Exp e2;
+
+    Integer accept(Visitor v) {
+        return v.visit(this);
+    }
+}
+
+class Mult extends Exp {
+    Exp e1;
+    Exp e2;
+
+    Integer accept(Visitor v) {
+        return v.visit(this);
+    }
+}
+
+class Num extends Exp {
+    Integer n;
+    Integer accept(Visitor v) {
+        return v.visit(this); 
+    }
+}</code></pre>
+<p>Now an <code>Exp</code> has a general method <code>accept()</code> that lets a visitor walks the tree structure of the expression. There is a visitor class for every functions that operate on tree. Each visitor class implements the <code>Visitor</code> interface.</p>
+<pre><code>interface Visitor {
+  Integer visit(Num e);
+  Integer visit(Plus e);
+  Integer visit(Mult e);
+}</code></pre>
+<p>We can define an <code>EvaluationVisitor</code>.</p>
+<pre><code>class EvaluationVisitor implements Visitor {
+  Integer visit(Num e) { 
+      return e.n;
+  }
+
+  Integer visit(Plus e) {
+      return e.accept(this) + e.accept(this);
+  }
+
+  Integer visit(Mult e) {
+      return e.accept(this) * e.accept(this);
+  }
+}</code></pre>
+<p>This almost solves the problems of the interpreter patterns. Now, new behaviors can be added without modifying the <code>Exp</code> class, plus all the behavior appears in one place, in the visitor class.</p>
+<p>There is one last issue. Notice the constraint on the return type of the visitor. We are still restricted to integer-returning visitors. But suppose we want visitors that return something else, like expressions. There are several ways around this, but an elegant one is to use genericity.</p>
+<pre><code>interface Visitor&lt;E&gt; {
+  E visit(Num e);
+  E visit(Plus e);
+  E visit(Mult e);
+}
+
+class EvaluationVisitor implements Visitor&lt;Integer&gt; {
+  Integer visit(Num e) { 
+      return e.n;
+  }
+
+  Integer visit(Plus e) {
+      return e.accept(this) + e.accept(this);
+  }
+
+  Integer visit(Mult e) {
+      return e.accept(this) * e.accept(this);
+  }
+}
+
+abstract class Exp {
+    abstract &lt;E&gt; E accept(Visitor&lt;E&gt; v);
+}
+
+class Plus extends Exp {
+    Exp e1;
+    Exp e2;
+
+    &lt;E&gt; E accept(Visitor&lt;E&gt; v) {
+        return v.visit(this);
+    }
+}
+
+class Mult extends Exp {
+    Exp e1;
+    Exp e2;
+
+    &lt;E&gt; E accept(Visitor&lt;E&gt; v) {
+        return v.visit(this);
+    }
+}
+
+class Num extends Exp {
+    Integer n;
+    &lt;E&gt; E accept(Visitor&lt;E&gt; v) {
+        return v.visit(this); 
+    }
+}</code></pre>
+<h2 id="java-code">Java code</h2>
+<p>The java code given to you illustrates some of these patterns. This is the code of the <code>main</code> function in <code>Main.java</code>:</p>
+<pre><code>  Parser p = new Parser(new Lexer(new FileReader(argv[0])));
+  Exp expression = (Exp) p.parse().value;      
+  assert (expression != null);
+
+  System.out.println(&quot;------ AST ------&quot;);
+  expression.accept(new PrintVisitor());
+  System.out.println();
+
+  System.out.println(&quot;------ Height of the AST ----&quot;);
+  int height = Height.computeHeight(expression);
+  System.out.println(&quot;using Height.computeHeight: &quot; + height);
+
+  ObjVisitor&lt;Integer&gt; v = new HeightVisitor();
+  height = expression.accept(v);
+  System.out.println(&quot;using HeightVisitor: &quot; + height);</code></pre>
+<p>It uses three of the above-mentioned patterns. After parsing the input file, the AST <code>expression</code> is printed using a <code>PrintVisitor</code> (which implements the simple non-generic <code>Visitor</code> interface, whose all <code>visit</code> methods return <code>void</code>). Then, the height of this AST is computed using a static method <code>computeHeight</code>. Finally, the height is computed again, but this time using a visitor <code>HeightVisitor</code> (which implements generic interface <code>ObjVisitor&lt;Integer&gt;</code>).</p>
+<p>You’re free to use whatever method you like best but the generic visitor is arguably the best choice. However, the other patterns are valid too if you find them easier to understand.</p>
+</body>
+</html>

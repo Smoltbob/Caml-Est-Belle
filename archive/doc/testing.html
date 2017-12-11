@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>testing</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.line-block{white-space: pre-line;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="testing">Testing</h1>
+<h2 id="file-organization">File organization</h2>
+<p>Organize your MinCaml test infrastructure using the following conventions.</p>
+<pre><code>scripts/
+tests/
+  syntax/
+     valid/
+       tests that should parse correctly
+     invalid/
+       tests that shouldn&#39;t parse correctly
+  typechecking/
+     valid/
+       tests that should typecheck
+     invalid/
+       tests that shouldn&#39;t typecheck
+  gen-code/
+     contains examples that should compile and execute properly</code></pre>
+<p>Put executable programs in <code>scripts</code> and add this directory to your <code>$PATH</code>. You should have at least two types of files in <code>scripts/</code>.</p>
+<ol type="1">
+<li>Symbolic links to mincamlc and asmlc and other executables you may have developed (e.g. the backend)</li>
+<li>Scripts that run the tests case (launcher) and check the results.</li>
+</ol>
+<p>The test cases (MinCaml program) are placed in <code>tests/</code> accordingly to the above conventions. Try to use explicit names for your tests, and use comments to describe what feature is tested. Note that you don’t have to test the parser since we gave it to you.</p>
+<p>As an example, we provide a script <code>mincaml-test-parser.sh</code> that runs the test in syntax/valid and syntax/invalid.</p>
+<p>You will have to extend this infrastructure. For instance, you should create subdirs of <code>valid/</code> <code>invalid/</code> and <code>gencode/</code> for different increments of your language. You should add new scripts to test typechecking, code generation, command-line options and so on.</p>
+<h2 id="testing-strategy">Testing strategy</h2>
+<p>There are several strategy to check whether a test has passed or failed, depending on the program output on the test case. For instance, you can:</p>
+<ol type="1">
+<li>check the error code<br />
+</li>
+<li>compare the actual result with the expected result using diff. Expected result can be store in a separate file, or in a comment in the test case.</li>
+</ol>
+<p>To test typechecking, you will typically check the error code. But to test code generation, you can’t really compare the generated code with an expected result because there can be many valid results. In that case, you can run the generated code (for instance using the simulator for ASML code, or qemu for ARM code) and compare the result with the expected behavior of the program.</p>
+<p>Suppose you want to test your ARM compiler on the test case <code>test_print_int.ml</code>:</p>
+<pre><code>let _ = print_int 42</code></pre>
+<p>You will store the expected result (<code>42</code>) in a file <code>test_print_int.expected</code> Then you (probably using a script) will compile <code>test_print_int.ml</code>, compile the <code>test_print_int.s</code> ARM file, run it with qemu, store the result in a file <code>test_print_int.actual</code>. Finally, you can compare <code>test_print_int.actual</code> with <code>test_print_int.expected</code> using <code>diff</code>.</p>
+<p>Note that you can automatically compute the expect result by running the test case with the ocaml interpreter.</p>
+<p>Remark: you can test the “completude” of your test base using code coverage evaluation tools such as Cobertura.</p>
+<h2 id="unit-tests">Unit tests</h2>
+<p>In addition to the <em>system tests</em> described above, you can add unit tests (e.g. using JUnit in Java).</p>
+</body>
+</html>

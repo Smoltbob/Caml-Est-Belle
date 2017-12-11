@@ -1,0 +1,10 @@
+let _ = 
+    let a = 0 in
+    let b = 1 in
+    if a = b then (
+        let res1 = 0 in
+        call _min_caml_print_int res1
+    ) else (
+        let res2 = 1 in
+        call _min_caml_print_int res2 
+    )

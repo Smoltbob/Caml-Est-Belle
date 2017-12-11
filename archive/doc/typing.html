@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>typing</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.line-block{white-space: pre-line;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="typing">Typing</h1>
+<h2 id="ocaml-types">OCaml types</h2>
+<p>OCaml (and MinCaml) is statically typed. Every identifier has a type that is inferred (i.e. guessed) by the compiler. See for instance the following function:</p>
+<pre><code>let f x = x + 1</code></pre>
+<p>The compiler can infer that <code>x</code> has type <code>int</code> and <code>f</code> has type <code>int -&gt; int</code>.</p>
+<p>Altneratively, types can be provided by the programmer.</p>
+<pre><code>let f (x : int) : int = x </code></pre>
+<p>The compiler checks the type before trying to generate code. This allows to rule out incorrect programs such as</p>
+<pre><code>let x = 1 + &quot;hello&quot; in ...</code></pre>
+<p><em>Exercice</em>: simple types</p>
+<p>What are the types of the following expressions?</p>
+<pre><code>1
+1.0 
+1 + 2
+let x = 1 in 1
+let x = 1 in 1 + x
+if true then 1 else 2 
+let f x = x + 1 in (f 0)
+let f x = x + 1 in f
+let f x y z = x + y + z in f 
+let f (x,y,z) = x + y + z in f</code></pre>
+<h3 id="polymorphism">Polymorphism</h3>
+<p>Some functions can accept and return values of different types</p>
+<pre><code>let f x = x in f 1
+
+let f x = 0 in (f 1.0) + (f &quot;hello&quot;);
+
+let f x = x in f</code></pre>
+<p><em>Exercice</em>: Is the expression <code>let f g = g 1 + g &quot;1&quot;</code> well-typed, and if yes, what is its type?</p>
+<h3 id="unit-type">Unit type</h3>
+<p>The type <code>unit</code> has only one inhabitant: <code>()</code> (called nil). Nil can be used as a return type for procedures. For instance, <code>print_int</code> has type <code>int -&gt; unit</code>: It always returns nil when applied to a string. Hence, <code>print_int 42</code> has type <code>unit</code> and is equal to nil.</p>
+<p>When a value is equal to nil, there’s no need to store it in a variable.</p>
+<pre><code>let x = print_string &quot;hello&quot; in ...</code></pre>
+<p>There’s no reasonable use for <code>x</code> since it is necessarily equal to nil. In that case, one can write</p>
+<pre><code>let _ = print_string &quot;hello&quot; in ... </code></pre>
+<p>or even better, use the <code>;</code> operator as in:</p>
+<pre><code>print_string &quot;hello&quot;; ....</code></pre>
+<p>Conversely, the <code>;</code> shouldn’t be preceded by a non-nil value. The compiler will issue a warning on the following program.</p>
+<pre><code>let x = 0; 1 in ...</code></pre>
+<p><em>Exercice</em>: there’s a predefined function <code>ignore</code> that we can use to tame the compiler.</p>
+<pre><code>let x = (ignore 0); 1 in ...</code></pre>
+<p>What is the type of <code>ignore</code>?</p>
+<h2 id="mincaml-type-system">MinCaml type system</h2>
+<p>What we presented is a very small subset of the OCaml type system, which is called the <a href="https://en.wikipedia.org/wiki/Hindley–Milner_type_system">Hindly-Milner type system</a>. MinCaml implements the same features with a few simplifications.</p>
+<p>An important difference is that unlike OCaml, MinCaml is <em>monomorphic</em>.</p>
+<p>These two expressions are well-typed</p>
+<pre><code>let f x = 0 in (f 1.0)
+let f x = 0 in (f true) </code></pre>
+<p>But this one is not.</p>
+<pre><code>let f x = 0 in (f 1.0) + (f true) </code></pre>
+<p>Another minor difference is that MinCaml programs must have unit type.</p>
+<p>For instance:</p>
+<pre><code>let rec fact x = if x = 0 then 1 else x * (fact (x-1)) 
+in print_int (fact 3)</code></pre>
+<p>is well-typed with type unit. Whereas</p>
+<pre><code>let rec fact x = if x = 0 then 1 else x * (fact (x-1)) 
+in (print_int 0); fact 3</code></pre>
+<p>has type <code>int</code>, and is not a correct MinCaml program.</p>
+<p>On a side note, this program is valid in OCaml but not syntactically correct in MinCaml</p>
+<pre><code>let rec fact x = if x = 0 then 1 else x * (fact (x-1)) 
+
+let _ = print_int (fact 3)</code></pre>
+<p>Finally, MinCaml programs never contain type annotation, unlike in OCaml where they are optional.</p>
+<h3 id="mincaml-types">MinCaml types</h3>
+<p>MinCaml types are simple structured expressions defined by the following (incomplete) syntax.</p>
+<pre><code>t ::=  bool
+   |   int
+   |   unit
+   |   t1 -&gt; t2       (* function type *)
+   |   variable       (* type variables *)
+   | ... </code></pre>
+<p>This means you’ll have to define a new datatype for types (complete <code>Type.{c,java,ml}</code>). (For those working in Java, it’s a tree datatype, so it should be defined along the same lines as Exp.)</p>
+<h3 id="type-checking">Type checking</h3>
+<p>The <em>type checker</em> is the part of the compiler that takes an AST, an environment (that contains predefined symbols and their types, for instance external functions like <code>print_int</code>) and determines if the program is well-typed or not. If it is not, it returns with an error message and the compiler doesn’t attempt to generate code. Sometimes, the type checker annotates the program with information that are useful for code generation, but it is not the case in MinCaml. Actually, the type checker is <em>optional</em> and you can try to generate code independently.</p>
+<p>Type checking is implemented in <em>three stages</em>. The first step is to generate type variables. Initially, a MinCaml program doesn’t contain type information.</p>
+<pre><code>let x = 3 in
+let y = 4 in
+in x + y</code></pre>
+<p>The parser generates type variables. In other words, after parsing, every variable in the AST is associated a unique object of class <code>Type</code> that represents a unique variable (there’s a placeholder in the AST to store this information).</p>
+<pre><code>let (x : &#39;a) = 3 in
+let (y : &#39;b) = 4 in
+in x + y </code></pre>
+<p>The second step is to generate type equations. We’ll see later how to do it, but suppose we obtain these three equations:</p>
+<pre><code>&#39;a = int   (* because x is assigned an integer, and has type &#39;a *)
+&#39;b = int   (* idem *)
+int = unit (* because x + y must have type unit, and is the result of + *)</code></pre>
+<p>The last step is to solve the type equations. In this case, the type equations lead to a contradiction <code>int = unit</code>, meaning that the program is not well-typed. It is rejected by the compiler before attempting to generate code.</p>
+<p>Let us go through the three stages.</p>
+<h4 id="generating-type-variables">Generating type variables</h4>
+<p>All variables should have a type. If not supplied by the user, we use a type variable. The AST contains place holders for types (here in Java, transposable to other languages).</p>
+<pre><code>class Let extends Exp {
+   Id id;
+   Type t;
+   Exp e1;
+   Exp e2;
+   ...</code></pre>
+<p>When the AST is initially created, <em>fresh</em> type variables are generated by the static <code>Type.gen()</code> method.</p>
+<h4 id="type-equations">Type equations</h4>
+<p>A <em>type equation</em> is simply a pair of types. We generate a list of typing equations that should hold for our term to be typable. These equations are generated during one recursive traversal of the AST.</p>
+<p>Typing is done relative to a typing environment. An <em>environment</em> <code>E</code> is a mapping from identifiers to types. Initially, the environment contains the types of the predefined function. We call <code>PREDEF</code> the initial environment.</p>
+<p><code>PREDEF = { print_string : string -&gt; unit, print_int : int -&gt; unit }</code></p>
+<p>Type equations are generated by the following algorithm.</p>
+<pre><code>Algorithm GenEquations: 
+   Input: (Expr, Environment, Type) 
+   Output: A list of equations (Type, Type)</code></pre>
+<p><code>GenEquation</code> takes three parameters:</p>
+<ul>
+<li><code>Expr</code> the program to be type checked</li>
+<li><code>Environment</code> the environment in which the program is typechecked</li>
+<li><code>Type</code> the type that the program must have</li>
+</ul>
+<p>It returns a list of equations that hold if and only if term <em>Expr</em> has type <em>Type</em> in environment <em>Environment</em>. For a MinCaml program E, we need to compute <code>GenEquations(PREDEF, E, unit)</code>. <code>GenEquations</code> is defined recursively on the structure of Expr.</p>
+<p>Here’s the pseudocode (it uses OCaml list notation).</p>
+<pre><code>GenEquations(env, expr, type) =
+  case on expr:
+    // only one equation &quot;unit = type&quot;
+    UNIT -&gt; return [ (unit, type) ]  
+    // similarly &quot;int = type&quot;, &quot;float = type&quot;
+    INT -&gt; return [ (int, type) ]
+    FLOAT -&gt; return  [ (float, type) ]
+    // &quot;not expr2&quot; is a boolean, so we must have &quot;bool = type&quot;
+    // but expr2 must be a boolean, so we generate the additional
+    // equations &quot;GenEquation(env, expr2, bool)&quot;
+    Not expr2 -&gt; 
+       eq = GenEquations(env, expr2, bool)
+       return (bool, type) :: eq
+    Add (expr1, expr2) -&gt;
+       eq1 = GenEquations(env, expr1, int)
+       eq2 = GenEquations(env, expr2, int)
+       return (int, type) :: eq1 :: eq2
+    //  This case corresponds to a program of the form
+    // Let (x : id_type) = exrp1 in expr2
+    // expr1 must be of the type id_type, so we generate 
+    // GenEquations(env, expr1, id_type) 
+    // expr2 must be of type &quot;type&quot;, but in a new environment where
+    // x is of type id_type, so we generate
+    // GenEquations(env + (id -&gt; id_type), expr2, type)
+    Let (id, id_type, expr1, expr2) -&gt;
+       eq1 = GenEquations(env, expr1, id_type)  
+       eq2 = GenEquations(env + (id -&gt; id_type), expr2, type)
+       return e1 :: eq2
+    // a variable x has a type t1 that must be known from the environment 
+    // (possibly a type variable)
+    // then, we have only one equation &quot;ty = type&quot; 
+    Var (x) -&gt;
+       t1 = env(x)  (* error if not defined *)
+       return [(t1, type)]
+    ... to be completed!
+    Letrec ...  -&gt;  
+    App ... -&gt;</code></pre>
+<h4 id="equations-resolution">Equations resolution</h4>
+<p>The equations generated by GenEquations are equalities of tree expressions with variables. Consider the following system:</p>
+<pre><code>(int -&gt; &#39;a) = &#39;b -&gt; &#39;c 
+`a = (int -&gt; &#39;d)
+`d = bool</code></pre>
+<p>We can substitute the third equation in second one, then the second in the first. We obtain</p>
+<pre><code>(int -&gt; (int -&gt; bool)) = `b -&gt; `c. </code></pre>
+<p>Finally, we deduce:</p>
+<pre><code>`a = int -&gt; bool
+`b = int 
+`c = int -&gt; bool
+`d = bool</code></pre>
+<p>The <em>unification algorithm</em> is a general algorithm used to solve such tree equations. Some of you may remember this algorithm from UE INF242…</p>
+<pre><code>Algorithm: Unification
+  Input : List of equations
+  Output : List of equations
+
+Output is a list of &quot;solved&quot; equations of the form:
+  (var_1, type_1), ... (var_n, type_n)
+
+Resolution(list): 
+  if list is empty
+     return [] (empty list) 
+  if list = (t1,t2) :: list2
+   by case on (t1,t2): 
+    if t1 and t2 are cleary not unifiable (int, float) or (t1 -&gt; t2, int)
+      exit(&quot;not unifiable&quot;)
+    if (t1, t2) = (t, t) with t = int, bool, float, unit 
+      return Resolution(list2)
+    if (t1, t2) = (t11 * t12, t21 * t22)
+      return Resolution ( (t11, t21) :: (t12, t22) :: list2 )
+    if (t1, t2) = (t11 -&gt; t12, t21 -&gt; t22)
+      return Resolution ( (t11, t21) :: (t12, t22) :: list2 )
+    if (t1, t2) = (var, t2)
+      list3 = list with *occurences of var replaced by t2*
+      return (var, t2) :: Resolution(list3)
+   ... to complete</code></pre>
+</body>
+</html>

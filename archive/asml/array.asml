@@ -1,0 +1,10 @@
+let _ = 
+    let size = 2 in
+    let init = 0 in
+    let arr = call _min_caml_create_array size init in
+    let i0 = 0 in
+    let v0 = 1 in
+    let tu = mem(arr + i0) <- v0 in 
+    let i1 = 1 in
+    let v1 = mem(arr + i0) in
+    mem(arr + i1) <- v1 

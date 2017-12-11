@@ -1,0 +1,8 @@
+To interpret an ASML program `foobar.asml`, simply type
+
+$ ./asml foobar.asml
+  or
+$ ./asml -v foobar.asml
+  for verbose mode.
+
+See examples in `asml/`.

@@ -1,0 +1,159 @@
+import java_cup.runtime.*;
+import java.util.*;
+
+parser code {:
+    Lexer l;
+    Parser(Lexer l){
+	   this.l = l;
+    }
+
+    class Pair<A,B> {
+        A left;
+        B right;
+
+        Pair(A left, B right) {
+            this.left = left;
+            this.right = right;
+        }
+    }
+
+    :}
+
+init with {:  :};
+scan with {: return l.next_token(); :};
+
+terminal boolean BOOL;
+
+terminal int INT;
+terminal float FLOAT;
+terminal Id IDENT;
+terminal NOT, MINUS, PLUS, MINUS_DOT, PLUS_DOT, AST_DOT, SLASH_DOT, EQUAL,
+ LESS_GREATER, LESS_EQUAL, GREATER_EQUAL, LESS, GREATER, IF, THEN, ELSE,
+ LET, IN, REC, COMMA, ARRAY_CREATE, DOT, LESS_MINUS, SEMICOLON, LPAREN, RPAREN;
+terminal prec_let, prec_if, prec_unary_minus, prec_app;
+
+non terminal List<Exp> elems;
+non terminal List<Exp> actual_args;
+non terminal List<Id> formal_args;
+non terminal Pair<List<Id>, List<Type>>  pat;
+non terminal FunDef fundef;
+non terminal Exp simple_exp;
+non terminal Exp exp;
+
+precedence right prec_let;
+precedence right SEMICOLON;
+precedence right prec_if;
+precedence right LESS_MINUS;
+precedence left  COMMA;
+precedence left  EQUAL, LESS_GREATER, LESS, GREATER, LESS_EQUAL, GREATER_EQUAL;
+precedence left  PLUS, MINUS, PLUS_DOT, MINUS_DOT;
+precedence left  AST_DOT, SLASH_DOT;
+precedence right prec_unary_minus;
+precedence left  prec_app;
+precedence left  DOT;
+
+precedence nonassoc INT, FLOAT, IDENT, LPAREN;
+
+start with exp;
+
+simple_exp ::= LPAREN exp:e RPAREN {: RESULT = e; :}
+             | LPAREN RPAREN {: RESULT = new Unit(); :}
+             | BOOL:b        {: RESULT = new Bool(b); :}
+             | INT:i         {: RESULT = new Int(i); :}
+             | FLOAT:f       {: RESULT = new Float(f); :}
+             | IDENT:id      {: RESULT = new Var(id); :}
+             | simple_exp:e1 DOT LPAREN exp:e2 RPAREN {: RESULT = new Get(e1, e2); :}
+;
+
+exp ::= 
+  simple_exp:e          {: RESULT = e; :}
+| NOT exp:e             {: RESULT = new Not(e); :}
+    %prec prec_app
+| MINUS exp:e           {: 
+    if (e instanceof Float) {
+        RESULT = new Float(-((Float) e).f);
+    } else {
+        RESULT = new Neg(e);
+    }
+ :}
+    %prec prec_unary_minus
+| exp:e1 PLUS exp:e2     {: RESULT = new Add(e1, e2); :}
+| exp:e1 MINUS exp:e2    {: RESULT = new Sub(e1, e2); :}
+| exp:e1 EQUAL exp:e2    {: RESULT = new Eq(e1, e2); :}
+| exp:e1 LESS_GREATER exp:e2    {: RESULT = new Not(new Eq(e1, e2)); :}
+| exp:e1 LESS exp:e2    {: RESULT = new Not(new LE(e2, e1)); :}
+| exp:e1 GREATER exp:e2   {: RESULT = new Not(new LE(e1, e2)); :}
+| exp:e1 LESS_EQUAL exp:e2    {: RESULT = new LE(e1, e2); :}
+| exp:e1 GREATER_EQUAL exp:e2    {: RESULT = new LE(e2, e1); :}
+| IF exp:e1 THEN exp:e2 ELSE exp:e3    
+     {: RESULT = new If(e1, e2, e3); :}
+     %prec prec_if 
+| MINUS_DOT exp:e    {: RESULT = new FNeg(e); :}
+    %prec prec_unary_minus
+| exp:e1 PLUS_DOT exp:e2    {: RESULT = new FAdd(e1, e2); :}
+| exp:e1 MINUS_DOT exp:e2    {: RESULT = new FSub(e1, e2); :}
+| exp:e1 AST_DOT exp:e2    {: RESULT = new FMul(e1, e2); :}
+| exp:e1 SLASH_DOT exp:e2    {: RESULT = new FDiv(e1, e2); :}
+| LET IDENT:id EQUAL exp:e1 IN exp:e2  {: RESULT = new Let(id, Type.gen(), e1, e2); :}
+%prec prec_let
+| LET REC fundef:fd IN exp:e    {: RESULT = new LetRec(fd,  e); :}
+%prec prec_let
+| exp:e actual_args:es    {: RESULT = new App(e, es); :}
+ %prec prec_app
+| elems:es  {: RESULT = new Tuple(es); :}
+| LET LPAREN pat:p RPAREN EQUAL exp:e1 IN exp:e2    
+    {: 
+       RESULT = new LetTuple(p.left, p.right, e1, e2); :}
+| simple_exp:e1 DOT LPAREN exp:e2 RPAREN LESS_MINUS exp:e3    {: RESULT = new Put(e1, e2, e3); :}
+| exp:e1 SEMICOLON exp:e2    
+    {: RESULT = new Let(Id.gen(), new TUnit(), e1, e2); :}
+| ARRAY_CREATE simple_exp:e1 simple_exp:e2    
+           {: RESULT = new Array(e1, e2); :}
+    %prec prec_app
+| error    {: RESULT = null; /* TODO */ :}
+;
+
+fundef ::=
+ IDENT:name formal_args:args EQUAL exp:e    
+            {: RESULT = new FunDef(name, null, args, e); :}
+ ;
+
+formal_args ::=
+  IDENT:id formal_args:args    
+   {: args.add(0, id); RESULT = args; :} 
+| IDENT:id   
+   {: List l = new LinkedList<Id>(); 
+      l.add(0, id); 
+      RESULT = l; 
+   :}
+;
+
+actual_args ::=
+  actual_args:es simple_exp:e    
+    {: es.add(e); RESULT = es; :}
+    %prec prec_app
+| simple_exp:e    
+    {: List l = new LinkedList<Exp>(); l.add(0, e); RESULT = l; :}
+    %prec prec_app
+    ;
+
+elems ::=
+  elems:es COMMA exp:e  
+    {: es.add(e); RESULT = es; :}
+| exp:e1 COMMA exp:e2
+    {: List l = new LinkedList<Exp>(); 
+       l.add(0, e2); 
+       l.add(0, e1);
+       RESULT = l; :}
+;
+
+pat ::=
+  pat:is COMMA IDENT:i    
+     {: is.left.add(i); RESULT = is; :}
+| IDENT:i1 COMMA IDENT:i2    
+     {: List<Id> l = new LinkedList<Id>(); 
+        List<Type> t = new LinkedList<Type>(); 
+        t.add(0, Type.gen()); t.add(0, Type.gen());
+        l.add(0, i2); 
+        l.add(0, i1); RESULT = new Pair<List<Id>, List<Type>>(l, null); :}
+;

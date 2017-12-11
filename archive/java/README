@@ -1,0 +1,19 @@
+usage:
+1) make
+2) ./min-ml program.ml, where program.ml is a min-ml program
+  (for instance,  ./min-ml ../mincaml/fib.ml).
+
+This parser a minmal program, print it using a PrintVisitor,
+compute its height using two different methods. By case analysis and
+ using a HeighVisitor. See 'java-tree.html' for the explanations. 
+
+NOTES:
+Cup parser generator documentation is available there:
+http://www2.cs.tum.edu/projects/cup/
+
+Java >= 1.7 is required. On mandelbrot, make sure jdk7 is used by 
+setting your PATH correctly: 
+
+export PATH=/usr/lib/jvm/java-7-openjdk-amd64/bin/:$PATH
+
+

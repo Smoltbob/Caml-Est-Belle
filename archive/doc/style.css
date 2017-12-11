@@ -1,0 +1,62 @@
+body {
+    color: black;
+    background-color: white;
+    font-family: sans-serif;
+}
+
+.title {
+    text-align: center
+}
+
+.subtitle {
+    text-align: center;
+    font-style: italic;
+}
+
+.author {
+    text-align: center;
+}
+
+code {
+    font-size: 120%;
+    color: green;
+}
+
+tt {
+    font-size: 120%;
+}
+
+pre {
+    font-size: 100%;
+    color: green;
+    margin: 1em;
+    border: 1px dashed;
+    padding: 1em;
+}
+
+div.question {
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1em;
+    margin-top: 1em;
+    width: 90%;
+    background-color: #e0e0ff;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+
+div.optquestion {
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1em;
+    margin-top: 1em;
+    width: 90%;
+    background-color: #e0e0e0;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+
+.classic {
+    color: black;
+}
+

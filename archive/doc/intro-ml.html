@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>intro-ml</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.line-block{white-space: pre-line;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="quick-intro-to-ocaml-and-mincaml">Quick intro to OCaml and MinCaml</h1>
+<h2 id="expressions-vs-statements">Expressions vs Statements</h2>
+<p>An <em>imperative</em> program is a sequence of <em>statements</em>.</p>
+<pre><code>x = 1 + 1;
+y = 2 + x;
+print(&quot;result = %d\n&quot;, y);</code></pre>
+<p>Each line describes an action that has an effect (update the memory, display something).</p>
+<p>The statements contain <em>expressions</em> like <code>2 + x</code> or <code>1 + 1</code>. A <em>pure</em> expression evaluates to a value, but doesn’t have (side) effect.</p>
+<p><em>Functional</em> programs are usually expression. For instance:</p>
+<pre><code>let x = 1 + 1 in
+let y = 2 + x in
+y</code></pre>
+<p>This program is an expression, that evaluates to <code>4</code>. It has no side effect.</p>
+<p>In most programming languages, the line is not so clear-cut between expressions and statements.</p>
+<p>For instance, in C, expressions are statements too. Consider this program:</p>
+<pre><code>x = 1;
+2;
+3;
+print(&quot;%d\n&quot;, x);</code></pre>
+<p>Actually, even <code>x = 1</code> is actually an expression! <code>x = 1</code> evaluates to 1, with the side-effect of assigning 1 to x. One can write:</p>
+<pre><code>x = 1;
+y = x = 1;</code></pre>
+<p>In functional languages, some expressions have side-effects too. For instance,</p>
+<pre><code>let x = 1 in
+let y = 1 in
+print_int (x + y)</code></pre>
+<p>This programs evaluates to <code>()</code> and prints <code>2</code> as a side effect. Understand the difference with</p>
+<pre><code>let x = 1 in
+let y = 1 in
+x + y</code></pre>
+<p>This programs evaluates to <code>2</code> with no side-effect.</p>
+<p>Generally, side effects are useful for input/output, or when using <em>mutable</em> data structures, but functional programming try to reduce them to a minimum.</p>
+<p>Nowadays, modern languages tend to be multi-paradigm (imperative, OO, functional) and the programmer can choose the best style depending on the problem to be solved.</p>
+<h2 id="simple-expressions">Simple expressions</h2>
+<p>Try them to with the OCaml <em>top-level</em> (interpreter <code>ocaml</code>).</p>
+<pre><code>1;;
+
+1 + 2;;
+
+3.0 +. 7.0;;
+
+1.0 + 3;;   (* not well-typed *)
+
+let x = 2 in
+let y = 3 in
+x + y;;
+
+let x = 2 in       
+let y = 3 in
+if (x &gt;= y) then  (* similar to (x &gt;= y)?1:0  in C *)
+  1
+else
+  0;;
+
+if true then false else true;</code></pre>
+<p>Now expression with side effects:</p>
+<pre><code>let x = 1 in print_int 1;;
+
+let x = print_int 1 in 
+let y = 2 in 
+print_int y;;
+
+let _ = print_int 1 in 
+let y = 2 in
+print_int y;;
+
+let y = (print_int 1); 2 in
+print_int y;;</code></pre>
+<p>Remark:</p>
+<ul>
+<li><p>the <code>;;</code> is useful in the top-level interpreter <code>ocaml</code> but not needed in programs compiled with <code>ocamlc</code>. In MinCaml, it’s incorrect to use it.</p></li>
+<li><p>notice that each expression has a type, and is evaluated to a value. We have seen the types: <code>int</code>, <code>float</code>, <code>unit</code>, <code>bool</code>. <code>bool</code> has two values, <code>true</code> and <code>false</code>, while <code>unit</code> has one <code>()</code> (called nil).</p></li>
+<li><p><code>A;B</code> is a shortcut for <code>let _ = A in B</code>. Normally <code>A</code> has unit type.</p></li>
+</ul>
+<p>In OCaml (but not MinCaml), we can define several <code>let</code> in sequence.</p>
+<pre><code>let x = 1;;
+let y = 2;;
+let _ = print_int (x + y);;</code></pre>
+<h2 id="functions">Functions</h2>
+<pre><code>let f x = x
+
+let f x = x + 1
+
+let f = fun x -&gt; x + 1
+
+let rec f x = x + 1 (* rec is mandatory for all functions in mincaml *)
+
+let rec fact x = 
+  if x == 0 then
+     1
+  else 
+     x * (fact (x - 1)) (* be careful to use proper parenthesis)</code></pre>
+<p>Remark:</p>
+<p>OCaml is a statically typed languages, but the programmer doesn’t need to explicitly give the type. One could write:</p>
+<pre><code>  let f (x : int) : int = x + 1</code></pre>
+<p>But even if we don’t, the compiler will <em>infer</em> that <code>f</code> has type <code>int -&gt; int</code>.</p>
+<p>In MinCaml, explict types are forbidden, and the <code>fun</code> keyword isn’t defined.</p>
+</body>
+</html>
