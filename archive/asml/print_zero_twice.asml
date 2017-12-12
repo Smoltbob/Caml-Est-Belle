@@ -1,4 +1,0 @@
-let _ =
-   let x = 0 in 
-   let tu = call _min_caml_print_int x in
-   call _min_caml_print_int x
