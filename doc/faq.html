@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>faq</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.line-block{white-space: pre-line;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="faq">FAQ</h1>
+<p>This answers some questions asked during the project.</p>
+<h2 id="do-i-need-to-create-a-new-datatype-for-each-transformation">Do I need to create a new datatype for each transformation?</h2>
+<p>The reference MinCaml compiler uses several transformations to go from a MinCaml to Sparc. Most of these transformations define a new language. For instance, the first transformation defines the language of K-normal forms.</p>
+<p>K-normal forms are a strict subset of the source language of MinCaml. So we can reuse the MinCaml AST for its internal representation, and we could reuse the same parser as well if we wanted to parse K-normal form programs. Still, it’s interesting to have a new datatype to code this language as it prevents from defining ill-formed k-normal form. On the downside, defining a new AST takes some work (especially in Java), and you may end up rewriting almost the same functions for different datatypes.</p>
+<h2 id="what-is-the-13-bit-immediate-optimization-phase">What is the 13-bit immediate optimization phase?</h2>
+<p>After k-normalization, all operations are of the form: op(x1,..,xn): They operate on variables, and not on litterals. However, in SPARC assembly (the target in the article), most integer instructions can take as operands immediate values if they need less than 13 bits. This phase is an optimization that use those instructions (for instance, “MOV r0, #1; ADD r1, r0” is rewritten as “ADD r1, #1”). In ARM, there are different constraints on immediate values, but you should be able to perform similar operations.</p>
+<h2 id="code-generation-for-function-calls">Code generation for function calls</h2>
+<p>We explain here a bit more the calling conventions in ARM code. In ASML, functions can be called using the <code>call</code> instruction. For instance,</p>
+<pre><code> let _g x1 = 
+   let x2 = 1 in
+   let x3 = 2 in 
+   let x = call _f x1 x2 x3  
+   ...
+   ...
+
+ let _f u v w = 
+    ...
+    ...</code></pre>
+<p>We say that <code>_g</code> is the caller and <code>_f</code> is the callee.</p>
+<p>The generated ARM code for <code>call</code> should copy the parameters in <code>r0</code> to <code>r3</code>, and on the stack if there are more than four parameters. In the example, <code>x1</code>, <code>x2</code> and <code>x3</code> will be placed in <code>r0</code>, <code>r1</code>, <code>r2</code>.</p>
+<p>The code generated for <code>_f</code> should contain a <em>prologue</em> (first instructions) and an <em>epilogue</em> (last instructions).</p>
+<h4 id="prologue">Prologue</h4>
+<pre><code>stmfd  sp!, {fp, lr}   # save fp and lr on the stack
+add fp, sp, #4         # position fp on the address of old fp
+sub sp, #n             # allocate memory to store local variables</code></pre>
+<h4 id="epilogue">Epilogue</h4>
+<p>The epilogue restore <code>sp</code>, <code>fp</code> and <code>lr</code> and returns to caller</p>
+<pre><code>sub sp, fp, #4         
+ldmfd  sp!, {fp, lr}  
+bx lr                  </code></pre>
+<p>After the prologue, the instructions contained in the function body can access the parameters and the local variables using <code>fp</code>. The stack should have the following shape (remember that pushing on the stack means decreasing <code>sp</code>).</p>
+<pre><code>#  (higher addresses)
+#    param_n                          
+#    ...
+#    param_5  &lt;- 4(fp) 
+#    old_fp  &lt;- fp
+#    lr     
+#    temp1   &lt;- -8(fp)
+#    temp2   &lt;- -12(fp)
+#    ...
+#    tempn   &lt;- SP
+#    (saved local registers)
+#  (lower addresses)   </code></pre>
+<p>The function body can access parameters using <code>r0</code> to <code>r3</code> and (if needed) addresses <code>4(fp)</code>, <code>8(fp)</code> and so on. Local variables can be accessed using <code>-8(fp)</code>, <code>-12(fp)</code> and so on.</p>
+<p>The first instructions in the function body after the prologue should copy the parameters contained in <code>r0</code> to <code>r3</code> to the temporary variables in the stack or in the local registers <code>r4</code> to <code>r12</code>, depending on your register allocation strategy. After that registers <code>r0</code> to <code>r3</code> can be used as <em>scratch registers</em>. The callee doesn’t have to save them hence they can be modifed without being restored. However, if you use local registers <code>r4</code> to <code>r12</code> they should be be saved on the stack right after the prologue (<em>callee-saved registers</em>), and restored just before the epilogue. Be careful though with <code>r11</code> which is register <code>fp</code>.</p>
+<h2 id="asml-limitations">ASML limitations</h2>
+<p>The ASML language is sufficient to encode simple features of MinCaml programs such as arithmetic expressing, functions, closures, tuples. However, you’ll probably need additional instructions for other features.</p>
+<p>To implement arrays efficiently in ARM, you can use load and store operations with register offset and shifting. For instance:</p>
+<pre><code>STR    R0, [R1, R2, LSL #2] ; Stores R0 to an address equal to sum of R1
+                            ; and four times R2.</code></pre>
+<p>This is useful for array access (e.g <code>a.(i)</code> in mincaml). You can add a corresponding expression <code>mem(x + y, n) &lt;- z</code> in ASML.</p>
+<p>An other limitation of ASML concerns “big” integers. In ARM, not all 32-bits integers can be used as immediate values. For instance <code>mov r0, #1456</code> is not permitted. Just as for floats, such integers can be put in the data section but you’ll have to extend ASML if you want to perform this operation in the front-end.</p>
+<h2 id="floats">Floats</h2>
+<p>Use a 32-bit representation for floats. This simplifies code generation as all MinCaml values fit in one word of memory (otherwise, one would need to use typing information to know the size of values in order to generate appropriate code).</p>
+<p>Also, the type-checker doesn’t need to decorate the AST with types as it is not needed (this is a simplification with respect to the article). The drawback is that MinCaml will differ from OCaml on operations involving floats.</p>
+<h2 id="typing">Typing</h2>
+<p>In the provided OCaml implementation, the <code>Type.t</code> datatype has a case <code>Var of t option ref</code>.</p>
+<pre><code>type t =                                                                         
+  | Unit                                                                         
+  | Bool                                                                         
+  | Int                                                                          
+  | Float                                                                        
+  | Fun of t list * t                                                            
+  | Tuple of t list                                                              
+  | Array of t                                                                   
+  | Var of t option ref </code></pre>
+<p>This is done to implement type checking more efficiently. However, to simplify your typing algorithm, you can instead use <code>Var of string</code> and generate <em>fresh</em> type variables in the parser whenever you have to provide a type. Modify <code>Type.gentyp()</code> so that it returns a new variable name each time it is called (this is already the case in the java implementation).</p>
+<p>The case <code>Fun of t list * t</code> represents types of the form <code>t1 -&gt; (t2 -&gt; (t3 -&gt; ... -&gt; tn))</code>. For instance, <code>Fun ([Int; Bool], Unit)</code> represents the type <code>Int -&gt; Bool -&gt; Unit</code> (don’t confuse it with <code>Int * Bool -&gt; Unit</code>).</p>
+<p>Note that in OCaml, one can use partial application such as:</p>
+<pre><code>let rec f x y z = x + y + z in
+let rec u x = f x 42 in   (* u has type int -&gt; (int -&gt; int) *)
+()</code></pre>
+<p>However, this is forbidden in MinCaml and should be written:</p>
+<pre><code>let rec f x y z = x + y + z in
+let rec u x z = f x 42 z in
+()</code></pre>
+<h2 id="closure-conversion-step-in-the-front-end">Closure Conversion step in the front-end</h2>
+<h3 id="direct-function-calls">Direct function calls</h3>
+<p>First, restrict yourself to MinCaml code that only needs direct function calls. It means: . no higher-order functions . no functions with free variables</p>
+<p>You should traverse the AST and generate a label from each function name. It will later be used in the ARM assembly code to identify a the first address of the function.</p>
+<p>For each function call <code>f x y ...</code>. If <code>f</code> corresponds to a function already seen, generate an <code>apply_direct</code> instruction to the label corresponding to <code>f</code>. Otherwise, <code>f</code> should be an external function. In that case, create the label by appending <code>_min_caml_</code> to the name.</p>
+<p>This should work even for recursive or mutually recursive functions. For instance, the program</p>
+<pre><code>let rec u x =                                                                    
+    let rec v x = u x in v 0                                                     
+in u 0  </code></pre>
+<p>is transformed to (after closure conversion and asml generation)</p>
+<pre><code>let _v x =                                                                   
+   call _u x                                                                 
+                                                                                 
+let _u y =                                                                   
+   let w = 0 in                                                              
+   call _v w                                                               
+
+let _ =                                                                          
+   let t = 0 in                                                              
+   call _u t                                                               </code></pre>
+<p>In subsequent steps, <code>apply_direct</code> will be translated into <code>call</code> in ASML and the backend will simply translate this call to a branching instruction. References to <code>_min_caml_</code> symbols will be resolved by the linker.</p>
+<p>Only when direct function calls work (<em>including ASML and ARM generation</em>), start extending this to closures</p>
+<h3 id="closures">Closures</h3>
+<p>The previous scheme is ineffective in several cases. We already explained why in the <a href="./frontend.html">frontend</a> document. We give more detail on how to implement the closure conversion phase (see also 4.10 in the article).</p>
+<p>Consider this example:</p>
+<pre><code>  let rec succ x = 
+     let rec add y = x + y in 
+     add 1 
+  in
+  print_int (succ 42)</code></pre>
+<p>The idea is to recognize that <code>add</code> has a free variable <code>x</code> so when we generate the intermediary code (i.e. the output of the closure conversion phase), we separate the free variables from the parameters.</p>
+<p>label: _f free variables: x parameters: y code: x + y</p>
+<p>Then, we generating the code for <code>succ</code>, we should get something like</p>
+<p>label: _succ free variables: None parameters: x code: …</p>
+<p>The code part <code>add 1</code> should be converted to some sort of call to <code>_f</code> but it is not as straighforward as before as we need to provide the value of the free variable <code>x</code>.</p>
+<p>The trick is to consider that <code>add</code> doesn’t translate to a label but to a closure, i.e. the label _f plus the value of <code>x</code>. So <code>add 1</code> translates to</p>
+<p>. a closure creation (make_closure) for <code>add</code> . an apply closure operation for <code>add 1</code>.</p>
+<p>label: _succ free variables: None parameters: x code: let add = make_closure(_add, x) in let w = 1 in apply_closure(add, w)</p>
+<h3 id="remark">Remark</h3>
+<p>. It’s been said before but apparently it’s not clear. <code>make_closure</code>, <code>apply_direct</code> and <code>apply_closure</code> will correspond to new nodes in your AST. We should use a syntactic notation here to explain the concepts. . We use <code>apply_direct</code> and <code>apply_closure</code> after closure conversion. The last phase in the front-end will generate <code>call</code> and <code>call_closure</code> instructions.</p>
+<p>For your information, here what’s the ASML output of the front-end looks like for this example. Essentially, <code>make_closure</code> in <code>succ</code> has been translated to a memory allocation followed by two updates in that structure. Moreover, free variable <code>x</code> in <code>add</code> is looked up in the closure. <code>%self</code> is an implicit parameter that contains the address of the closure. In ARM, it will have to be passed explicitely by the generated code for <code>call_closure</code>.</p>
+<pre><code>let _add.8 y.9 =
+   let x.5 = mem(%self + 4) in
+   add x.5 y.9
+
+let _succ.4 x.5 =
+   let add.8 = new 8 in
+   let l.12 = _add.8 in
+   let tu13 = mem(add.8 + 0) &lt;- l.12 in
+   let tu11 = mem(add.8 + 4) &lt;- x.5 in
+   let ti3.10 = 1 in
+   call_closure add.8 ti3.10
+   
+let _ = 
+   let ti1.7 = 42 in
+   let ti2.6 = call _succ.4 ti1.7 in
+   call _min_caml_print_int ti2.6</code></pre>
+</body>
+</html>

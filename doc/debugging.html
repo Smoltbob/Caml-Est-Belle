@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>debugging</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.line-block{white-space: pre-line;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="debugging">Debugging</h1>
+<pre><code>qemu-arm ./gcd
+qemu: uncaught target signal 11 (Segmentation fault) - core dumped</code></pre>
+<p>View assembly:</p>
+<pre><code> arm-none-eabi-objdump -td gcd</code></pre>
+<p>Launch in singlestep with debug port 1234:</p>
+<pre><code> qemu-arm -singlestep -g 1234 ./gcd</code></pre>
+<p>Connect your favorite debugger <!-- `layout asm` and `layout regs` --></p>
+<pre><code>arm-none-eabi-gdb ./gcd
+(gdb)target remote :1234
+(gdb)start
+(gdb)stepi</code></pre>
+<p>Using <code>ddd</code> instead of <code>gdb</code>:</p>
+<pre><code>ddd --debugger arm-none-eabi-gdb ./gcd</code></pre>
+</body>
+</html>

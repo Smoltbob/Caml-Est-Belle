@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>closure</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.line-block{white-space: pre-line;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="what-is-a-closure">What is a closure?</h1>
+<p>In low level languages (think C, or assembly), functions can be passed as parameters to other functions using <em>function pointers</em>. That is, pointers to the first instruction of the function.</p>
+<p>Example: the C function <code>signal()</code> is used to register a signal handler.</p>
+<pre><code>    typedef void (*sig_t) (int);
+
+    sig_t signal(int sig, sig_t func);</code></pre>
+<p>Things get more complicated when function definitions can be nested. For instance, in GNU C, one can write:</p>
+<pre><code>    int add (double a, double b) {
+      int add_b (double x) { return x + b; }
+      return add_b(a);
+    }</code></pre>
+<p>Suppose now that instead of an integer, <code>add</code> returns a pointer to <code>add_b</code>.</p>
+<pre><code>    typedef int (*func) (int);
+
+    func add(double b) {
+      int add_b (double x) { return x + b; }
+      return &amp;add_b;
+    }</code></pre>
+<p>Unfortunately, this is not correct. The variable <code>b</code> may no longer exists when <code>add</code> returns. Presumably, <code>b</code> is allocated on the stack, and will be freed before we try to the function returned by add.</p>
+<p>To solve this issue, functional languages use the notion of closure. A closure is the runtime representation of a function together with its context (the values of the local variables that the function was using when it was defined).</p>
+<p>We could implement this behavior in C by defining a closure type. For instance, a closure type for functions of type <code>int -&gt; int</code> could be:</p>
+<pre><code>    struct Closure {
+      int b;
+      func f;
+    };
+
+    typedef struct Closure *PClosure;</code></pre>
+<p>We can rewrite the initial program:</p>
+<pre><code>    int add_b(PClosure this, double x) {
+      return (x + this-&gt;b);
+    }
+
+    PClosure add (double b) {
+      PClosure cl = (PClosure) malloc(sizeof(struct Closure));
+      cl-&gt;b = b;
+      cl-&gt;f = (func) &amp;add_b;
+      return cl;
+    }</code></pre>
+<p>This is essentially the transformation you’ll have to perform in the front-end of the compiler in ASML generation (see <a href="./frondend.html">frontend</a> and <a href="./asml.html">ASML</a>).</p>
+<p>Of course, in programming languages that support closures, all of this is taken care of by the compiler or the runtime. Some examples:</p>
+<h4 id="ocaml">OCaml</h4>
+<pre><code>let add b = 
+    let add_b x = x + b in 
+    add_b</code></pre>
+<h4 id="javascript">Javascript</h4>
+<pre><code>function add(b) {
+    add_b = function(x) {
+        return x + b;
+    }
+    return add_b;
+}</code></pre>
+<p>In object-oriented languages like Java or C++, closures can be coded using objects instead of structures. A closure is an object with one method, and fields capturing the local variables.</p>
+</body>
+</html>

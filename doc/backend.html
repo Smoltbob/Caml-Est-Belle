@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>backend</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.line-block{white-space: pre-line;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="back-end">Back-end</h1>
+<p>In this document, we describe the <em>back-end</em> of the compiler, i.e., how from the Intermediate Representation (here, ASML) we can obtain assembly code.</p>
+<p>ASML (described in details in another document) is close to the ARM assembly but still contains “high-level” constructions, such as variables (called “temporaries”, instead of registers), function calls, or if-then-else constructs, and is actually still architecture agnostic (i.e., still generic and not yet targeted for any particular architecture).</p>
+<p>The back-end proceeds in two steps.</p>
+<ul>
+<li><p>The first step is to assign all the temporaries in ASML to actual machine registers by performing register allocation.</p></li>
+<li><p>The second step is to translate the new ASML code to ARM. For the most part, it is a matter of translating the ASML instructions to their ARM counterparts. The difficult part will be to implement memory management (stack/heap allocation) and function calls respecting the calling conventions.</p></li>
+</ul>
+<h2 id="register-allocation">Register allocation</h2>
+<p>Register allocation will convert all variables to registers. If there is not enough registers, you must <em>spill</em> (save) variables to memory: insert a store after each definition, and a load before each use (can actually be refined, since maybe not all loads are useful). In your implementation, you can implement register allocation by mapping registers to variables in the ASML code.</p>
+<p>Example:</p>
+<pre><code>let _succ x =                                                                
+   let t = 1 in                                                              
+   add x t                                                                 
+
+let _ =                                                                          
+   let y = 1 in                                                                
+   let u = call _succ y in                                               
+   call _min_caml_print_int u</code></pre>
+<p>After register allocation, variables are replaced by ARM registers.</p>
+<pre><code>let _succ r4 =                                                                
+   let r5 = 1 in                                                              
+   add r4 r5                                                                 
+
+let _ =                                                                          
+   let r4 = 1 in                                                                
+   let r5 = call _succ r4 in                                               
+   call _min_caml_print_int r5 </code></pre>
+<p>Variable can also be allocated on the stack, in which case we would use indirect addressing such as <code>[fp, i]</code> (offset i from the frame pointer).</p>
+<p>Note that depending on your design, you can add new instructions in ASML (for instance to load and store variables from the stack) in order to make the ARM generation easier.</p>
+<p>There are many strategies to allocate registers.</p>
+<h3 id="very-basic-allocation">Very basic allocation</h3>
+<p>As a first step to have something working, assign to each variable a different register and stop compiling if you run out of register. Of course, this is not a viable strategy since you won’t be able to compile all programs.</p>
+<h3 id="basic-allocation-spill-everything">Basic allocation: spill everything</h3>
+<p>To make the previous approach work (but still inefficently) you can spill all variables to the stack. It is also the case for instance in gcc if you compile without any optimization (<code>-O0</code>). In that case, all variables will be assigned an address <code>[fp, i]</code>.</p>
+<p>The following strategies are more intricate and can be seen as improvements when everything else is working.</p>
+<h3 id="linear-scan">Linear scan</h3>
+<p>An algorithm that yield acceptable results, fast enough to be used in constrained environments. Consider the function as a single basic block. Each variable has a live-range from its first definition to its last use: they are intervals.</p>
+<p>Order the intervals by increasing starting point, and assign them to registers in this order. When there is no register available, spill <em>among the current live variables</em> the one that has the farthest use.</p>
+<ul>
+<li><p>It works ok as long as you separate registers for load/store from the others. (this can be refined with care).</p></li>
+<li><p>A particular good point: it will spill in priority variables from callee- save first (denoted above x**) since their use is at the end of the function.</p></li>
+</ul>
+<h3 id="graph-coloring">Graph coloring</h3>
+<p>Actually, live-ranges of variables are not intervals as a function is not a simple basic block but a more general control-flow graph (CFG). It is possible to construct the exact interference graph using the exact live-ranges with a control-flow analysis. In that graph, every variable is a node and two adjacent nodes cannot have the same register. This is graph coloring where registers are colors. In that case, we know how many colors we have (the registers), and whenever we can’t color the graph, we need to spill variables. This analysis yields better results, however, we face two problems:</p>
+<ul>
+<li>graph-coloring is NP-complete for k&gt;=3 colors</li>
+<li>when spilling a variable, it creates multiple “small” variables which are short-lived (for the loads and stores) but needs to be taken into account.</li>
+</ul>
+<p>The most common way to treat this problem is to use a simplification technique, and iterate as long as required. A very good algorithm is the Iterated Register Coalescing by Appel &amp; George, which has the added benefit of taking into account register /coalescing/, i.e., putting in the same registers to variables linked by a move instruction in order to save the instruction.</p>
+<h3 id="tree-scan">Tree scan</h3>
+<p>A benefit of compiling from a functional language is that each variable is defined only once! We can do even better in that case, as live-ranges are subtrees of the dominance tree (which you don’t know about, but you can ask me :-) In short, while in general the graph coloring problem is NP-complete, in that case the graph is particular and we know how to color it in polynomial time. The algorithm looks a lot like linear scan, but works on a tree (and sub- trees) instead of an interval (and sub-intervals).</p>
+<p>Note: special care must be taken for <code>let x = if ... then ... else ...</code> constructs.</p>
+<!-- 
+### Other possible optimizations
+
+* No need to reserve `r11` as frame pointer if you know the size of your 
+  frames.
+ -->
+<h2 id="arm-generation">ARM Generation</h2>
+<h3 id="heap">Heap</h3>
+<p>Values in MinCaml are always one word (4 bytes) long. They are either primitive types (integers), or addresses of values allocated in the heap (arrays, closures, tuples).</p>
+<p>Heap allocation is done using <code>new</code> in ASML. In ARM, you can simple allocate a large static area of memory and store somewhere a pointer on the first available address. Memory in the heap is never freed but it would be a nice extension to implement a garbage collector.</p>
+<h3 id="function-calls">Function calls</h3>
+<p>In order to implement function calls, we must answer a few questions. Typically,</p>
+<ul>
+<li>Where to store the parameters?</li>
+<li>Where to store the returned value(s)</li>
+<li>How are used the registers and who (the caller or the callee) should save them.</li>
+</ul>
+<p>Usually, this is specified by <em>calling conventions</em>. These conventions allow programs to interact even if they were generated by different compilers. We will use the calling conventions used for ARM.</p>
+<h4 id="registers">Registers</h4>
+<ul>
+<li><code>r15</code> is the program counter (alias <code>pc</code>)</li>
+<li><code>r14</code> is the link register (alias <code>lr</code>). (The branch <code>BL</code> instruction, used in a subroutine call, stores the return address in this register).</li>
+<li><code>r13</code> is the stack pointer (alias <code>sp</code>).</li>
+<li><code>r4</code> to <code>r12</code>: used to hold local variables.</li>
+<li><code>r11</code> can be used as frame pointer (alias <code>fp</code>).</li>
+<li><code>r0</code> to <code>r3</code>: used to hold argument values passed to a subroutine, and also hold results returned from a subroutine.</li>
+</ul>
+<h4 id="parameters-passing">Parameters passing</h4>
+<ul>
+<li>Up to four parameters can be passed to a function using registers <code>r0</code> to <code>r3</code>. Additional parameters are pushed on the stack.</li>
+<li>Values are returned in <code>r0</code>.</li>
+</ul>
+<p>In MinCaml, the arguments always fit in registers (they are either integers, bools or addresses) and only one value can be returned by a function (in <code>r0</code>).</p>
+<p>To make things simpler, suppose that functions are limited to four parameters (at least in a first step).</p>
+<h4 id="saving-registers">Saving registers</h4>
+<ul>
+<li>Callee-save registers: subroutines must preserve the contents of <code>r4</code> to <code>r11</code> and the stack pointer (<code>r13</code>).</li>
+<li><p>Caller-save registers: <code>r0-r3</code>, <code>r12</code>, <code>r14</code>, <code>r15</code>: you must save them before calling another function (<code>r15</code> automatically put in <code>r14</code>, but <code>r14</code> must be saved on the stack!) ## Tips</p></li>
+<li>Debug ARM code with a debugger. See <a href="./debugging.html">here</a>.</li>
+<li><p>You can compile C programs using the arm compiler <code>arm-none-eabi-gcc -S foobar.c -O0</code> (in <code>/opt/gnu/arm</code> on UFR computers).</p></li>
+</ul>
+</body>
+</html>

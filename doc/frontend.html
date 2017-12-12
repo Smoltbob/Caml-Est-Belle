@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>frontend</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.line-block{white-space: pre-line;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="front-end">Front-end</h1>
+<p>The <em>front-end</em> of the compiler is fully specified in the <a href="./min-caml_article.pdf">reference paper</a> (section 4). This document provides some examples and clarifications, but ultimately, you should refer to the paper.</p>
+<p>The front-end transforms a MinCaml program into an ASML program (See <a href="./asml.html">ASML</a>). Typechecking is technically part of the front-end but is presented in <a href="./typing.html">typing</a>.</p>
+<p>The MinCaml front-end is defined as a sequence of small and simple transformations.</p>
+<ul>
+<li>K-Normalization</li>
+<li>alpha-conversion</li>
+<li>reduction of nested-let</li>
+<li>closure conversion</li>
+<li>ASML generation</li>
+<li>other transformations (beta-reduction, inline expansion, constant folding, elimination of unnecessary definitions, 13-bit optimization) are for optimisation purpose and can be skipped.</li>
+</ul>
+<p>In your front-end, you will write these transformations using tree traversal algorithms. Typically, the transformation algorithms are defined recursively on the structure of the tree.</p>
+<p>There are several choices to be made to implement these algorithms.</p>
+<ul>
+<li>How to represent the tree and which pattern to use for the tree traversal (see <a href="./java-tree.html">trees in java</a>).</li>
+<li>Do you construct a new tree, or update the current tree. For some transformation, it will be easier to construct a new tree (k-normalisation) and for other (alpha-conversation), and update will be easier.</li>
+<li>What new datatypes do you need? when do you need a new datatype for the transformed tree? At the very least, you will need to define a new datatype for ASML.</li>
+</ul>
+<p>Now we go through the main transformations on two examples (be careful that it is not be <em>exactly</em> what you will get by applying strictly the algorithms of the documents) but you should get the idea.</p>
+<h2 id="example-1">Example 1</h2>
+<pre><code>let x = 
+   let y = 1 + 2 in y
+in let rec succ x = x + 1 
+in let rec double x = 2 * x 
+in print_int (succ (double x))</code></pre>
+<h3 id="k-normalization">K-normalization</h3>
+<p>All nested expressions are replaced by new <em>fresh</em> variables. By doing so, the code gets one step closer to assembly languages where instructions operate on registers instead of expressions. Notice that this introduces many temporary variables. Eventually, all these variables will be efficiently translated to registers (or optimized away in some of the transformations).</p>
+<pre><code>let x = 
+  let y = 
+   let v1 = 1 in
+   let v2 = 2 in
+   v1 + v2
+   in y
+
+in let rec succ x = 
+   let v3 = x in
+   let v4 = 1 in
+   v3 + v4
+
+in let rec double x = 
+   let v5 = 2 in
+   let v6 = x in
+   v5 * v6
+
+in let v7 = 
+   let v8 = 
+     let v9 = x in double v9 in
+   succ v8
+in print_int v7</code></pre>
+<h3 id="alpha-conversion">Alpha-conversion</h3>
+<p>Here we make sure that all the bound variables (variables defined by a let or functions parameters) are different. This will be needed for some of the next steps.</p>
+<pre><code>let x = 
+  let y = 
+   let v1 = 1 in
+   let v2 = 2 in
+   v1 + v2
+   in y 
+
+in let rec succ x1 = 
+   let v3 = x1 in
+   let v4 = 1 in
+   v3 + v4
+
+in let rec double x2 = 
+   let v5 = 2 in
+   let v6 = x2 in
+   v5 * v6
+
+in let v7 = 
+   let v8 = 
+     let v9 = x in double v9 in
+   succ v8
+in print_int v7</code></pre>
+<h3 id="reduction-of-nested-let-expressions">Reduction of nested Let-expressions:</h3>
+<p>We “linearize” or “flatten” all the let definitions (but not the let-rec). For instance:</p>
+<pre><code>let x = 
+   (let y = e1 in e2)
+in e3</code></pre>
+<p>becomes:</p>
+<pre><code>let y = e1 in
+let x = e2 in
+e3</code></pre>
+<p>On the example, it gives us:</p>
+<pre><code>let v1 = 1 in
+let v2 = 2 in
+let y = v1 + v2 in
+let x = y in
+
+let rec succ x1 = 
+  let v3 = x1 in
+  let v4 = 1 in
+  v3 + v4 in 
+
+let rec double x2 = 
+  let v5 = 2 in
+  let v6 = x2 in
+  v5 * v6 in
+
+let v9 = x in
+let v8 = double v9 in
+let v7 = succ v8 in
+ print_int v7</code></pre>
+<h3 id="closure-conversion">Closure Conversion</h3>
+<p>In the next transformation, we separate function definitions from the rest of the code. First, we suppose that there are no higher-order functions. It means that functions don’t take other functions as parameters and don’t return functions.</p>
+<p>In that case:</p>
+<ul>
+<li>we flatten the nest let rec.</li>
+<li>for each function, we assign a label that will be used later on in the generated assembly</li>
+<li>we identify the parameters of the function</li>
+<li>we replace the calls “f x1 … xn” with a new instruction “apply_direct(l, (x1 … xn))” where l is the label for f.</li>
+</ul>
+<p>In the current examples, we generate the following function definitions:</p>
+<pre><code>label: _succ
+parameters: x2 
+code:
+  let v4 = x2 in
+  let v5 = 1 in
+  let v6 = x2 + 1 in
+  v6  
+
+label: _double
+parameters: x3  
+code:
+   let v7 = 2 in
+   let v8 = x3 in
+   let v9 = v7 * v8 in
+   v9</code></pre>
+<p>and the main program:</p>
+<pre><code>let v1 = 1 in
+let v2 = 2 in
+let v3 = v1 + v2 in
+let x1 = v3 in
+let x = x1 in 
+let v10 = apply_direct(_double, x) in
+let v11 = apply_direct(_succ, v10) in
+print_int v11</code></pre>
+<h3 id="asml-code-generation.">ASML code generation.</h3>
+<p>The last step is ASML generation. ASML generation makes explicit the memory accesses used for closures, tuples and arrays. See <a href="./closure.html">Closure</a> and <a href="./asml.html">ASML</a> for more details.</p>
+<h2 id="example-2">Example 2</h2>
+<p>We consider now a more challenging example with a higher-order function.</p>
+<pre><code>let rec f x =
+   let rec g y = x + y in g
+in print_int ((f 0) 0)</code></pre>
+<p>In this program, the function f returns a value g that is itself a function. To make things harder, g is a nested function that uses a variable <code>x</code> declared outside its scope (<code>x</code> is not a parameter).</p>
+<p>The transformations work as before except closure conversion that requires more care. Just before closure conversion, we get this program:</p>
+<pre><code>let rec f x = 
+   let rec g y = x + y in g
+in 
+
+let v1 = f 0 in
+let v2 = v1 0 in
+print_int v2</code></pre>
+<p>There are two issues. If we flatten the let definitions, we get something non-sensical.</p>
+<pre><code>let g y = x + y 
+let rec f x = g in
+...</code></pre>
+<p>Moreover, the value returned by g is a function. Is it enough to replace this variable g by the label assigned to g in the transformation?</p>
+<p>These issues are adressed by using the notion of closure. As explained in <a href="./closure.html">closure</a>, at a lower-level, the value returned by <code>f</code> is encoded as a structure (callsed a closure) that contains a pointer to g (given by its label), and the value of the free variables of <code>g</code> at the time it was created.</p>
+<p>In the closure conversion step, we define a <code>make_closure</code> operation that constructs a closure, and apply_closure that calls the function in the closure with the provided arguments, and replace the free variables by the values stored in the closure.</p>
+<p>After closure conversion, we get something like this:</p>
+<h4 id="functions-definitions">Functions definitions:</h4>
+<pre><code>label: _f 
+free variables: None
+parameters: x
+code:
+   let v3 = make_closure(_g,x) 
+   in v3
+
+label _g:
+free variables: x
+parameters: y
+code:
+     x + y  </code></pre>
+<h4 id="main-program">Main program:</h4>
+<pre><code>let v1 = apply_direct(_f, 0) in
+let v2 = apply_closure(v1, 0) in
+print_int v2</code></pre>
+</body>
+</html>

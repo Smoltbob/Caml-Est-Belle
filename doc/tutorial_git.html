@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>tutorial_git</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.line-block{white-space: pre-line;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="git-tutorial">Git tutorial</h1>
+<p>Before starting this lab, you should be familiar with the basic concepts of Git (repository, revision, commit, difference between distributed and centralized CVS). If not, refer to <a href="http://git-scm.com/book/en/v2/Getting-Started-Git-Basics">book (English)</a> or to any git tutorial.</p>
+<h2 id="configuration">Configuration</h2>
+<p>Everyone must complete this part.</p>
+<h3 id="ssh-keys">ssh keys</h3>
+<p>Check that you have a directory <code>~/.ssh</code>. If not, run the command: <code>ssh-keygen</code> in your <code>$HOME</code> directory. At the question “Enter passphrase (empty for no passphrase):”, you may hit return.</p>
+<p>At this point, you own two cryptographic keys. A private key <code>~/.ssh/id_rsa</code> and a public key <code>~/.ssh/id_rsa.pub</code> (or <code>id_dsa</code> and <code>id_dsa.pub</code>).</p>
+<p>Reminder: Among other things, a couple public / private keys allows for the authentication of a user on a server. A user stores his public key on a remote server, then at login time, the server checks whether the public and private keys match. If they do, the user is authenticated without the need to enter a password.</p>
+<p>Later on, you’ll upload your public key on the server that hosts your shared git repository.</p>
+<h3 id="git-configuration-.gitconfig">Git configuration: .gitconfig</h3>
+<p>If you don’t have one already, create a file <code>~/.gitconfig</code> with the following content:</p>
+<pre><code>[core] editor =  &lt;your favorite editor (vim, emacs, gedit...)&gt;
+[user] name = &lt;your real name&gt;
+     email = &lt;your email address&gt;
+[push] default = current</code></pre>
+<h3 id="setting-up-git-repositories">Setting up git repositories</h3>
+<p>For the remainder of the lab, you can team up with another student if you wish.</p>
+<p>Before starting to work on the repository that you’re going to share during the programming project, you’re going to experiment with <code>git</code> using temporary local repositories.</p>
+<p>Run the following commands:</p>
+<pre><code>mkdir repo.git
+cd repo.git
+git init --bare
+cd ..
+git clone repo.git repo-A
+git clone repo.git repo-B</code></pre>
+<p>The directories <code>repot.git</code>, <code>repo-A</code> and <code>repo-B</code> are all (empty) git repositories. <code>repo-A</code> and <code>repo-B</code> are clones of <code>repo.git</code>. A typical git setting consists of a shared repository on a server (i.e., <code>repo.git</code>), and several local repositories for each member of the group (i.e., <code>repo-A</code> and <code>repo-B</code>).</p>
+<p>In this simpler setting, all the repositories are local but this is enough for us to understand a typical git workflow.</p>
+<h3 id="working-locally">Working locally</h3>
+<p>Run the following commands:</p>
+<pre><code>cd Repo-A
+echo &quot;hello&quot; &gt; a.txt
+git status</code></pre>
+<p>The <code>git status</code> command is very useful and you should run it often. It tells you the status of all your files and in particular what has changed since the last commit. (a commit is a snapshot of your project at a given time). Here, <code>a.txt</code> is untracked: it’s not stored in the repository and it won’t be until you add it.</p>
+<pre><code>git add a.txt
+git status</code></pre>
+<p>From now on, <code>a.txt</code> is tracked by git. It’ll be added to the next commit.</p>
+<pre><code>git commit</code></pre>
+<p>Git opens the text editor you specified in <code>~/.gitconfig</code> in order for the user to type a message describing the new revision of the system. After this is done, a new revision of the system is created in the repository <code>repo-A</code>.</p>
+<p>Remark: you can also use the following command:</p>
+<pre><code>git commit -m &quot;description of the new revision&quot;</code></pre>
+<p>Similarly, create, add and commit a file <code>b.txt</code>. Now, update <code>a.txt</code> and see the new status.</p>
+<pre><code>echo &quot;good bye&quot; &gt;&gt; a.txt
+git status</code></pre>
+<p>Although the file has been modified, it won’t be added to the next commit unless marked explicitly as “staged”. This is achieved with the command:</p>
+<pre><code>git add a.txt</code></pre>
+<p>Remark: this is a second way to use <code>git add</code>.</p>
+<p>We can then create a new revision with:</p>
+<pre><code>git commit -m &quot;a.txt updated with good bye&quot;</code></pre>
+<p>Remark: We can do the “add” step directly in the commit command with <code>git commit -a</code>. With this option, all the modified files are included in the new revision. We advise you to always use this option until you feel more confident.</p>
+<p>Other useful commands:</p>
+<pre><code>git diff</code></pre>
+<p>shows the diff between the working directory and the last commit. Typically, it helps you to review your changes before commiting. Is your code good-enough to be shared with others?</p>
+<pre><code>git log</code></pre>
+<p>shows the list of all commits. Notice that each commit is identified by a 40-letters hashtag.</p>
+<p>Some files shouldn’t be included in the repository. Typically, binary or generated files such as: <em>.pdf, </em>.o, *.class. They can be listed in a <code>.gitignore</code> file at the root of your repository.</p>
+<p>For example, run the following commands:</p>
+<pre><code>touch c.txt
+git status
+echo c.txt &gt; .gitignore
+git status</code></pre>
+<p>You should see that git now ignores <code>c.txt</code>.</p>
+<p>Finally, you should add the <code>.gitignore</code> file to the repository:</p>
+<pre><code>git add .gitignore
+git commit -am &quot;added gitignore&quot;</code></pre>
+<h3 id="synchronizing-with-a-server">Synchronizing with a server</h3>
+<p>So far, all the commands only involved <code>repo-A</code>. In a distributed settings, those commands can be performed offline.</p>
+<p>In order to share your work with others, we need to “push” it to the shared repository <code>repo.git</code>.</p>
+<p>For that, run the command: git push</p>
+<p>You can now pull all the new commits from repo-B with: cd ../repo-B git pull</p>
+<p>At that point, <code>repo-A</code> and <code>repo-B</code> should look exactly the same. In particular, <code>ls</code> should show <code>a.txt b.txt</code>. You can also check with <code>git log</code> that all commits are the same in both repositories.</p>
+<p>Now update the file <code>a.txt</code> in <code>repo-A</code>, then commit your change. And similarly, update the file <code>b.txt</code> in <code>repo-B</code>, then commit your change.</p>
+<p>In <code>repo-A</code>, run: git push</p>
+<p>Then in <code>repo-B</code>, run: git push</p>
+<p>Normally, you should see error message. The reason is that B is trying to push its change to the server while it has not pulled the latest available revision yet. You need to first run:</p>
+<pre><code>git pull</code></pre>
+<p>Fill the commit message, and check that <code>a.txt</code> has been updated. Then run:</p>
+<pre><code>git push.</code></pre>
+<p>Finally, you can run in <code>repo-A</code></p>
+<pre><code>git pull</code></pre>
+<p>Now, <code>repo-A</code> and <code>repo-B</code> should be synchronized again.</p>
+<p>Remark: <code>git pull</code> actually is a shortcut for two different operations. The first operation is <code>git fetch</code> which retrieves all the commits on the server that it doesn’t own yet. Then it runs <code>git merge</code> that tries to merge the latest local commit (sometimes referred to as <code>HEAD</code>) with the latest commit from the server (called <code>origin/master</code>). This merge operation created a new commit as a side effect. You can check that with <code>git log</code>.</p>
+<p>Here, the merge operation was very simple as the concurrent changes took place on different files. That’s why git could do it automatically, but it’s not always the case.</p>
+<p>We recommend that you keep experimenting with similar changes before proceeding to the next part. Update a file in <code>repo-A</code>, commit and push your changes, pull the new commits from <code>repo-B</code> and so on. Do not update concurrently the same part of the same file in <code>repo-A</code> and <code>repo-B</code> as it will lead to conflicts that git isn’t able to solve automatically.</p>
+<h3 id="dealing-with-conflicts">Dealing with conflicts</h3>
+<p>First, check that <code>repo.git</code>, <code>repo-A</code> and <code>repo-B</code> are fully synchronized.</p>
+<p>In <code>repo-A</code> and <code>repo-B</code>, change the first line of <code>a.txt</code> in two different ways. Then commit your change (but don’t push them) in both repository.</p>
+<p>Then run in <code>repo-A</code>: git push</p>
+<p>and in <code>repo-B</code>: git pull</p>
+<p>This time, git wasn’t able to merge the two commits and it has to be fixed manually. Both versions appear in the file <code>a.txt</code> in a “diff” format similar to this.</p>
+<pre><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+changes made by B
+=======
+changes made by A
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; a1f77ea359168bcec48d9167627e4689bc93ac0c</code></pre>
+<p>The user has to go through all the changes and merge them correctly (i.e., manually solve the conflicts). Once this is done, the conflict should be marked as resolved with:</p>
+<pre><code>git add a.txt</code></pre>
+<p>Remark: this is a third way of using git add.</p>
+<p>Then, the commit can be finalized with:</p>
+<pre><code>git commit</code></pre>
+<p>and finally, the new commit can be pushed on the server.</p>
+<p>Then, go to <code>repo-A</code> and pull the new commit.</p>
+<p>Now, the two repositories should be synchronized again.</p>
+<p>We recommend that you repeat the previous steps as many times as needed until you feel comfortable.</p>
+<h3 id="some-advice">Some advice</h3>
+<p>In order to avoid conflicts, communicate regularly with your teammates in order to know who works on what.</p>
+<p>Regularly synchronize with the server <code>git push</code> and <code>git pull</code> in order to share your work, and retrieve the latest versions of the project. Before performing a pull operation, you must commit your change so that they are not lost during the merge process.</p>
+<p>Don’t forget to add the new files you’ve created (<code>git status</code> helps you for that). This is a common mistake. When this happens, your project will compile locally but your teammates will have missing files that will prevent them from compiling the project.</p>
+<p>Never commit something that doesn’t compile.</p>
+<p>Do not add binary or generated files to the repository.</p>
+<p>In case of problem, <code>git stash</code> saves the current state of the project, and reverse to the last commit. It may not work in case of unmerged conflicts. In this case, you can use <code>git reset --hard</code>, but all your uncommited changes will be lost.</p>
+<h3 id="ides">IDEs</h3>
+<p>Most IDEs supports git natively or through the use of plugins. For instance, with Eclipse you can use <code>egit</code>.</p>
+<h3 id="references">References</h3>
+<ul>
+<li><a href="http://git-scm.com/documentation">Git official documentation</a></li>
+<li><a href="http://git-scm.com/book/en/v2">Pro git</a></li>
+<li>A <a href="http://www.vogella.com/articles/Git/article.html">git tutorial</a></li>
+<li>An <a href="http://www.vogella.com/articles/EGit/article.html"><code>egit</code> tutorial</a></li>
+</ul>
+<h3 id="conclusion">Conclusion</h3>
+<p>Git is ubiquitous and sooner or later you will have to use it. This project is a good opportunity for you to learn it. This lab only showed you enough to get started. You will need to learn from other resources for a more advanced usage. We recommend particularly the book “pro.git”.</p>
+</body>
+</html>

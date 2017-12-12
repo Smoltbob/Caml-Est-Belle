@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>asml</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.line-block{white-space: pre-line;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<h1 id="asml">ASML</h1>
+<p>In this document, we specify an intermediary language (called ASML) that defines the interface between the <a href="./frontend.html">front-end</a> and the <a href="./backend.html">back-end</a> of the compiler.</p>
+<p>ASML is an addition to the implementation described in the MinCaml paper. It is essentially a syntax for the <em>Virtual Machine Code</em> described in section 4.11, and more precisely the <code>SparcAsm.t</code> datatype.</p>
+<p>Your front-end must be able to generate syntactically correct ASML code with the option <code>-asml</code>. Optionally, you can implement an ASML parser so that you can also generate SPARC code from ASML code. In any case, the front-end and back- end should use the same internal representation of ASML code (similar to the <code>SparcAsm.t</code> datatype).</p>
+<p>ASML is a high-level assembly language with a functional flavor and an ML-like syntax. Like regular assembly language, values are stored in temporaries, i.e., registers but in an unbounded number. Functions are referenced by labels. Instructions operate either on variable or immediate values. On the other hand, ASML uses higher-level abstractions. There is an unbounded number of temporaries. Parameters passing when calling functions is implicit. There are if-then-else instructions, operators for memory allocation, and for closure calls.</p>
+<h2 id="examples">Examples</h2>
+<p>In this section, we describe the syntax and semantics of ASML with a series of examples.</p>
+<h3 id="basics">Basics</h3>
+<p>An ASML program always has an entry point starting with <code>let _ =</code> (we call it the <em>main</em> function).</p>
+<pre><code>let _ = 
+  let x = 0 in
+  call _min_caml_print_int x</code></pre>
+<p>Functions are called using the <code>call</code> operator. The only accepted parameters are variables. There are two types of identifiers: variables and labels. Labels must start with an underscore. Some functions like <code>_min_caml_print_int</code> are <em>external</em> and provided by the runtime. Variables contain values that can be either addresses, labels, nil, booleans or integers. Each of them takes one memory <em>word</em> of space. A word is equal to 4 bytes. ASML is not statically typed. Typing errors cause undefined behavior at runtime.</p>
+<p>Just like in ML, functions and operators always return a value. The nil value is used when the returned value is irrelevant. It is assumed that the main function returns nil.</p>
+<p>The next example performs two consecutive prints. The first call to <code>_min_caml_print_int</code> returns nil. As a consequence, the variable <code>tu</code> (<code>tu</code> as in “<em>type unit</em>”) isn’t needed in the rest of the program.</p>
+<pre><code>let _ =
+   let x = 0 in 
+   let tu = call _min_caml_print_int x in
+   call _min_caml_print_int x</code></pre>
+<p>Before the main function, an arbitrary number of functions can be defined, each with an arbitrary number of arguments. The following example also uses two binary operators, <code>add</code> and <code>sub</code>.</p>
+<pre><code>let _f x y =
+   let z = add x y in
+   let t = 2 in
+   sub t z
+
+let _ =
+   let x = 0 in
+   let y = 1 in
+   let z = call _f x y in
+   call _min_caml_print_int z</code></pre>
+<p>There are some restrictions:</p>
+<ul>
+<li>a variable cannot be defined twice</li>
+<li>and “let” can’t be nested (except for variable definitions inside functions).</li>
+</ul>
+<p>For instance, the following two program fragments are illegal.</p>
+<pre><code>let x = 0 in
+let x = add x x
+
+let x = let y = 1 in y</code></pre>
+<p>Unlike functions call, some operators accept integer immediate values.</p>
+<pre><code>let _f x =
+   let z = add x 1 in
+   sub z 2</code></pre>
+<p>ASML has if-then-else constructs.</p>
+<pre><code>let _ = 
+    let a = 0 in
+    let b = 1 in
+    if a = b then (
+        let res1 = 0 in
+        call _min_caml_print_int res1
+    ) else (
+        let res2 = 1 in
+        call _min_caml_print_int res2 
+    )</code></pre>
+<h3 id="memory-imperative-features">Memory (Imperative features)</h3>
+<p>Memory can be accessed in ASML using addresses, offsets, and the <code>mem</code> operator.</p>
+<pre><code>let _ = 
+   let size = 2 in
+   let init = 0 in
+   let arr = call _min_caml_create_array size init in
+   let i0 = 0 in
+   let v0 = 1 in
+   let tu = mem(arr + i0) &lt;- v0 in 
+   let i1 = 1 in
+   let v1 = mem(arr + i0) in
+   mem(arr + i1) &lt;- v1 </code></pre>
+<p>The external function <code>_min_caml_create_array</code> allocates <code>size</code> words, and initializes them with value <code>init</code>. This could be done directly in ASML using the <code>new</code> operator for memory allocation but it’s convenient to have a dedicated external function.</p>
+<p><code>mem(x + y) &lt;- z</code> and <code>mem(x + y)</code> are syntactic constructs reminiscent of OCaml for memory operators. In particular <code>x + y</code> <em>is not</em> a sub-expression, but can only be a memory address plus an offset (in bytes).</p>
+<p>Access to non-initialized or non-allocated addresses leads to undefined behavior.</p>
+<h3 id="floats">Floats</h3>
+<p>Float are used differently than integers. They can’t be used as immediate values in the program. In the reference paper, this has to do with the limitation of the Sparc architecture (in Sparc assembly, an immediate float value doesn’t fit in the mem code of operators, and immediate integers are restricted to 13 bits). Instead, float litterals are stored in memory at addresses defined by <em>labels</em>.</p>
+<p>Consequently, float are declared at the top level, along with function definitions and are associated to labels.</p>
+<pre><code>let _x1 = 2.4 
+let _x2 = 1.7 
+let _ = 
+    let addr1 = _x1 in
+    let addr2 = _x2 in
+    let r1 = mem(addr1 + 0) in
+    let r2 = mem(addr2 + 0) in
+    let r3 = fadd r1 r2 in
+    let r4 = call _min_caml_int_of_float r3 in
+    call _min_caml_print_int r4</code></pre>
+<h3 id="closures">Closures</h3>
+<p>Consider the following MinCaml program</p>
+<pre><code>let x = 1 in
+let rec add_x y = y + x in
+let rec apply_to_zero u = u 0 in
+print_int (apply_to_zero add_x)</code></pre>
+<p>A possible translation to ASML is the following (explanations below):</p>
+<pre><code>let _add_x y =
+        let x = mem(%self + 4) in
+    add y x
+
+let _apply_to_zero u =
+    let t = 0 in
+        apply_closure u t
+
+let _ = 
+    let x0 = 1 in
+    let add_x = new 8 in
+    let addr_add_x = _add_x in
+    let tu0 = mem(add_x + 0) &lt;- addr_add_x in
+    let tu1 = mem(add_x + 4) &lt;- x0 in
+    let res = call _apply_to_zero add_x in
+    call _min_caml_print_int res </code></pre>
+<p>Remember that a closure can be viewed as an object that contains one method (in this example, <code>_add_x</code>) and fields that correspond to a function environment when it is declared (here <code>x</code>) (see <a href="./closure.html">closure</a>).</p>
+<p>The instruction <code>let add_x = new 8</code> allocates 8 bytes and stores the pointer to the allocated memory in <code>add_x</code>. The first word is then initialized to the address of the <em>method</em> of the closure, that is <code>_add_x</code>, and the second word is initialized to the value of <code>x</code> when function <code>add_x</code> was defined.</p>
+<p>The first argument <code>u</code> of <code>_apply_to_zero</code> is a closure (more precisely, its address), and is called using the <code>apply_closure</code> instruction. This effectively copies address <code>u</code> in a special temporary <code>%self</code>, and call the function pointed to by <code>u</code>.</p>
+<p>Functions <code>_add_x</code> is always called in the context of a <code>apply_closure</code> instruction and can thus retrieve its environment using temporary <code>%self</code> (in <a href="./closure.html">closure</a> the closure address is always pushed on the stack of the closure).</p>
+<h3 id="comparison-with-datatype-sparcasm.t">Comparison with datatype Sparcasm.t</h3>
+<p>The correspondance between the ASML syntax and the <code>SparcAsm.t</code> datatype is mostly straightforward. Most constructors in <code>SparcAsm.t</code> and <code>SparcAsm.exp</code> have a direct syntactic countepart.</p>
+<p>There a few exceptions. <code>SparcAsm.exp</code> constructors <code>Set</code>, <code>SetL</code>, and <code>SparcAsm.t</code> constructor <code>Ans</code> don’t need a specific keyword as they are implict from the context. Constructors <code>Ld</code> and <code>St</code> are syntactically represented by the array notation <code>mem(x + y)</code> and <code>mem(x + y) &lt;- z</code>, closer to the ML syntax.</p>
+<p>We ignore the <code>LdDF</code> and <code>StDF</code> constructor that are float versions of <code>Ld</code> and <code>St</code>. We won’t make use of this feature.</p>
+<h2 id="syntax">Syntax</h2>
+<h3 id="grammar">Grammar</h3>
+<p>ASML use ML-style comments. Integer (<code>INT</code>) and float litterals (<code>FLOAT</code>) are defined as in OCaml. Identifiers (<code>IDENT</code>) are strings of characters and numbers, starting lowercase character. A label (<code>LABEL</code>) is an identifier starting with an <code>_</code>. <code>%self</code> is a special identifier.</p>
+<p>The other tokens are:</p>
+<pre><code>LPAREN  &#39;(&#39; 
+RPAREN  &#39;)&#39;
+PLUS    &#39;+&#39;
+EQUAL   &#39;=&#39; 
+FEQUAL  &quot;=.&quot;
+LE      &quot;&lt;=&quot; 
+FLE     &quot;&lt;=.&quot;
+GE      &quot;&gt;=&quot; 
+IF      &quot;if&quot; 
+THEN    &quot;then&quot;
+ELSE    &quot;else&quot;
+LET     &quot;let&quot; 
+IN      &quot;in&quot; 
+DOT     &quot;.&quot; 
+NEG     &quot;neg&quot; 
+FNEG    &quot;fneg&quot; 
+MEM     &quot;mem&quot; 
+FMUL    &quot;fmul&quot; 
+FDIV    &quot;fdiv&quot;
+FSUB    &quot;fsub&quot; 
+FADD    &quot;fadd&quot; 
+ASSIGN  &quot;&lt;-&quot; 
+ADD     &quot;add&quot; 
+SUB     &quot;sub&quot; 
+CALL    &quot;call&quot; 
+NEW     &quot;new&quot; 
+    NOP     &quot;nop&quot;
+    APPCLO  &quot;apply_closure&quot;
+    UNDERSC &#39;_&#39;</code></pre>
+<p>The syntax is given by the following rules:</p>
+<pre><code>ident_or_imm:
+| INT   
+| IDENT 
+
+exp: 
+| NOP 
+| LPAREN exp RPAREN
+| INT
+| IDENT
+| LABEL
+| NEG IDENT
+| FNEG IDENT
+| FADD IDENT IDENT
+| FSUB IDENT IDENT
+| FMUL IDENT IDENT
+| FDIV IDENT IDENT
+| NEW ident_or_imm 
+| ADD IDENT ident_or_imm 
+| SUB IDENT ident_or_imm 
+| MEM LPAREN IDENT PLUS ident_or_imm RPAREN
+| MEM LPAREN IDENT PLUS ident_or_imm RPAREN ASSIGN IDENT
+| IF IDENT EQUAL ident_or_imm THEN asmt ELSE asmt  
+| IF IDENT LE ident_or_imm THEN asmt ELSE asmt  
+| IF IDENT GE ident_or_imm THEN asmt ELSE asmt  
+| IF IDENT FEQUAL IDENT THEN asmt ELSE asmt  
+| IF IDENT FLE IDENT THEN asmt ELSE asmt  
+| CALL LABEL formal_args 
+| CALLCLO IDENT formal_args 
+
+asmt: 
+| LPAREN asmt RPAREN 
+| LET IDENT EQUAL exp IN asmt 
+| exp 
+
+formal_args:
+| IDENT formal_args
+| IDENT
+| NIL
+
+fundefs:
+| LET UNDERSC EQUAL asmt 
+| LET LABEL EQUAL FLOAT fundefs 
+| LET LABEL formal_args EQUAL asmt fundefs 
+
+toplevel:
+|  fundefs </code></pre>
+<h2 id="simulator">Simulator</h2>
+<p>We provide the <em>asml</em> interpreter in the <code>tool</code> directory of the archive. To run an ASML program <code>foobar.v</code>, simply type</p>
+<pre><code>./asml foobar.v</code></pre>
+<p>or</p>
+<pre><code>./asml -v foobar.v</code></pre>
+<p>for verbose mode.</p>
+<p>Most examples of this document are given in <code>asmlexamples/</code>.</p>
+<p>The predefined functions are:</p>
+<pre><code>_min_caml_create_array
+_min_caml_create_float_array
+_min_caml_print_int
+_min_caml_print_newline
+_min_caml_sin
+_min_caml_cos
+_min_caml_sqrt
+_min_caml_abs_float
+_min_caml_int_of_float
+_min_caml_float_of_int
+_min_caml_truncate</code></pre>
+</body>
+</html>
