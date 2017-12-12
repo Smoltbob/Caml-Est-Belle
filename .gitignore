@@ -3,3 +3,4 @@ archive/*
 mincamlc
 min-ml
 *.pdf
+asmlparse
