@@ -20,16 +20,28 @@ rule token = parse
     { INT(int_of_string (Lexing.lexeme lexbuf)) }
 | digit+ ('.' digit*)? (['e' 'E'] ['+' '-']? digit+)?
     { FLOAT(float_of_string (Lexing.lexeme lexbuf)) }
-| "sub" 
-    { SUB }
-| "add"
-    { ADD }
+| "neg"
+    { NEG }
+| "fneg"
+    { FNEG }
 | '='
     { EQUAL }
 | "let"
     { LET }
 | "in"
     { IN }
+| "fmul"
+    { FMUL }
+| "fdiv"
+    { FDIV }
+| "fadd"
+    { FADD }
+| "fsub"
+    { FSUB }
+| "add"
+    { ADD }
+| "sub" 
+    { SUB }
 | '_'
     { UNDERSC }
 | underscore (digit|lower|upper|underscore)*

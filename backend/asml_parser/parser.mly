@@ -69,6 +69,18 @@ exp:
     { Var($1) }
 | LABEL
     { Var($1) }
+| NEG IDENT
+    { Neg($2) }
+| FNEG IDENT
+    { Fneg($2) }
+| FADD IDENT IDENT
+    { Fadd($2, $3) }
+| FSUB IDENT IDENT
+    { Fsub($2, $3) }
+| FMUL IDENT IDENT
+    { Fmul($2, $3) }
+| FDIV IDENT IDENT
+    { Fdiv($2, $3) }
 | ADD IDENT ident_or_imm /* addition */
     { Add($2, $3) }
 | SUB IDENT ident_or_imm
