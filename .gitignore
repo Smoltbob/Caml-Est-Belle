@@ -4,3 +4,4 @@ mincamlc
 min-ml
 *.pdf
 asmlparse
+*.swp
