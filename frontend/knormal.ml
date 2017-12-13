@@ -22,7 +22,8 @@ let rec knormal ast =
                     Let((b',t), knormal b, 
                         Sub(Var a', Var b')) 
                    )
-    |Add (a, b) -> let (a',t) = newvar () in
+    |Add (a, b) -> print_string "HERE ";print_newline ();
+                    let (a',t) = newvar () in
                    let (b',t) = newvar () in
                    Let((a',t), knormal a,
                     Let((b',t), knormal b, 
@@ -36,13 +37,13 @@ let rec knormal ast =
     |Eq (a, b) -> Eq (a, b)
     |LE (a, b) -> LE (a, b)
     |If (a, b, c) -> If (a, b, c)
-    |Var a -> print_string a; Var a
+    |Var a -> Var a
     |App (a, b) -> App (a, b)
     |Tuple a -> Tuple a
     |LetTuple (a, b, c) -> LetTuple (a, b, c)
     |Array (a, b) -> Array (a, b)
     |Get (a, b) -> Get (a, b)
     |Put (a, b, c) -> Put (a, b, c)
-    |Let (a, b, c) -> Let (a, b, c)
+    |Let (a, b, c) -> Let (a, knormal b, knormal c)
     |LetRec (a, b) ->  LetRec (a, b) 
 
