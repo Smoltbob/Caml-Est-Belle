@@ -1,7 +1,7 @@
 
 all: 
-	ocamlbuild prog.byte 
-	mv prog.byte asmlparse
+	ocamlbuild asmlparser.byte 
+	mv asmlparser.byte asmlparse
 
 clean:
 	rm -rf _build
