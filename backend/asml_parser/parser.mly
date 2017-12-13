@@ -38,17 +38,17 @@ let addtyp x = (x, Type.gentyp ())
 %token UNDERSC
 %token EOF
 
-%type <Syntax.t> toplevel
+%type <Syntax.toplevel> toplevel
 %start toplevel
 %%
 
 toplevel:
 | fundefs
-    { $1 }
+    { Fundef($1) }
 
 fundefs:
 |   LET UNDERSC EQUAL asmt 
-    { $4 }
+    { Body($4) }
 
 asmt:
 |   LPAREN asmt RPAREN
@@ -56,7 +56,7 @@ asmt:
 |   LET IDENT EQUAL exp IN asmt
     { Let($2, $4, $6) }
 |   exp
-    { $1 }   
+    { Expression($1) }   
 
 exp:
 | LPAREN exp RPAREN
