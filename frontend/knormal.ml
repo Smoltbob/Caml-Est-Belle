@@ -1,20 +1,54 @@
 open Syntax;;
+open Printf;;
 (*open Parser;;*)
 
 (*
 let addtyp x = (x, Type.gentyp ()) 
 let newid () = addtyp (Id.genid ()) 
 *)
+type t =
+  | Unit
+  | Bool of bool
+  | Int of int
+  | Float of float
+  | Not of t
+  | Neg of t
+  | Add of t * t
+  | Sub of t * t
+  | FNeg of t
+  | FAdd of t * t
+  | FSub of t * t
+  | FMul of t * t
+  | FDiv of t * t
+  | Eq of t * t
+  | LE of t * t
+  | IfEq of t * t * t
+  | IfLE of t * t * t
+  (*| IfBool of t * t * t*)
+  | Let of (Id.t * Type.t) * t * t
+  | Var of Id.t
+  | LetRec of Syntax.fundef * t
+  | App of t * t list
+  | Tuple of t list
+  | LetTuple of (Id.t * Type.t) list * t * t
+  | Array of t * t
+  | Get of t * t
+  | Put of t * t * t
+
+
 let last = ref 97 
 let newvar () = let res = ((String.make 1  (char_of_int !last)), Type.gentyp ()) in incr last; res  
 let newfct args body = let res = {name = newvar (); args = args; body = body } in res  
 
-let rec knormal ast =
+
+
+let rec knormal (ast:Syntax.t) : t =
     match ast with
     |Unit -> Unit 
     |Bool a -> Bool a
     |Int a ->  Int a
     |Float a -> Float a
+    
     |Not b -> let (b',t) = newvar () in Let((b',t), knormal b, Not (Var b'))
     |Neg b -> let (b',t) = newvar () in Let((b',t), knormal b, Neg (Var b'))
     |Sub (a, b) -> let (a',t) = newvar () in
@@ -68,16 +102,62 @@ let rec knormal ast =
                    )
     
     |Var a -> Var a
-    |App (a, b) -> App(a, b)
+    |App (a, b) -> App(knormal a, List.map knormal b)
     
-    |If (a, b, c) -> If (a, b, c)
-    |Tuple a -> Tuple a
-    |LetTuple (a, b, c) -> LetTuple (a, b, c)
-    |Array (a, b) -> Array (a, b)
-    |Get (a, b) -> Get (a, b)
-    |Put (a, b, c) -> Put (a, b, c)
+    |If (a, b, c) -> IfEq (knormal a, knormal b, knormal c) (*TODO*)
     
-    |Let (a, b, c) -> Let (a, knormal b, knormal c)
+    |Tuple a -> Tuple(List.map knormal a)
+    |LetTuple (a, b, c) -> LetTuple (a, knormal b, knormal c)
+    |Array (a, b) -> Array (knormal a, knormal b)
+    |Get (a, b) -> Get (knormal a, knormal b)
+    |Put (a, b, c) -> Put (knormal a, knormal b, knormal c)
     
-    |LetRec (a, b) ->  LetRec (a, b) 
+    |Let (a, b, c) -> Let (a, knormal b, knormal c) (*OK*)
+    
+    |LetRec (a, b) ->  LetRec (a, knormal b) 
+    
+
+let rec k_to_string (exp:t) : string =
+    match exp with
+  | Unit -> "()"
+  | Bool b -> if b then "true" else "false"
+  | Int i -> string_of_int i
+  | Float f -> sprintf "%.2f" f
+  
+  | Not e -> sprintf "(not %s)" (k_to_string e)
+  | Neg e -> sprintf "(- %s)" (k_to_string e)
+  | Add (e1, e2) -> sprintf "(%s + %s)" (k_to_string e1) (k_to_string e2)
+  | Sub (e1, e2) -> sprintf "(%s - %s)" (k_to_string e1) (k_to_string e2) 
+  | FNeg e -> sprintf "(-. %s)" (k_to_string e)
+  | FAdd (e1, e2) -> sprintf "(%s +. %s)" (k_to_string e1) (k_to_string e2)
+  | FSub (e1, e2) -> sprintf "(%s -. %s)" (k_to_string e1) (k_to_string e2) 
+  | FMul (e1, e2) -> sprintf "(%s *. %s)" (k_to_string e1) (k_to_string e2)
+  | FDiv (e1, e2) -> sprintf "(%s /. %s)" (k_to_string e1) (k_to_string e2) 
+  | Eq (e1, e2) -> sprintf "(%s = %s)" (k_to_string e1) (k_to_string e2) 
+  | LE (e1, e2) -> sprintf "(%s <= %s)" (k_to_string e1) (k_to_string e2)  
+  | IfEq (e1, e2, e3) -> 
+          sprintf "(if %s then %s else %s)" (k_to_string e1) (k_to_string e2) (k_to_string e3)   
+  | IfLE (e1, e2, e3) -> 
+          sprintf "(if %s then %s else %s)" (k_to_string e1) (k_to_string e2) (k_to_string e3)   
+  | Let ((id,t), e1, e2) -> 
+          sprintf "(let %s = %s in %s)" (Id.to_string id) (k_to_string e1) (k_to_string e2)   
+  | Var id -> Id.to_string id 
+  | App (e1, le2) -> sprintf "(%s %s)" (k_to_string e1) (infix_to_string k_to_string le2 " ") 
+  | LetRec (fd, e) ->  
+          sprintf "(let rec %s %s = %s in %s)" 
+          (let (x, _) = fd.name in (Id.to_string x))
+          (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ") 
+          (Syntax.to_string fd.body)   (*CHANGE LATER*)
+          (k_to_string e)
+  | LetTuple (l, e1, e2)-> 
+          sprintf "(let (%s) = %s in %s)" 
+          (infix_to_string (fun (x, _) -> Id.to_string x) l ", ")
+          (k_to_string e1)
+          (k_to_string e2)
+  | Get(e1, e2) -> sprintf "%s.(%s)" (k_to_string e1) (k_to_string e2)
+  | Put(e1, e2, e3) -> sprintf "(%s.(%s) <- %s)"  
+                 (k_to_string e1) (k_to_string e2) (k_to_string e3)
+  | Tuple(l) -> sprintf "(%s)" (infix_to_string k_to_string l ", ") 
+  | Array(e1,e2) -> sprintf "(Array.create %s %s)" 
+       (k_to_string e1) (k_to_string e2) 
 
