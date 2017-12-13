@@ -16,6 +16,13 @@ type t =
   | Eq of Id.t * t
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
+type toplevel =
+    | Fundef of fundef list
+
+type asmt = 
+    | Let of (Id.t * Type.t) * t * asmt
+    | Expression of t
+
 let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : string = 
     match l with 
     | [] -> ""
