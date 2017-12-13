@@ -1,5 +1,8 @@
 let print_ast l =
-  print_string (Syntax.to_string (Parser.exp Lexer.token l)); print_newline ()
+  let s = (Parser.exp Lexer.token l) in
+  (*print_string (Syntax.to_string s); print_newline ()*)
+  (*print_string (Syntax.to_string (Knormal.syn_of_knorm  (Knormal.knormal s))); print_newline ()*)
+  print_string (Knormal.k_to_string (Knormal.knormal s)); print_newline ()
 
 let file f = 
   let inchan = open_in f in
