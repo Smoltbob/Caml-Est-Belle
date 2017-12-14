@@ -1,0 +1,5 @@
+Parsed asml AST :
+(((1)))
+Generated ARM :
+_START:
+#1

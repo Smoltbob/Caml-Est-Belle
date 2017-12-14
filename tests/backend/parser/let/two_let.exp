@@ -1,0 +1,7 @@
+Parsed asml AST :
+(((Let x = (add x 1) in (Let y = (add x 1) in ((add x y))))))
+Generated ARM :
+_START:
+ADD x x #1
+ADD y x #1
+ADD x y

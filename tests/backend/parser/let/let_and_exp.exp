@@ -1,0 +1,6 @@
+Parsed asml AST :
+(((Let x = (add x 1) in ((sub x x)))))
+Generated ARM :
+_START:
+ADD x x #1
+SUB x x
