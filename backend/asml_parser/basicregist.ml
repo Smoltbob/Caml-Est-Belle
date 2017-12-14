@@ -1,14 +1,12 @@
-open Syntax;;
-
 let register_number = 10 
 let variabletable = Array.make register_number "" 
 
 let registVar x = 
 	let i = ref 0 in
-	while (!i < (Array.length variabletable)) && (variabletable.(!i) <> "") && (x <> variabletable.(!i)) do
+	while (!i < register_number) && (variabletable.(!i) <> "") && (x <> variabletable.(!i)) do
 		i := !i + 1;
 	done;
-	if !i = Array.length variabletable || variabletable.(!i) <> "" then
+	if !i = register_number then
         (failwith "variabletable is full")
     else
         (variabletable.(!i) <- x; !i)
