@@ -8,15 +8,15 @@ let registVar x =
 	while (!i < (Array.length variabletable)) && (variabletable.(!i) <> "") && (x <> variabletable.(!i)) do
 		i := !i + 1;
 	done;
-	if !i = Array.length variabletable then
-		(failwith "variabletable is full");
-	if (variabletable.(!i) = "") then
-		(variabletable.(!i) <- x)
+	if !i = Array.length variabletable || variabletable.(!i) <> "" then
+        (failwith "variabletable is full")
+    else
+        (variabletable.(!i) <- x;
+        !i)
 in
 
 let rec regist prog table =
 	match prog with
-	
 	|Neg(x) -> registVar x
 	|Fneg(x) -> registVar x
 	|Fsub(a,b) -> registVar a; registVar b
