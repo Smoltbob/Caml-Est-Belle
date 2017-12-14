@@ -1,5 +1,5 @@
 let print_ast l =
-  print_string (Syntax.to_string_top (Parser.toplevel Lexer.token l)); print_newline ()
+  print_string (Syntax.to_arm_top (Parser.toplevel Lexer.token l)); print_newline ()
 
 let file f = 
   let inchan = open_in f in

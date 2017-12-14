@@ -62,9 +62,10 @@ let rec to_string_top top =
   | Fundef f -> to_string_fundef f
 
 (* Bellow : WIP ARM generation *)
+(* Handle return values ? *)
 let rec to_arm exp =
     match exp with
-  | Int i -> sprintf "# %s" (string_of_int i)
+  | Int i -> sprintf "#%s" (string_of_int i)
   | Float f -> sprintf "%.2f" f  (* Not implem *)
   | Neg id -> sprintf "(neg %s)" (Id.to_string id) (* Not implem *)
   | Fneg id -> sprintf "(fneg %s)" (Id.to_string id)(* Not implem *)
@@ -72,17 +73,19 @@ let rec to_arm exp =
   | Fsub (id1, id2) -> sprintf "(fsub %s %s)" (Id.to_string id1) (Id.to_string id2)(* Not implem *)
   | Fmul (id1, id2) -> sprintf "(fmul %s %s)" (Id.to_string id1) (Id.to_string id2)(* Not implem *)
   | Fdiv (id1, id2) -> sprintf "(fdiv %s %s)" (Id.to_string id1) (Id.to_string id2)(* Not implem *)
-  | Add (e1, e2) -> sprintf "ADD %s %s" (Id.to_string e1) (to_string e2)
-  | Sub (e1, e2) -> sprintf "SUB %s %s" (Id.to_string e1) (to_string e2) 
+  | Add (e1, e2) -> sprintf "ADD %s %s" (Id.to_string e1) (to_arm e2)
+  | Sub (e1, e2) -> sprintf "SUB %s %s" (Id.to_string e1) (to_arm e2)
   | Var id -> Id.to_string id 
-  | Eq (e1, e2) -> sprintf "(%s = %s)" (Id.to_string e1) (to_string e2) 
+  | Eq (e1, e2) -> sprintf "(%s = %s)" (Id.to_string e1) (to_arm e2) 
 
 let rec to_arm_asm asm =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP Id Id Id/Imm" *)
     | Let (id, e, a) -> (match e with 
-                            | Add (e1, e2) -> sprintf "ADD %s %s %s %s" (Id.to_string id) (Id.to_string e1) (to_arm e2) (to_arm_asm a)
-                            | Sub (e1, e2) -> sprintf "SUB %s %s %s %s" (Id.to_string id) (Id.to_string e1) (to_arm e2) (to_arm_asm a)
+                            | Add (e1, e2) -> sprintf "ADD %s %s %s\n%s" (Id.to_string id) (Id.to_string e1) (to_arm e2) (to_arm_asm a)
+                            | Sub (e1, e2) -> sprintf "SUB %s %s %s\n%s" (Id.to_string id) (Id.to_string e1) (to_arm e2) (to_arm_asm a)
+                            | Int i -> sprintf "ADD %s %s #0\n%s" (Id.to_string id) (string_of_int i) (to_arm_asm a) (* Good traduction ? *)
+                            | Var id2 -> sprintf "ADD %s %s #0\n%s" (Id.to_string id) (Id.to_string id2) (to_arm_asm a)
     )
     | Expression e -> sprintf "%s" (to_arm e)
 
@@ -91,5 +94,6 @@ let rec to_arm_fundef fund =
     | Body b -> to_arm_asm b
 
 let rec to_arm_top top =
+    print_string "_START:\n";
     match top with
     | Fundef f -> to_arm_fundef f
