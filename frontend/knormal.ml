@@ -102,20 +102,26 @@ let rec knormal (ast:Syntax.t) : t =
                    )
     
     |Var a -> Var a
-    |App (a, b) -> App(knormal a, List.map knormal b)
+    |App (a,b) ->  (*let f = newvar () in*)
+                    let rec aux vars_rem k_vars =
+                        match vars_rem with
+                        |[] -> App(knormal a, k_vars)
+                        |h::q -> let (x,t) = newvar () in Let((x,t), knormal h, aux q ((Var x)::k_vars))
+                    in
+                    aux b []
     
+    (*tmp*) 
     |If (a, b, c) -> IfEq (knormal a, knormal b, knormal c) (*TODO*)
-    
     |Tuple a -> Tuple(List.map knormal a)
     |LetTuple (a, b, c) -> LetTuple (a, knormal b, knormal c)
     |Array (a, b) -> Array (knormal a, knormal b)
     |Get (a, b) -> Get (knormal a, knormal b)
     |Put (a, b, c) -> Put (knormal a, knormal b, knormal c)
-    
+    (*/tmp*)
     |Let (a, b, c) -> Let (a, knormal b, knormal c) (*OK*)
-    
+    (*tmp*)
     |LetRec (a, b) ->  LetRec (a, knormal b) 
-    
+    (*/tmp*)
 
 let rec k_to_string (exp:t) : string =
     match exp with
