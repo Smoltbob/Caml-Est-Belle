@@ -55,11 +55,11 @@ let rec to_string_asm asm =
 
 let rec to_string_fundef fund =
     match fund with
- | Body b -> to_string_asm b
+ | Body b -> sprintf "(%s)" (to_string_asm b)
 
-let rec to_string_top top =
+let rec to_string_top top = 
     match top with
-  | Fundef f -> to_string_fundef f
+  | Fundef f -> sprintf "(%s)" (to_string_fundef f)
 
 (* Bellow : WIP ARM generation *)
 (* Handle return values ? *)
