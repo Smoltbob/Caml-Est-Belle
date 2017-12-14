@@ -1,6 +1,11 @@
+(* The maximum number of variables we allow.
+ * It will be used to create a table used to associate a unique index to
+ * each variable *)
 let register_number = 10 
 let variabletable = Array.make register_number "" 
 
+(* Returns the index of a variable by using the table.
+ * If the variable is not in the table then we put it inside. *)
 let registVar x = 
 	let i = ref 0 in
 	while (!i < register_number) && (variabletable.(!i) <> "") && (x <> variabletable.(!i)) do
