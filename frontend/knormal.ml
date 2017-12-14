@@ -102,13 +102,13 @@ let rec knormal (ast:Syntax.t) : t =
                    )
     
     |Var a -> Var a
-    |App (a,b) ->  (*let f = newvar () in*)
+    |App (a,b) ->  let (f,t) = newvar () in
                     let rec aux vars_rem k_vars =
                         match vars_rem with
-                        |[] -> App(knormal a, k_vars)
+                        |[] -> App(Var(f), List.rev k_vars)
                         |h::q -> let (x,t) = newvar () in Let((x,t), knormal h, aux q ((Var x)::k_vars))
                     in
-                    aux b []
+                    Let((f, t), knormal a, aux b [])
     
     (*tmp*) 
     |If (a, b, c) -> IfEq (knormal a, knormal b, knormal c) (*TODO*)
