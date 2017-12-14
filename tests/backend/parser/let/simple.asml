@@ -1,0 +1,6 @@
+let _ =
+    let x = add x 1 in
+    let x = sub x x in
+    let x = 1 in
+    let x = y in
+    add x y 

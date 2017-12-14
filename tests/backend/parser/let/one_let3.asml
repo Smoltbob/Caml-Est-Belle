@@ -1,0 +1,5 @@
+let _ =
+    let x = 1 in
+    let x = 1 in
+    add x x
+

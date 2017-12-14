@@ -1,0 +1,10 @@
+let _ =
+    let x = add x 1 in
+    sub x x
+    let x = sub x x in
+    sub x x
+    let x = 1 in
+    sub x x
+    let x = y in
+    sub x x
+    
