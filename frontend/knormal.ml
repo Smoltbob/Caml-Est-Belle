@@ -27,13 +27,14 @@ type t =
   (*| IfBool of t * t * t*)
   | Let of (Id.t * Type.t) * t * t
   | Var of Id.t
-  | LetRec of Syntax.fundef * t
+  | LetRec of fundef * t
   | App of t * t list
   | Tuple of t list
   | LetTuple of (Id.t * Type.t) list * t * t
   | Array of t * t
   | Get of t * t
   | Put of t * t * t
+and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t } 
 
 
 let last = ref 97 
@@ -120,7 +121,7 @@ let rec knormal (ast:Syntax.t) : t =
     (*/tmp*)
     |Let (a, b, c) -> Let (a, knormal b, knormal c) (*OK*)
     (*tmp*)
-    |LetRec (a, b) ->  LetRec (a, knormal b) 
+    |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b) 
     (*/tmp*)
 
 let rec k_to_string (exp:t) : string =
@@ -153,7 +154,7 @@ let rec k_to_string (exp:t) : string =
           sprintf "(let rec %s %s = %s in %s)" 
           (let (x, _) = fd.name in (Id.to_string x))
           (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ") 
-          (Syntax.to_string fd.body)   (*CHANGE LATER*)
+          (k_to_string fd.body)   (*CHANGE LATER*)
           (k_to_string e)
   | LetTuple (l, e1, e2)-> 
           sprintf "(let (%s) = %s in %s)" 

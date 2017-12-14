@@ -20,13 +20,14 @@ type t =
   (*| IfBool of t * t * t*)
   | Let of (Id.t * Type.t) * t * t
   | Var of Id.t
-  | LetRec of Syntax.fundef * t
+  | LetRec of fundef * t
   | App of t * t list
   | Tuple of t list
   | LetTuple of (Id.t * Type.t) list * t * t
   | Array of t * t
   | Get of t * t
   | Put of t * t * t
+and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }   
 
 val knormal : Syntax.t -> t
 
