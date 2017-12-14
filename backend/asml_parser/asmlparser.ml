@@ -1,9 +1,6 @@
 let print_ast l =
-  print_string "Parsed asml AST :\n";
   let s = (Parser.toplevel Lexer.token l) in
-  print_string (Syntax.to_string_top s); print_newline ();
-  print_string "Generated ARM :\n";
-  print_string (Syntax.to_arm_top s); print_newline ()
+  print_string (Syntax.to_string_top s); print_newline ()
 
 let file f = 
     let inchan = open_in f in
