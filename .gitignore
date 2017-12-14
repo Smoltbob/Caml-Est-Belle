@@ -8,3 +8,5 @@ asmlparse
 armgen
 *.o
 *.s
+*.arm
+*.elf
