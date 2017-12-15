@@ -42,6 +42,8 @@ rule token = parse
     { ADD }
 | "sub" 
     { SUB }
+| "call"
+    { CALL }
 | "nop" 
     { NOP }
 | '_'

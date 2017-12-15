@@ -68,7 +68,7 @@ exp:
 | IDENT
     { Var($1) }
 | LABEL
-    { Var($1) }
+    { Var($1) } /* Make a special label function ? */
 | NEG IDENT
     { Neg($2) }
 | FNEG IDENT
@@ -87,6 +87,8 @@ exp:
     { Sub($2, $3) }
 | EQUAL IDENT ident_or_imm
     { Eq($2, $3) }
+| CALL LABEL formal_args
+    { Call($2, $3) }
 | NOP
     { Nop }
 | error
@@ -94,6 +96,14 @@ exp:
 	(Printf.sprintf "parse error near characters %d-%d"
 	   (Parsing.symbol_start ())
 	   (Parsing.symbol_end ())) }
+    
+formal_args:
+| IDENT
+    { Arg($1) }
+| IDENT formal_args
+    { Args($1, $2) }
+/* Implement NIL | IDENT formal_args */
+
 
 ident_or_imm:
 | INT
