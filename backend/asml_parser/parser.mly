@@ -87,6 +87,8 @@ exp:
     { Sub($2, $3) }
 | EQUAL IDENT ident_or_imm
     { Eq($2, $3) }
+| NOP
+    { Nop }
 | error
     { failwith
 	(Printf.sprintf "parse error near characters %d-%d"

@@ -13,6 +13,7 @@ type t =
   | Sub of Id.t * t
   | Var of Id.t
   | Eq of Id.t * t
+  | Nop
   (* NOP ? *)
 
 and asmt = 
@@ -62,6 +63,7 @@ let rec to_string_top top =
   | Fundef f -> sprintf "(%s)" (to_string_fundef f)
 
 (* Bellow : WIP ARM generation *)
+(* Put this in a new file ? *)
 (* Handle return values ? *)
 let rec to_arm exp =
     match exp with
@@ -77,6 +79,7 @@ let rec to_arm exp =
   | Sub (e1, e2) -> sprintf "SUB %s, %s" (Id.to_string e1) (to_arm e2)
   | Var id -> Id.to_string id 
   | Eq (e1, e2) -> sprintf "(%s = %s)" (Id.to_string e1) (to_arm e2) 
+  | Nop -> sprintf "nop"
 
 let rec to_arm_asm asm =
     match asm with
