@@ -1,4 +1,3 @@
-
 type t =
   | Unit
   | Bool of bool
@@ -31,4 +30,4 @@ and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 val knormal : Syntax.t -> t
 
-val k_to_string : t -> string  
+val k_to_string : t -> string
