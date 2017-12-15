@@ -5,3 +5,8 @@ min-ml
 *.pdf
 asmlparse
 *.swp
+armgen
+*.o
+*.s
+*.arm
+*.elf

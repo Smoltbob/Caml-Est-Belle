@@ -1,7 +1,7 @@
-export PATH := /opt/gnu/arm/bin:$(PATH)
+export PATH := /usr/arm-none-eabi/bin:$(PATH)
 
-AS=arm-eabi-as
-LD=arm-eabi-ld
+AS=arm-none-eabi-as
+LD=arm-none-eabi-ld
 
 ASM=$(wildcard *.s)
 PRG=$(subst .s,.arm,${ASM})
@@ -17,6 +17,9 @@ echo:
 
 %.arm : %.o
 	${LD} -o $@ $^
+
+clean:
+	rm *.arm
 
 test: ${PRG}
 	@for p in ${PRG} ; do \

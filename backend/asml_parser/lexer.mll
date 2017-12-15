@@ -42,6 +42,8 @@ rule token = parse
     { ADD }
 | "sub" 
     { SUB }
+| "nop" 
+    { NOP }
 | '_'
     { UNDERSC }
 | underscore (digit|lower|upper|underscore)*
