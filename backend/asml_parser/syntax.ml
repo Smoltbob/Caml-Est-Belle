@@ -95,6 +95,11 @@ let rec to_arm exp =
   | Call (l1, a1) -> sprintf ("TODO")
   | Nop -> sprintf "nop"
 
+let rec to_arm_formal_args args =
+    match args with
+    | Arg a1 -> sprintf "%s" (Id.to_string a1) 
+    | Args (a1, a2) -> sprintf "(%s %s)" (Id.to_string a1) (to_string_args a2)
+
 let rec to_arm_asm asm =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP Id Id Id/Imm" *)

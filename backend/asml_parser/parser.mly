@@ -100,8 +100,8 @@ exp:
 formal_args:
 | IDENT
     { Arg($1) }
-| IDENT formal_args
-    { Args($1, $2) }
+/*| IDENT formal_args
+    { Args($1, $2) }*/
 /* Implement NIL | IDENT formal_args */
 
 
