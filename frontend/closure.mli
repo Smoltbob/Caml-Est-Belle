@@ -3,7 +3,7 @@ open Knormal;;
 type t =
 (* uncomment those lines when ready to create closures *)
     (*| LetClosure of (Id.t * Type.t) * (Id.l * Type.t) * t list*)
-    (*| AppD of (Id.t * t list)*)
+    (* | AppD of (Id.t * t list) *)
     (*| AppC of (Id.l * t list)*)
     | Unit
     | Bool of bool
@@ -40,11 +40,11 @@ and fundef = {
 
 (*type prog = Prog of fundef list * t*)
 
-type toplevel = fundef list
+(* type toplevel = fundef list *)
 
-val clos = Knormal.t -> Closure.t
+val clos : Knormal.t -> t
 (* val clos_first = Knormal.t -> Closure.toplevel *)
 (* val fv = t -> S.t *)
 
-val toplevel = fundef list ref
+(* val toplevel : fundef list ref *)
 (* val g = Type.t M.t -> S.t -> Syntax.t -> t *)

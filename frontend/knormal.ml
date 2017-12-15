@@ -34,7 +34,7 @@ type t =
   | Array of t * t
   | Get of t * t
   | Put of t * t * t
-and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t } 
+and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 
 let last = ref 97
@@ -103,12 +103,6 @@ let rec knormal (ast:Syntax.t) : t =
                    )
 
     |Var a -> Var a
-<<<<<<< HEAD
-    |App (a, b) -> App(knormal a, List.map knormal b)
-
-    |If (a, b, c) -> IfEq (knormal a, knormal b, knormal c) (*TODO*)
-
-=======
     |App (a,b) ->  let (f,t) = newvar () in
                     let rec aux vars_rem k_vars =
                         match vars_rem with
@@ -116,28 +110,19 @@ let rec knormal (ast:Syntax.t) : t =
                         |h::q -> let (x,t) = newvar () in Let((x,t), knormal h, aux q ((Var x)::k_vars))
                     in
                     Let((f, t), knormal a, aux b [])
-    
-    (*tmp*) 
+
+    (*tmp*)
     |If (a, b, c) -> IfEq (knormal a, knormal b, knormal c) (*TODO*)
->>>>>>> 410171e32c219716c93a6c878624e13b056bdd37
     |Tuple a -> Tuple(List.map knormal a)
     |LetTuple (a, b, c) -> LetTuple (a, knormal b, knormal c)
     |Array (a, b) -> Array (knormal a, knormal b)
     |Get (a, b) -> Get (knormal a, knormal b)
     |Put (a, b, c) -> Put (knormal a, knormal b, knormal c)
-<<<<<<< HEAD
-
-    |Let (a, b, c) -> Let (a, knormal b, knormal c) (*OK*)
-
-    |LetRec (a, b) ->  LetRec (a, knormal b)
-
-=======
     (*/tmp*)
     |Let (a, b, c) -> Let (a, knormal b, knormal c) (*OK*)
     (*tmp*)
-    |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b) 
+    |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b)
     (*/tmp*)
->>>>>>> 410171e32c219716c93a6c878624e13b056bdd37
 
 let rec k_to_string (exp:t) : string =
     match exp with
@@ -168,13 +153,8 @@ let rec k_to_string (exp:t) : string =
   | LetRec (fd, e) ->
           sprintf "(let rec %s %s = %s in %s)"
           (let (x, _) = fd.name in (Id.to_string x))
-<<<<<<< HEAD
           (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
-          (Syntax.to_string fd.body)   (*CHANGE LATER*)
-=======
-          (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ") 
           (k_to_string fd.body)   (*CHANGE LATER*)
->>>>>>> 410171e32c219716c93a6c878624e13b056bdd37
           (k_to_string e)
   | LetTuple (l, e1, e2)->
           sprintf "(let (%s) = %s in %s)"
