@@ -3,8 +3,8 @@ open Printf;;
 (*open Parser;;*)
 
 (*
-let addtyp x = (x, Type.gentyp ()) 
-let newid () = addtyp (Id.genid ()) 
+let addtyp x = (x, Type.gentyp ())
+let newid () = addtyp (Id.genid ())
 *)
 type t =
   | Unit
@@ -36,86 +36,86 @@ type t =
   | Put of t * t * t
 
 
-let last = ref 97 
-let newvar () = let res = ((String.make 1  (char_of_int !last)), Type.gentyp ()) in incr last; res  
-let newfct args body = let res = {name = newvar (); args = args; body = body } in res  
+let last = ref 97
+let newvar () = let res = ((String.make 1  (char_of_int !last)), Type.gentyp ()) in incr last; res
+let newfct args body = let res = {name = newvar (); args = args; body = body } in res
 
 
 
 let rec knormal (ast:Syntax.t) : t =
     match ast with
-    |Unit -> Unit 
+    |Unit -> Unit
     |Bool a -> Bool a
     |Int a ->  Int a
     |Float a -> Float a
-    
+
     |Not b -> let (b',t) = newvar () in Let((b',t), knormal b, Not (Var b'))
     |Neg b -> let (b',t) = newvar () in Let((b',t), knormal b, Neg (Var b'))
     |Sub (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
                    Let((a',t), knormal a,
-                    Let((b',t), knormal b, 
-                        Sub(Var a', Var b')) 
+                    Let((b',t), knormal b,
+                        Sub(Var a', Var b'))
                    )
     |Add (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
                    Let((a',t), knormal a,
-                    Let((b',t), knormal b, 
-                        Add(Var a', Var b')) 
-                   ) 
+                    Let((b',t), knormal b,
+                        Add(Var a', Var b'))
+                   )
     |FAdd (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
                    Let((a',t), knormal a,
-                    Let((b',t), knormal b, 
-                        FAdd(Var a', Var b')) 
+                    Let((b',t), knormal b,
+                        FAdd(Var a', Var b'))
                    )
     |FNeg b -> let (b',t) = newvar () in Let((b',t), knormal b, FNeg (Var b'))
     |FSub (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
                    Let((a',t), knormal a,
-                    Let((b',t), knormal b, 
-                        FSub(Var a', Var b')) 
+                    Let((b',t), knormal b,
+                        FSub(Var a', Var b'))
                    )
     |FMul (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
                    Let((a',t), knormal a,
-                    Let((b',t), knormal b, 
-                        FMul(Var a', Var b')) 
+                    Let((b',t), knormal b,
+                        FMul(Var a', Var b'))
                    )
     |FDiv (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
                    Let((a',t), knormal a,
-                    Let((b',t), knormal b, 
-                        FDiv(Var a', Var b')) 
+                    Let((b',t), knormal b,
+                        FDiv(Var a', Var b'))
                    )
     |Eq (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
                    Let((a',t), knormal a,
-                    Let((b',t), knormal b, 
-                        Eq (Var a', Var b')) 
+                    Let((b',t), knormal b,
+                        Eq (Var a', Var b'))
                    )
     |LE (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
                    Let((a',t), knormal a,
-                    Let((b',t), knormal b, 
-                        LE (Var a', Var b')) 
+                    Let((b',t), knormal b,
+                        LE (Var a', Var b'))
                    )
-    
+
     |Var a -> Var a
     |App (a, b) -> App(knormal a, List.map knormal b)
-    
+
     |If (a, b, c) -> IfEq (knormal a, knormal b, knormal c) (*TODO*)
-    
+
     |Tuple a -> Tuple(List.map knormal a)
     |LetTuple (a, b, c) -> LetTuple (a, knormal b, knormal c)
     |Array (a, b) -> Array (knormal a, knormal b)
     |Get (a, b) -> Get (knormal a, knormal b)
     |Put (a, b, c) -> Put (knormal a, knormal b, knormal c)
-    
+
     |Let (a, b, c) -> Let (a, knormal b, knormal c) (*OK*)
-    
-    |LetRec (a, b) ->  LetRec (a, knormal b) 
-    
+
+    |LetRec (a, b) ->  LetRec (a, knormal b)
+
 
 let rec k_to_string (exp:t) : string =
     match exp with
@@ -123,41 +123,40 @@ let rec k_to_string (exp:t) : string =
   | Bool b -> if b then "true" else "false"
   | Int i -> string_of_int i
   | Float f -> sprintf "%.2f" f
-  
+
   | Not e -> sprintf "(not %s)" (k_to_string e)
   | Neg e -> sprintf "(- %s)" (k_to_string e)
   | Add (e1, e2) -> sprintf "(%s + %s)" (k_to_string e1) (k_to_string e2)
-  | Sub (e1, e2) -> sprintf "(%s - %s)" (k_to_string e1) (k_to_string e2) 
+  | Sub (e1, e2) -> sprintf "(%s - %s)" (k_to_string e1) (k_to_string e2)
   | FNeg e -> sprintf "(-. %s)" (k_to_string e)
   | FAdd (e1, e2) -> sprintf "(%s +. %s)" (k_to_string e1) (k_to_string e2)
-  | FSub (e1, e2) -> sprintf "(%s -. %s)" (k_to_string e1) (k_to_string e2) 
+  | FSub (e1, e2) -> sprintf "(%s -. %s)" (k_to_string e1) (k_to_string e2)
   | FMul (e1, e2) -> sprintf "(%s *. %s)" (k_to_string e1) (k_to_string e2)
-  | FDiv (e1, e2) -> sprintf "(%s /. %s)" (k_to_string e1) (k_to_string e2) 
-  | Eq (e1, e2) -> sprintf "(%s = %s)" (k_to_string e1) (k_to_string e2) 
-  | LE (e1, e2) -> sprintf "(%s <= %s)" (k_to_string e1) (k_to_string e2)  
-  | IfEq (e1, e2, e3) -> 
-          sprintf "(if %s then %s else %s)" (k_to_string e1) (k_to_string e2) (k_to_string e3)   
-  | IfLE (e1, e2, e3) -> 
-          sprintf "(if %s then %s else %s)" (k_to_string e1) (k_to_string e2) (k_to_string e3)   
-  | Let ((id,t), e1, e2) -> 
-          sprintf "(let %s = %s in %s)" (Id.to_string id) (k_to_string e1) (k_to_string e2)   
-  | Var id -> Id.to_string id 
-  | App (e1, le2) -> sprintf "(%s %s)" (k_to_string e1) (infix_to_string k_to_string le2 " ") 
-  | LetRec (fd, e) ->  
-          sprintf "(let rec %s %s = %s in %s)" 
+  | FDiv (e1, e2) -> sprintf "(%s /. %s)" (k_to_string e1) (k_to_string e2)
+  | Eq (e1, e2) -> sprintf "(%s = %s)" (k_to_string e1) (k_to_string e2)
+  | LE (e1, e2) -> sprintf "(%s <= %s)" (k_to_string e1) (k_to_string e2)
+  | IfEq (e1, e2, e3) ->
+          sprintf "(if %s then %s else %s)" (k_to_string e1) (k_to_string e2) (k_to_string e3)
+  | IfLE (e1, e2, e3) ->
+          sprintf "(if %s then %s else %s)" (k_to_string e1) (k_to_string e2) (k_to_string e3)
+  | Let ((id,t), e1, e2) ->
+          sprintf "(let %s = %s in %s)" (Id.to_string id) (k_to_string e1) (k_to_string e2)
+  | Var id -> Id.to_string id
+  | App (e1, le2) -> sprintf "(%s %s)" (k_to_string e1) (infix_to_string k_to_string le2 " ")
+  | LetRec (fd, e) ->
+          sprintf "(let rec %s %s = %s in %s)"
           (let (x, _) = fd.name in (Id.to_string x))
-          (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ") 
+          (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
           (Syntax.to_string fd.body)   (*CHANGE LATER*)
           (k_to_string e)
-  | LetTuple (l, e1, e2)-> 
-          sprintf "(let (%s) = %s in %s)" 
+  | LetTuple (l, e1, e2)->
+          sprintf "(let (%s) = %s in %s)"
           (infix_to_string (fun (x, _) -> Id.to_string x) l ", ")
           (k_to_string e1)
           (k_to_string e2)
   | Get(e1, e2) -> sprintf "%s.(%s)" (k_to_string e1) (k_to_string e2)
-  | Put(e1, e2, e3) -> sprintf "(%s.(%s) <- %s)"  
+  | Put(e1, e2, e3) -> sprintf "(%s.(%s) <- %s)"
                  (k_to_string e1) (k_to_string e2) (k_to_string e3)
-  | Tuple(l) -> sprintf "(%s)" (infix_to_string k_to_string l ", ") 
-  | Array(e1,e2) -> sprintf "(Array.create %s %s)" 
-       (k_to_string e1) (k_to_string e2) 
-
+  | Tuple(l) -> sprintf "(%s)" (infix_to_string k_to_string l ", ")
+  | Array(e1,e2) -> sprintf "(Array.create %s %s)"
+       (k_to_string e1) (k_to_string e2)

@@ -1,4 +1,3 @@
-
 type t =
   | Unit
   | Bool of bool
@@ -30,4 +29,4 @@ type t =
 
 val knormal : Syntax.t -> t
 
-val k_to_string : t -> string  
+val k_to_string : t -> string

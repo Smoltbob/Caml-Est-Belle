@@ -1,40 +1,21 @@
-type t =
-    | Unit
-    | Bool of bool
-    | Int of int
-    | Float of float
-    | Not of t
-    | Neg of t
-    | Add of t * t
-    | Sub of t * t
-    | FNeg of t
-    | FAdd of t * t
-    | FSub of t * t
-    | FMul of t * t
-    | FDiv of t * t
-    | Eq of t * t
-    | LE of t * t
-    | If of t * t * t
-    | Let of (Id.t * Type.t) * t * t
-    | Var of Id.t
-    | LetRec of fundef * t
-    | App of t * t list
-    | Tuple of t list
-    | LetTuple of (Id.t * Type.t) list * t * t
-    | Array of t * t
-    | Get of t * t
-    | Put of t * t * t
-and fundef = {
-                name : Id.l * Type.t;
-                args : (Id.t * Type.t) list;
-                formal_fv : (Id.t * Type.t) list;
-                body : t
-            }
-and prog = Prog of fundef list * t
+open Knormal;;
+open Closure;;
 
-(* Not sure what S.t and M.t are yet *)
-val f = Syntax.t -> prog
-val fv = t -> S.t
+let last = ref 97
+let newlabel () = let res = ((String.make 1  (char_of_int !last)), Type.gentyp ()) in incr last; res
+let newfct args body = let res = {name = newlabel (); args = args; formal_fv = ; body = body} in res
 
-val toplevel = fundef list ref
-val g = Type.t M.t -> S.t -> Syntax.t -> t
+(* Nested letrec have not been unnested yet (in reduction) *)
+let rec clos k :Closure.t = match k with
+    | LetRec (f, a, b) -> (match a with
+        | LetRec (y, a2, b2) -> reduc (LetRec (y, a2, (reduc (LetRec (x, b2, b)))))
+        | _ -> LetRec (x, a, reduc b))
+    | App (f, l) -> (* This is not needed for the first version of closure we consider : there is no higher-order function*)
+        let rec clos_args l = match l with
+            | [] -> []
+            | t::q -> (clos t)::(clos_args q)
+        in App (f, clos_args l)
+    | _ -> k
+
+let rec clos_first k = match k with
+    | -> Toplevel (l)
