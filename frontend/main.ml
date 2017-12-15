@@ -2,7 +2,8 @@ let print_ast l =
   let s = (Parser.exp Lexer.token l) in
   (* print_string (Knormal.k_to_string (Knormal.knormal s)); print_newline () *)
   (* print_string (Knormal.k_to_string (Reduction.reduc (Knormal.knormal s))); print_newline () *)
-  print_string (Asmlgen.asml_to_string_main (Closure.clos (Reduction.reduc (Knormal.knormal s)))); print_newline ()
+  (* print_string (Asmlgen.closure_to_asmlstring_main (Closure.clos (Reduction.reduc (Knormal.knormal s)))); print_newline () *)
+  Asmlgen.asml_head (Closure.clos (Reduction.reduc (Knormal.knormal s)))
 
 let file f =
   let inchan = open_in f in

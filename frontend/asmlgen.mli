@@ -1,6 +1,6 @@
 open Printf;;
 open Closure;;
-(*
+
 type t =
   | Int of int
   | Float of float
@@ -26,10 +26,14 @@ and fundef =
     | Body of asmt (* We will need the name, arguments and return type for functions *)
 
 type toplevel =
-    | Fundef of fundef (* Once we implement functions we will have a list *) *)
+    | Fundef of fundef (* Once we implement functions we will have a list *)
 
 
 (* val gen : Closure.t -> asmt *)
-val asml_to_string : t -> string
+val closure_to_asmlstring : Closure.t -> string
 
-val asml_to_string_main : t -> string
+val closure_to_asmlstring_main : Closure.t -> string
+
+val asml_t_triv : Closure.t -> t
+val asml_exp : Closure.t -> asmt
+val asml_head : Closure.t -> toplevel
