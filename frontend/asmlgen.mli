@@ -23,11 +23,11 @@ and asmt =
     (* | Additional case for parenthesis ? Don't think so ? *)
 
 and fundef =
-    | Body of asmt (* We will need the name, arguments and return type for functions *)
+    | Body of asmt
+    (* We will need the name, arguments and return type for functions *)
 
 type toplevel =
-    | Fundef of fundef (* Once we implement functions we will have a list *)
-
+    | Fundefs of (fundef list)
 
 (* val gen : Closure.t -> asmt *)
 val closure_to_asmlstring : Closure.t -> string

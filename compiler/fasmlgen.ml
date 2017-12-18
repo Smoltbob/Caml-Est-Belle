@@ -1,23 +1,24 @@
-open Closure;;
+open Fclosure;;
 open Printf;;
+open Bsyntax;; (* Type for the asml file *)
 
-type t =
+(* type t =
   | Int of int
   | Float of float
-  | Neg of Id.t
-  | Fneg of Id.t
-  | Fsub of Id.t * Id.t
-  | Fadd of Id.t * Id.t
-  | Fmul of Id.t * Id.t
-  | Fdiv of Id.t * Id.t
-  | Add of Id.t * t
-  | Sub of Id.t * t
-  | Var of Id.t
-  | Eq of Id.t * t
+  | Neg of Fid.t
+  | Fneg of Fid.t
+  | Fsub of Fid.t * Fid.t
+  | Fadd of Fid.t * Fid.t
+  | Fmul of Fid.t * Fid.t
+  | Fdiv of Fid.t * Fid.t
+  | Add of Fid.t * t
+  | Sub of Fid.t * t
+  | Var of Fid.t
+  | Eq of Fid.t * t
   | Nop
 
 and asmt =
-    | Let of Id.t * t * asmt
+    | Let of Fid.t * t * asmt
     | Expression of t
     (* | Additional case for parenthesis ? Don't think so ? *)
 
@@ -25,7 +26,7 @@ and fundef =
     | Body of asmt (* We will need the name, arguments and return type for functions *)
 
 type toplevel =
-    | Fundefs of (fundef list) (* Once we implement functions we will have a list *)
+    | Fundefs of (fundef list) (* Once we implement functions we will have a list *) *)
 
 
 let rec asml_t_triv t = match t with
@@ -43,7 +44,7 @@ let rec asml_t_triv t = match t with
     | Var x -> Var x
 
 
-let rec asml_exp (c:Closure.t) :asmt = match c with
+let rec asml_exp (c:Fclosure.t) :asmt = match c with
     | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
     (* | _ -> Expression asml_t_triv c *)
     | Unit -> Expression Nop
@@ -67,11 +68,11 @@ let rec asml_exp (c:Closure.t) :asmt = match c with
 let asml_head c =
     Fundefs [Body (asml_exp c)]
 
-let rec closure_to_asmlstring (exp:Closure.t) : string = match exp with
+let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
   | Unit -> "nop"
   (* | Bool b -> if b then "true" else "false" *)
   | Int i -> string_of_int i
-  | Var id -> Id.to_string id
+  | Var id -> Fid.to_string id
   (* | Let (x, a, b) -> sprintf *)
   | Add (e1, e2) -> sprintf "add %s %s \n" (closure_to_asmlstring e1) (closure_to_asmlstring e2)
   | Sub (e1, e2) -> sprintf "sub %s %s \n" (closure_to_asmlstring e1) (closure_to_asmlstring e2)
@@ -93,17 +94,17 @@ let rec closure_to_asmlstring (exp:Closure.t) : string = match exp with
   | IfLE (e1, e2, e3) ->
           sprintf "(if %s then %s else %s)" (closure_to_asmlstring e1) (closure_to_asmlstring e2) (closure_to_asmlstring e3)
   | Let ((id,t), e1, e2) ->
-          sprintf "(let %s = %s in %s)" (Id.to_string id) (closure_to_asmlstring e1) (closure_to_asmlstring e2)
+          sprintf "(let %s = %s in %s)" (Fid.to_string id) (closure_to_asmlstring e1) (closure_to_asmlstring e2)
   | App (e1, le2) -> sprintf "(%s %s)" (closure_to_asmlstring e1) (infix_to_string closure_to_asmlstring le2 " ")
   | LetRec (fd, e) ->
           sprintf "(let rec %s %s = %s in %s)"
-          (let (x, _) = fd.name in (Id.to_string x))
-          (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
+          (let (x, _) = fd.name in (Fid.to_string x))
+          (infix_to_string (fun (x,_) -> (Fid.to_string x)) fd.args " ")
           (closure_to_asmlstring fd.body)   (*CHANGE LATER*)
           (closure_to_asmlstring e)
   | LetTuple (l, e1, e2)->
           sprintf "(let (%s) = %s in %s)"
-          (infix_to_string (fun (x, _) -> Id.to_string x) l ", ")
+          (infix_to_string (fun (x, _) -> Fid.to_string x) l ", ")
           (closure_to_asmlstring e1)
           (closure_to_asmlstring e2)
   | Get(e1, e2) -> sprintf "%s.(%s)" (closure_to_asmlstring e1) (closure_to_asmlstring e2)
@@ -114,5 +115,5 @@ let rec closure_to_asmlstring (exp:Closure.t) : string = match exp with
        (closure_to_asmlstring e1) (closure_to_asmlstring e2) *)
 
 
-let closure_to_asmlstring_main (exp:Closure.t) : string =
+let closure_to_asmlstring_main (exp:Fclosure.t) : string =
    sprintf "let _ = \n %s" (closure_to_asmlstring exp)

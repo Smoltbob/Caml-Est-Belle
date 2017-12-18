@@ -1,8 +1,8 @@
 type t =
 (* uncomment those lines when ready to create closures *)
-    (*| LetClosure of (Id.t * Type.t) * (Id.l * Type.t) * t list*)
-    (* | AppD of (Id.t * t list) *)
-    (*| AppC of (Id.l * t list)*)
+    (*| LetFclosure of (Fid.t * Ftype.t) * (Fid.l * Ftype.t) * t list*)
+    (* | AppD of (Fid.t * t list) *)
+    (*| AppC of (Fid.l * t list)*)
     | Unit
     | Bool of bool
     | Int of int
@@ -21,18 +21,18 @@ type t =
     | IfEq of t * t * t
     | IfLE of t * t * t
     | IfBool of t * t * t
-    | Let of (Id.t * Type.t) * t * t
-    | Var of Id.t
-    | LetRec of Syntax.fundef * t
+    | Let of (Fid.t * Ftype.t) * t * t
+    | Var of Fid.t
+    | LetRec of Fsyntax.fundef * t
     | Tuple of t list
-    | LetTuple of (Id.t * Type.t) list * t * t
+    | LetTuple of (Fid.t * Ftype.t) list * t * t
     | Array of t * t
     | Get of t * t
     | Put of t * t * t
 and fundef = {
-                name : Id.l * Type.t;
-                args : (Id.t * Type.t) list;
-                formal_fv : (Id.t * Type.t) list;
+                name : Fid.l * Ftype.t;
+                args : (Fid.t * Ftype.t) list;
+                formal_fv : (Fid.t * Ftype.t) list;
                 body : t
             }
 
@@ -42,7 +42,7 @@ and fundef = {
 
 
 (* Nested letrec have not been unnested yet (in reduction) *)
-let rec clos (k:Knormal.t) :t = match k with
+let rec clos (k:Fknormal.t) :t = match k with
 (*This is not needed for the first version of closure we consider : there is no higher-order function*)
     (* | LetRec (f, a, b) -> (match a with
         | LetRec  (y, a2, b2) -> clos (LetRec (y, clos a2, (clos (LetRec (x, b2, b)))))
@@ -80,6 +80,6 @@ let rec clos (k:Knormal.t) :t = match k with
     (*/tmp*)
     | Let (a, b, c) -> Let (a, clos b, clos c) (*OK*)
 
-
-(* let rec clos_toplevel k = match k with
+(*
+let rec clos_toplevel k = match k with
     | -> Toplevel (clos l) *)
