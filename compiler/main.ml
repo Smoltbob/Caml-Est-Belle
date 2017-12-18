@@ -3,7 +3,7 @@ let print_asml l =
     (* print_string (Fknormal.k_to_string (Fknormal.knormal s)); print_newline () *)
     (* print_string (Fknormal.k_to_string (Freduction.reduc (Fknormal.knormal s))); print_newline () *)
     (* print_string (Fasmlgen.closure_to_asmlstring_main (Fclosure.clos (Freduction.reduc (Fknormal.knormal s)))); print_newline () *)
-    Bsyntax.to_arm_top (Fasmlgen.asml_head (Fclosure.clos (Freduction.reduc (Fknormal.knormal s))))
+    Barmgenerator.toplevel_to_arm (Fasmlgen.asml_head (Fclosure.clos (Freduction.reduc (Fknormal.knormal s))))
 
 let file f =
     let inchan = open_in f in

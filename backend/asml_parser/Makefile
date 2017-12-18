@@ -1,4 +1,4 @@
-all: asmlparser armgen
+all: armgen #asmlparser armgen
 
 asmlparser:
 	ocamlbuild asmlparser.byte 
