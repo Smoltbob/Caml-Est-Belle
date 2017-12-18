@@ -37,7 +37,6 @@ let addtyp x = (x, Btype.gentyp ())
 %token APPLCLO
 %token UNDERSC
 %token EOF
-%token NIL
 
 %type <Bsyntax.toplevel> toplevel
 %start toplevel
@@ -100,11 +99,11 @@ exp:
 
 formal_args:
 | IDENT
-    { [$1] }
-| IDENT formal_args
-    { $1 :: $2 }
-| NIL
-    { [] }
+    { Arg($1) }
+/*| IDENT formal_args
+    { Args($1, $2) }*/
+/* Implement NIL | IDENT formal_args */
+
 
 ident_or_imm:
 | INT

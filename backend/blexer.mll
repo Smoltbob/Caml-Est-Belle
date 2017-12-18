@@ -1,6 +1,6 @@
 {
-open Parser
-open Type
+open Bparser
+open Btype
 }
 
 let space = [' ' '\t' '\n' '\r']
@@ -46,8 +46,6 @@ rule token = parse
     { CALL }
 | "nop" 
     { NOP }
-| "()" 
-    { NIL }
 | '_'
     { UNDERSC }
 | underscore (digit|lower|upper|underscore)*
