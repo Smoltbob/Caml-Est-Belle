@@ -63,8 +63,8 @@ let rec to_string exp =
 
 let rec to_string_asm asm =
     match asm with
- | Let (id, e1, a) -> sprintf "(Let %s = %s in %s)" (Id.to_string id) (to_string e1) (to_string_asm a)
- | Expression e -> sprintf "(%s)" (to_string e)
+  | Let (id, e1, a) -> sprintf "(Let %s = %s in %s)" (Id.to_string id) (to_string e1) (to_string_asm a)
+  | Expression e -> sprintf "(%s)" (to_string e)
 
 let rec to_string_fundef fund =
     match fund with

@@ -18,9 +18,7 @@ type t =
   | Nop
   (* NOP ? *)
   (* Too allowing: should be ADD of Bid.t * imm (that can be float or int) *)
-and formal_args =
-    | Arg of Bid.t
-    | Args of Bid.t * formal_args
+and formal_args = Bid.t list
 
 and asmt =
     | Let of Bid.t * t * asmt
@@ -34,17 +32,16 @@ type toplevel =
     | Fundefs of (fundef list) (* Once we implement functions we will have a list *)
 
 
+let rec to_string_args argu =
+    match argu with
+    | [] -> sprintf ""
+    | t::q -> sprintf "(%s %s)" t (to_string_args q) 
 
 let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : string =
     match l with
     | [] -> ""
     | [x] -> to_s x
     | hd :: tl -> (to_s hd) ^ op ^ (infix_to_string to_s tl op)
-
-let rec to_string_args argu =
-    match argu with
-    | Arg a1 -> sprintf "(%s)" (Bid.to_string a1)
-    | Args (a1, a2) -> sprintf "(%s %s)" (Bid.to_string a1) (to_string_args a2)
 
 let rec to_string exp =
     match exp with
@@ -98,8 +95,8 @@ let rec to_arm exp =
 
 let rec to_arm_formal_args args =
     match args with
-    | Arg a1 -> sprintf "%s" (Bid.to_string a1)
-    | Args (a1, a2) -> sprintf "(%s %s)" (Bid.to_string a1) (to_string_args a2)
+    | [] -> sprintf ""
+    | t::q -> sprintf "(%s %s)" t (to_string_args q) 
 
 let rec to_arm_asm asm =
     match asm with
