@@ -52,36 +52,34 @@ let rec clos (k:Knormal.t) :t = match k with
             | [] -> []
             | t::q -> (clos t)::(clos_args q)
         in AppD (f, clos_args l) *)
-    |Unit -> Unit
-    |Bool a -> Bool a
-    |Int a ->  Int  a
-    |Float a -> Float a
-    |Not b -> Not (clos b)
-    |Neg b -> Neg (clos b)
-    |Sub (a, b) -> Sub (clos a, clos b)
-    |Add (a, b) -> Add (clos a, clos b)
-    |FAdd (a, b) -> FAdd (clos a, clos b)
-    |FNeg b -> FNeg (clos b)
-    |FSub (a, b) -> FSub (clos a, clos b)
-    |FMul (a, b) -> FMul (clos a, clos b)
-    |FDiv (a, b) -> FDiv (clos a, clos b)
-    |Eq (a, b) -> Eq (clos a, clos b)
-    |LE (a, b) -> LE (clos a, clos b)
-    |Var a -> Var a
+    | Unit -> Unit
+    | Bool a -> Bool a
+    | Int a ->  Int  a
+    | Float a -> Float a
+    | Not b -> Not (clos b)
+    | Neg b -> Neg (clos b)
+    | Sub (a, b) -> Sub (clos a, clos b)
+    | Add (a, b) -> Add (clos a, clos b)
+    | FAdd (a, b) -> FAdd (clos a, clos b)
+    | FNeg b -> FNeg (clos b)
+    | FSub (a, b) -> FSub (clos a, clos b)
+    | FMul (a, b) -> FMul (clos a, clos b)
+    | FDiv (a, b) -> FDiv (clos a, clos b)
+    | Eq (a, b) -> Eq (clos a, clos b)
+    | LE (a, b) -> LE (clos a, clos b)
+    | Var a -> Var a
     (* |App (a,b) -> AppD (clos a, List.map clos b) *)
-    |IfEq (a, b, c) -> IfEq (clos a, clos b, clos c)
-    |IfLE (a, b, c) -> IfLE (clos a, clos b, clos c)
+    | IfEq (a, b, c) -> IfEq (clos a, clos b, clos c)
+    | IfLE (a, b, c) -> IfLE (clos a, clos b, clos c)
     (* |IfBool (a, b, c) -> IfBool (clos a, clos b, clos c) *)
-    |Tuple a -> Tuple (List.map clos a)
+    | Tuple a -> Tuple (List.map clos a)
     (* |LetTuple (a, b, c) -> LetTuple (clos a, clos b, clos c) *)
-    |Array (a, b) -> Array (clos a, clos b)
-    |Get (a, b) -> Get (clos a, clos b)
-    |Put (a, b, c) -> Put (clos a, clos b, clos c)
+    | Array (a, b) -> Array (clos a, clos b)
+    | Get (a, b) -> Get (clos a, clos b)
+    | Put (a, b, c) -> Put (clos a, clos b, clos c)
     (*/tmp*)
-    |Let (a, b, c) -> Let (a, clos b, clos c) (*OK*)
-    (*tmp*)
-    (* |LetRec (a, b) ->  LetClosure ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b) *)
-    (*/tmp*)
+    | Let (a, b, c) -> Let (a, clos b, clos c) (*OK*)
 
-(* let rec clos_first k = match k with
+
+(* let rec clos_toplevel k = match k with
     | -> Toplevel (clos l) *)
