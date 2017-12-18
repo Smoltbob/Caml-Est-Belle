@@ -1,6 +1,7 @@
 open Fclosure;;
 open Printf;;
-open Bsyntax;;
+open Bsyntax;; (* Type for the asml file *)
+
 (* type t =
   | Int of int
   | Float of float

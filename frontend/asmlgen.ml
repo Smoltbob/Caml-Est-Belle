@@ -15,7 +15,6 @@ type t =
   | Var of Id.t
   | Eq of Id.t * t
   | Nop
-  (* NOP ? *)
 
 and asmt =
     | Let of Id.t * t * asmt
@@ -26,7 +25,7 @@ and fundef =
     | Body of asmt (* We will need the name, arguments and return type for functions *)
 
 type toplevel =
-    | Fundef of fundef (* Once we implement functions we will have a list *)
+    | Fundefs of (fundef list) (* Once we implement functions we will have a list *)
 
 
 let rec asml_t_triv t = match t with
@@ -66,7 +65,7 @@ let rec asml_exp (c:Closure.t) :asmt = match c with
     | Expression exp -> Expression (asml_exp exp) *)
 
 let asml_head c =
-    Fundef (Body (asml_exp c))
+    Fundefs [Body (asml_exp c)]
 
 let rec closure_to_asmlstring (exp:Closure.t) : string = match exp with
   | Unit -> "nop"

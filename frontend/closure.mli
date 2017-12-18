@@ -43,7 +43,7 @@ and fundef = {
 (* type toplevel = fundef list *)
 
 val clos : Knormal.t -> t
-(* val clos_first = Knormal.t -> Closure.toplevel *)
+(* val clos_toplevel : Knormal.t -> toplevel *)
 (* val fv = t -> S.t *)
 
 (* val toplevel : fundef list ref *)
