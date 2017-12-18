@@ -10,26 +10,28 @@ else
     verb=0
 fi
 
-for file in no_let/*.asml; do
+folder="let"
+
+for file in "$folder"/*.asml; do
     # Removing extention from filename
     filename=$(basename "$file")
     filename="${filename%.*}"
     # Printing filename + path
     echo -e "File: \e[34m$file\e[0m"
     # Printing output from parsing + ARM generation
-    RESULT=$(./../../../backend/asml_parser/asmlparse $file)
+    RESULT=$(./../../../backend/asml_parser/asmlparse "$file")
     if [[ $verb = 1 ]]; then
         echo -e "\e[33mOutput  : $RESULT\e[0m"
         echo ""
     fi
     # Printing the expected output
-    EXP=$(cat no_let/$filename.exp)
+    EXP=$(cat "$folder"/"$filename".exp)
     if [[ $verb = 1 ]]; then
         echo -e "\e[35mExpected :$EXP\e[0m"
         echo ""
     fi
     # Comparison between the two
-    if [[ $RESULT == $EXP ]]; then
+    if [[ $RESULT == "$EXP" ]]; then
         echo -e "\e[7mResult\e[27m \e[32mOK\e[0m"
     else 
         echo -e "\e[7mResult\e[27m \e[31mKO\e[0m"

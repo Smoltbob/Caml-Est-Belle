@@ -13,8 +13,13 @@ type t =
   | Sub of Id.t * t
   | Var of Id.t
   | Eq of Id.t * t
+  | Call of Id.t * formal_args
   | Nop
   (* NOP ? *)
+  (* Too allowing: should be ADD of Id.t * imm (that can be float or int) *)
+and formal_args =
+    | Arg of Id.t
+    | Args of Id.t * formal_args
 
 and asmt = 
     | Let of Id.t * t * asmt
@@ -28,12 +33,18 @@ type toplevel =
     | Fundef of fundef (* Once we implement functions we will have a list *)
 
 
+
 let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : string = 
     match l with 
     | [] -> ""
     | [x] -> to_s x
     | hd :: tl -> (to_s hd) ^ op ^ (infix_to_string to_s tl op)
 
+let rec to_string_args argu =
+    match argu with
+    | Arg a1 -> sprintf "(%s)" (Id.to_string a1) 
+    | Args (a1, a2) -> sprintf "(%s %s)" (Id.to_string a1) (to_string_args a2)
+    
 let rec to_string exp =
     match exp with
   | Int i -> string_of_int i
@@ -48,6 +59,8 @@ let rec to_string exp =
   | Sub (e1, e2) -> sprintf "(sub %s %s)" (Id.to_string e1) (to_string e2) 
   | Var id -> Id.to_string id 
   | Eq (e1, e2) -> sprintf "(%s = %s)" (Id.to_string e1) (to_string e2) 
+  | Call (l1, a1) -> sprintf "(call %s %s)" (Id.to_string l1) (to_string_args a1)
+  | Nop -> sprintf "nop"
 
 let rec to_string_asm asm =
     match asm with
@@ -69,26 +82,32 @@ let rec to_arm exp =
     match exp with
   | Int i -> sprintf "#%s" (string_of_int i)
   | Float f -> sprintf "%.2f" f  (* Not implem *)
-  | Neg id -> sprintf "(neg %s)" (Id.to_string id) (* Not implem *)
-  | Fneg id -> sprintf "(fneg %s)" (Id.to_string id)(* Not implem *)
-  | Fadd (id1, id2) -> sprintf "(fadd %s %s)" (Id.to_string id1) (Id.to_string id2)(* Not implem *)
-  | Fsub (id1, id2) -> sprintf "(fsub %s %s)" (Id.to_string id1) (Id.to_string id2)(* Not implem *)
-  | Fmul (id1, id2) -> sprintf "(fmul %s %s)" (Id.to_string id1) (Id.to_string id2)(* Not implem *)
-  | Fdiv (id1, id2) -> sprintf "(fdiv %s %s)" (Id.to_string id1) (Id.to_string id2)(* Not implem *)
-  | Add (e1, e2) -> sprintf "ADD %s, %s" (Id.to_string e1) (to_arm e2)
-  | Sub (e1, e2) -> sprintf "SUB %s, %s" (Id.to_string e1) (to_arm e2)
-  | Var id -> Id.to_string id 
-  | Eq (e1, e2) -> sprintf "(%s = %s)" (Id.to_string e1) (to_arm e2) 
+  | Neg id -> sprintf "(neg %s)" (Id.to_register id) (* Not implem *)
+  | Fneg id -> sprintf "(fneg %s)" (Id.to_register id)(* Not implem *)
+  | Fadd (id1, id2) -> sprintf "(fadd %s %s)" (Id.to_register id1) (Id.to_register id2)(* Not implem *)
+  | Fsub (id1, id2) -> sprintf "(fsub %s %s)" (Id.to_register id1) (Id.to_register id2)(* Not implem *)
+  | Fmul (id1, id2) -> sprintf "(fmul %s %s)" (Id.to_register id1) (Id.to_register id2)(* Not implem *)
+  | Fdiv (id1, id2) -> sprintf "(fdiv %s %s)" (Id.to_register id1) (Id.to_register id2)(* Not implem *)
+  | Add (e1, e2) -> sprintf "ADD %s, %s" (Id.to_register e1) (to_arm e2)
+  | Sub (e1, e2) -> sprintf "SUB %s, %s" (Id.to_register e1) (to_arm e2)
+  | Var id -> sprintf "%s" (Id.to_register id)
+  | Eq (e1, e2) -> sprintf "(%s = %s)" (Id.to_register e1) (to_arm e2) 
+  | Call (l1, a1) -> sprintf ("TODO")
   | Nop -> sprintf "nop"
+
+let rec to_arm_formal_args args =
+    match args with
+    | Arg a1 -> sprintf "%s" (Id.to_string a1) 
+    | Args (a1, a2) -> sprintf "(%s %s)" (Id.to_string a1) (to_string_args a2)
 
 let rec to_arm_asm asm =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP Id Id Id/Imm" *)
     | Let (id, e, a) -> (match e with 
-                            | Add (e1, e2) -> sprintf "ADD %s, %s, %s\n%s" (Id.to_string id) (Id.to_string e1) (to_arm e2) (to_arm_asm a)
-                            | Sub (e1, e2) -> sprintf "SUB %s, %s, %s\n%s" (Id.to_string id) (Id.to_string e1) (to_arm e2) (to_arm_asm a)
-                            | Int i -> sprintf "ADD %s, %s, #0\n%s" (Id.to_string id) (string_of_int i) (to_arm_asm a) (* Good traduction ? *)
-                            | Var id2 -> sprintf "ADD %s, %s, #0\n%s" (Id.to_string id) (Id.to_string id2) (to_arm_asm a)
+                            | Add (e1, e2) -> sprintf "ADD %s, %s, %s\n%s" (Id.to_register id) (Id.to_register e1) (to_arm e2) (to_arm_asm a)
+                            | Sub (e1, e2) -> sprintf "SUB %s, %s, %s\n%s" (Id.to_register id) (Id.to_register e1) (to_arm e2) (to_arm_asm a)
+                            | Int i -> sprintf "ADD %s, %s, #0\n%s" (Id.to_register id) (string_of_int i) (to_arm_asm a) (* Good traduction ? *)
+                            | Var id2 -> sprintf "ADD %s, %s, #0\n%s" (Id.to_register id) (Id.to_register id2) (to_arm_asm a)
     )
     | Expression e -> sprintf "%s" (to_arm e)
 

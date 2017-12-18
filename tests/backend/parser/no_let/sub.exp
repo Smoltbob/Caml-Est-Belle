@@ -1,5 +1,1 @@
-Parsed asml AST :
 ((((sub x 1))))
-Generated ARM :
-_START:
-SUB x #1
