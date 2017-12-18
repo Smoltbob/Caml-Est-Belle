@@ -18,8 +18,8 @@ type t =
     | FDiv of t * t
     | Eq of t * t
     | LE of t * t
-    | IfEq of t * t * t
-    | IfLE of t * t * t
+    | IfEq of Fid.t * Fid.t * t * t
+    | IfLE of Fid.t * Fid.t * t * t
     | IfBool of t * t * t
     | Let of (Fid.t * Ftype.t) * t * t
     | Var of Fid.t
@@ -69,8 +69,8 @@ let rec clos (k:Fknormal.t) :t = match k with
     | LE (a, b) -> LE (clos a, clos b)
     | Var a -> Var a
     (* |App (a,b) -> AppD (clos a, List.map clos b) *)
-    | IfEq (a, b, c) -> IfEq (clos a, clos b, clos c)
-    | IfLE (a, b, c) -> IfLE (clos a, clos b, clos c)
+    | IfEq (x, y, b, c) -> IfEq (x, y, clos b, clos c)
+    | IfLE (x, y, b, c) -> IfLE (x, y, clos b, clos c)
     (* |IfBool (a, b, c) -> IfBool (clos a, clos b, clos c) *)
     | Tuple a -> Tuple (List.map clos a)
     (* |LetTuple (a, b, c) -> LetTuple (clos a, clos b, clos c) *)
