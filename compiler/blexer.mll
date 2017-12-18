@@ -1,6 +1,6 @@
 {
-open Parser
-open Type
+open Bparser
+open Btype
 }
 
 let space = [' ' '\t' '\n' '\r']

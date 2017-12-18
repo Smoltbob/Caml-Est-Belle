@@ -1,12 +1,12 @@
 %{
-open Syntax
-let addtyp x = (x, Type.gentyp ())
+open Bsyntax
+let addtyp x = (x, Btype.gentyp ())
 %}
 
 %token <int> INT
 %token <float> FLOAT
-%token <Id.t> IDENT
-%token <Id.t> LABEL
+%token <Bid.t> IDENT
+%token <Bid.t> LABEL
 %token LPAREN
 %token RPAREN
 %token PLUS
@@ -37,9 +37,8 @@ let addtyp x = (x, Type.gentyp ())
 %token APPLCLO
 %token UNDERSC
 %token EOF
-%token NIL
 
-%type <Syntax.toplevel> toplevel
+%type <Bsyntax.toplevel> toplevel
 %start toplevel
 %%
 
@@ -48,7 +47,7 @@ toplevel:
     { Fundefs([$1]) }
 
 fundefs:
-|   LET UNDERSC EQUAL asmt 
+|   LET UNDERSC EQUAL asmt
     { Body($4) }
 
 asmt:
@@ -57,7 +56,7 @@ asmt:
 |   LET IDENT EQUAL exp IN asmt
     { Let($2, $4, $6) }
 |   exp
-    { Expression($1) }   
+    { Expression($1) }
 
 exp:
 | LPAREN exp RPAREN
@@ -97,14 +96,14 @@ exp:
 	(Printf.sprintf "parse error near characters %d-%d"
 	   (Parsing.symbol_start ())
 	   (Parsing.symbol_end ())) }
-    
+
 formal_args:
 | IDENT
-    { [$1] }
-| IDENT formal_args
-    { $1 :: $2 }
-| NIL
-    { [] }
+    { Arg($1) }
+/*| IDENT formal_args
+    { Args($1, $2) }*/
+/* Implement NIL | IDENT formal_args */
+
 
 ident_or_imm:
 | INT

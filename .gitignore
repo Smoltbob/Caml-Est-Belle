@@ -1,5 +1,6 @@
 _build/
 archive/*
+*.d
 mincamlc
 min-ml
 *.pdf
