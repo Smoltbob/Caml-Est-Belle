@@ -1,6 +1,7 @@
-open Printf
+open Printf;;
+open List;;
 
-type t = 
+type t =
   | Int of int
   | Float of float
   | Neg of Bid.t
@@ -21,30 +22,30 @@ and formal_args =
     | Arg of Bid.t
     | Args of Bid.t * formal_args
 
-and asmt = 
+and asmt =
     | Let of Bid.t * t * asmt
     | Expression of t
     (* | Additional case for parenthesis ? Don't think so ? *)
 
-and fundef = 
+and fundef =
     | Body of asmt (* We will need the name, arguments and return type for functions *)
 
 type toplevel =
-    | Fundef of fundef (* Once we implement functions we will have a list *)
+    | Fundefs of (fundef list) (* Once we implement functions we will have a list *)
 
 
 
-let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : string = 
-    match l with 
+let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : string =
+    match l with
     | [] -> ""
     | [x] -> to_s x
     | hd :: tl -> (to_s hd) ^ op ^ (infix_to_string to_s tl op)
 
 let rec to_string_args argu =
     match argu with
-    | Arg a1 -> sprintf "(%s)" (Bid.to_string a1) 
+    | Arg a1 -> sprintf "(%s)" (Bid.to_string a1)
     | Args (a1, a2) -> sprintf "(%s %s)" (Bid.to_string a1) (to_string_args a2)
-    
+
 let rec to_string exp =
     match exp with
   | Int i -> string_of_int i
@@ -56,9 +57,9 @@ let rec to_string exp =
   | Fmul (id1, id2) -> sprintf "(fmul %s %s)" (Bid.to_string id1) (Bid.to_string id2)
   | Fdiv (id1, id2) -> sprintf "(fdiv %s %s)" (Bid.to_string id1) (Bid.to_string id2)
   | Add (e1, e2) -> sprintf "(add %s %s)" (Bid.to_string e1) (to_string e2)
-  | Sub (e1, e2) -> sprintf "(sub %s %s)" (Bid.to_string e1) (to_string e2) 
-  | Var id -> Bid.to_string id 
-  | Eq (e1, e2) -> sprintf "(%s = %s)" (Bid.to_string e1) (to_string e2) 
+  | Sub (e1, e2) -> sprintf "(sub %s %s)" (Bid.to_string e1) (to_string e2)
+  | Var id -> Bid.to_string id
+  | Eq (e1, e2) -> sprintf "(%s = %s)" (Bid.to_string e1) (to_string e2)
   | Call (l1, a1) -> sprintf "(call %s %s)" (Bid.to_string l1) (to_string_args a1)
   | Nop -> sprintf "nop"
 
@@ -71,9 +72,9 @@ let rec to_string_fundef fund =
     match fund with
  | Body b -> sprintf "(%s)" (to_string_asm b)
 
-let rec to_string_top top = 
+let rec to_string_top top =
     match top with
-  | Fundef f -> sprintf "(%s)" (to_string_fundef f)
+  | Fundefs f -> sprintf "(%s)" (to_string_fundef (hd f))
 
 (* Bellow : WIP ARM generation *)
 (* Put this in a new file ? *)
@@ -91,19 +92,19 @@ let rec to_arm exp =
   | Add (e1, e2) -> sprintf "ADD %s, %s" (Bid.to_register e1) (to_arm e2)
   | Sub (e1, e2) -> sprintf "SUB %s, %s" (Bid.to_register e1) (to_arm e2)
   | Var id -> sprintf "%s" (Bid.to_register id)
-  | Eq (e1, e2) -> sprintf "(%s = %s)" (Bid.to_register e1) (to_arm e2) 
+  | Eq (e1, e2) -> sprintf "(%s = %s)" (Bid.to_register e1) (to_arm e2)
   | Call (l1, a1) -> sprintf ("TODO")
   | Nop -> sprintf "nop"
 
 let rec to_arm_formal_args args =
     match args with
-    | Arg a1 -> sprintf "%s" (Bid.to_string a1) 
+    | Arg a1 -> sprintf "%s" (Bid.to_string a1)
     | Args (a1, a2) -> sprintf "(%s %s)" (Bid.to_string a1) (to_string_args a2)
 
 let rec to_arm_asm asm =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP Bid Bid Bid/Imm" *)
-    | Let (id, e, a) -> (match e with 
+    | Let (id, e, a) -> (match e with
                             | Add (e1, e2) -> sprintf "ADD %s, %s, %s\n%s" (Bid.to_register id) (Bid.to_register e1) (to_arm e2) (to_arm_asm a)
                             | Sub (e1, e2) -> sprintf "SUB %s, %s, %s\n%s" (Bid.to_register id) (Bid.to_register e1) (to_arm e2) (to_arm_asm a)
                             | Int i -> sprintf "ADD %s, %s, #0\n%s" (Bid.to_register id) (string_of_int i) (to_arm_asm a) (* Good traduction ? *)
@@ -119,4 +120,4 @@ let rec to_arm_top top =
     print_string ".text\n.global _start\n";
     print_string "_start:\n";
     match top with
-    | Fundef f -> sprintf "%s %s" (to_arm_fundef f) "\nBL min_caml_exit"
+    | Fundefs f -> print_string (sprintf "%s %s" (to_arm_fundef (hd f)) "\nBL min_caml_exit\n")

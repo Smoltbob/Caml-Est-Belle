@@ -1,6 +1,6 @@
 let print_arm l =
-  let s = (Parser.toplevel Lexer.token l) in
-  print_string (Syntax.to_arm_top s); print_newline ()
+  let s = (Fparser.toplevel Flexer.token l) in
+  print_string (Fsyntax.to_arm_top s); print_newline ()
 
 let file f = 
     let inchan = open_in f in

@@ -44,10 +44,10 @@ let addtyp x = (x, Btype.gentyp ())
 
 toplevel:
 | fundefs
-    { Fundef($1) }
+    { Fundef([$1]) }
 
 fundefs:
-|   LET UNDERSC EQUAL asmt 
+|   LET UNDERSC EQUAL asmt
     { Body($4) }
 
 asmt:
@@ -56,7 +56,7 @@ asmt:
 |   LET IDENT EQUAL exp IN asmt
     { Let($2, $4, $6) }
 |   exp
-    { Expression($1) }   
+    { Expression($1) }
 
 exp:
 | LPAREN exp RPAREN
@@ -96,7 +96,7 @@ exp:
 	(Printf.sprintf "parse error near characters %d-%d"
 	   (Parsing.symbol_start ())
 	   (Parsing.symbol_end ())) }
-    
+
 formal_args:
 | IDENT
     { Arg($1) }

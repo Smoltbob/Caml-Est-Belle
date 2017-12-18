@@ -35,7 +35,7 @@ let rec regist prog table =
 in	 
 
 let () =
-	let prog = Sub("a", Var("b")) in(* Parser.toplevel is the input*)
+	let prog = Sub("a", Var("b")) in(* Fparser.toplevel is the input*)
 	regist prog variabletable;
 	Array.iter print_string variabletable
 	in ()
