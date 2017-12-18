@@ -20,8 +20,8 @@ type t =
     | FDiv of t * t
     | Eq of t * t
     | LE of t * t
-    | IfEq of t * t * t
-    | IfLE of t * t * t
+    | IfEq of Fid.t * Fid.t * t * t
+    | IfLE of Fid.t * Fid.t * t * t
     | IfBool of t * t * t
     | Let of (Fid.t * Ftype.t) * t * t
     | Var of Fid.t

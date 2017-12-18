@@ -18,8 +18,8 @@ type t =
     | FDiv of t * t
     | Eq of t * t
     | LE of t * t
-    | IfEq of t * t * t
-    | IfLE of t * t * t
+    | IfEq of Fid.t * Fid.t * t * t
+    | IfLE of Fid.t * Fid.t * t * t
     | IfBool of t * t * t
     | Let of (Fid.t * Ftype.t) * t * t
     | Var of Fid.t
@@ -58,8 +58,8 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     | LE (a, b) -> LE (clos_exp a, clos_exp b)
     | Var a -> Var a
     (* |App (a,b) -> AppD (clos_exp a, List.map clos_exp b) *)
-    | IfEq (a, b, c) -> IfEq (clos_exp a, clos_exp b, clos_exp c)
-    | IfLE (a, b, c) -> IfLE (clos_exp a, clos_exp b, clos_exp c)
+    | IfEq (x, y, b, c) -> IfEq (x, y, clos_exp b, clos_exp c)
+    | IfLE (x, y, b, c) -> IfLE (x, y, clos_exp b, clos_exp c)
     (* |IfBool (a, b, c) -> IfBool (clos_exp a, clos_exp b, clos_exp c) *)
     | Tuple a -> Tuple (List.map clos_exp a)
     (* |LetTuple (a, b, c) -> LetTuple (clos_exp a, clos_exp b, clos_exp c) *)
@@ -88,7 +88,6 @@ let rec clos (k:Fknormal.t) :t = match k with
             | [] -> []
             | t::q -> (clos t)::(clos_args q)
         in AppD (f, clos_args l) *)
-
 
 (*
 let rec clos_toplevel k = match k with

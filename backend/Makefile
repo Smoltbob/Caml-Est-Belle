@@ -1,14 +1,15 @@
-
-all: 
-	ocamlbuild main.byte 
-	mv main.byte mincamlc
+all: asmlparser armgen
 
 asmlparser:
 	ocamlbuild basmlparser.byte 
 	mv basmlparser.byte asmlparse
 
+armgen:
+	ocamlbuild barmgen.byte 
+	mv barmgen.byte armgen
+
 clean:
 	rm -rf _build
 
 cleanest: clean
-	rm -f min-ml
+	rm -f asmlparse armgen
