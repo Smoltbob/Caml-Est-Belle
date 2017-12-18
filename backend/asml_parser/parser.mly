@@ -37,6 +37,7 @@ let addtyp x = (x, Type.gentyp ())
 %token APPLCLO
 %token UNDERSC
 %token EOF
+%token NIL
 
 %type <Syntax.toplevel> toplevel
 %start toplevel
@@ -44,7 +45,7 @@ let addtyp x = (x, Type.gentyp ())
 
 toplevel:
 | fundefs
-    { Fundef($1) }
+    { Fundefs([$1]) }
 
 fundefs:
 |   LET UNDERSC EQUAL asmt 
@@ -99,11 +100,11 @@ exp:
     
 formal_args:
 | IDENT
-    { Arg($1) }
-/*| IDENT formal_args
-    { Args($1, $2) }*/
-/* Implement NIL | IDENT formal_args */
-
+    { [$1] }
+| IDENT formal_args
+    { $1 :: $2 }
+| NIL
+    { [] }
 
 ident_or_imm:
 | INT

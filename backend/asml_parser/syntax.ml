@@ -1,4 +1,5 @@
 open Printf
+open List
 
 type t = 
   | Int of int
@@ -17,9 +18,7 @@ type t =
   | Nop
   (* NOP ? *)
   (* Too allowing: should be ADD of Id.t * imm (that can be float or int) *)
-and formal_args =
-    | Arg of Id.t
-    | Args of Id.t * formal_args
+and formal_args = Id.t list
 
 and asmt = 
     | Let of Id.t * t * asmt
@@ -30,7 +29,7 @@ and fundef =
     | Body of asmt (* We will need the name, arguments and return type for functions *)
 
 type toplevel =
-    | Fundef of fundef (* Once we implement functions we will have a list *)
+    | Fundefs of (fundef list) 
 
 
 
@@ -42,8 +41,8 @@ let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : stri
 
 let rec to_string_args argu =
     match argu with
-    | Arg a1 -> sprintf "(%s)" (Id.to_string a1) 
-    | Args (a1, a2) -> sprintf "(%s %s)" (Id.to_string a1) (to_string_args a2)
+    | [] -> sprintf ""
+    | t::q -> sprintf "(%s %s)" t (to_string_args q) 
     
 let rec to_string exp =
     match exp with
@@ -73,7 +72,7 @@ let rec to_string_fundef fund =
 
 let rec to_string_top top = 
     match top with
-  | Fundef f -> sprintf "(%s)" (to_string_fundef f)
+  | Fundefs f -> sprintf "(%s)" (to_string_fundef (hd f))
 
 (* Bellow : WIP ARM generation *)
 (* Put this in a new file ? *)
@@ -97,8 +96,8 @@ let rec to_arm exp =
 
 let rec to_arm_formal_args args =
     match args with
-    | Arg a1 -> sprintf "%s" (Id.to_string a1) 
-    | Args (a1, a2) -> sprintf "(%s %s)" (Id.to_string a1) (to_string_args a2)
+    | [] -> sprintf ""
+    | t::q -> sprintf "(%s %s)" t (to_string_args q) 
 
 let rec to_arm_asm asm =
     match asm with
@@ -119,4 +118,6 @@ let rec to_arm_top top =
     print_string ".text\n.global _start\n";
     print_string "_start:\n";
     match top with
-    | Fundef f -> sprintf "%s %s" (to_arm_fundef f) "\nBL min_caml_exit"
+    | Fundefs f -> 
+            (* match f with t::q in  *)
+            sprintf "%s %s" (to_arm_fundef (hd f)) "\nBL min_caml_exit"
