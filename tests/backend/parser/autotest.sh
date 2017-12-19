@@ -19,7 +19,7 @@ for file in "$folder"/*.asml; do
     # Printing filename + path
     echo -e "File: \e[34m$file\e[0m"
     # Printing output from parsing + ARM generation
-    RESULT=$(./../../../backend/asml_parser/asmlparse "$file")
+    RESULT=$(./../../../compiler/asmlparse "$file")
     if [[ $verb = 1 ]]; then
         echo -e "\e[33mOutput  : $RESULT\e[0m"
         echo ""

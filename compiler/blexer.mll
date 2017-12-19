@@ -46,6 +46,8 @@ rule token = parse
     { CALL }
 | "nop" 
     { NOP }
+| "()" | ""
+    { NIL }
 | '_'
     { UNDERSC }
 | underscore (digit|lower|upper|underscore)*

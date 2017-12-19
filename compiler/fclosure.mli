@@ -20,19 +20,19 @@ type t =
     | FDiv of t * t
     | Eq of t * t
     | LE of t * t
-    | IfEq of t * t * t
-    | IfLE of t * t * t
+    | IfEq of Fid.t * Fid.t * t * t
+    | IfLE of Fid.t * Fid.t * t * t
     | IfBool of t * t * t
     | Let of (Fid.t * Ftype.t) * t * t
     | Var of Fid.t
-    | LetRec of Fsyntax.fundef * t
+    | LetRec of fundef * t
     | Tuple of t list
     | LetTuple of (Fid.t * Ftype.t) list * t * t
     | Array of t * t
     | Get of t * t
     | Put of t * t * t
 and fundef = {
-                name : Fid.l * Ftype.t;
+                name : Fid.t * Ftype.t;
                 args : (Fid.t * Ftype.t) list;
                 formal_fv : (Fid.t * Ftype.t) list;
                 body : t
@@ -43,6 +43,7 @@ and fundef = {
 (* type toplevel = fundef list *)
 
 val clos : Fknormal.t -> t
+val clos_exp : Fknormal.t -> t
 (* val clos_toplevel : Fknormal.t -> toplevel *)
 (* val fv = t -> S.t *)
 

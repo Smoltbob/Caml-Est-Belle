@@ -37,6 +37,7 @@ let addtyp x = (x, Btype.gentyp ())
 %token APPLCLO
 %token UNDERSC
 %token EOF
+%token NIL
 
 %type <Bsyntax.toplevel> toplevel
 %start toplevel
@@ -44,7 +45,7 @@ let addtyp x = (x, Btype.gentyp ())
 
 toplevel:
 | fundefs
-    { Fundef([$1]) }
+    { Fundefs([$1]) }
 
 fundefs:
 |   LET UNDERSC EQUAL asmt
@@ -98,12 +99,12 @@ exp:
 	   (Parsing.symbol_end ())) }
 
 formal_args:
+| NIL
+    { [] }
 | IDENT
-    { Arg($1) }
-/*| IDENT formal_args
-    { Args($1, $2) }*/
-/* Implement NIL | IDENT formal_args */
-
+    { [$1] }
+| IDENT formal_args
+    { $1 :: $2 }
 
 ident_or_imm:
 | INT

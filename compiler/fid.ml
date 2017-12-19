@@ -1,7 +1,6 @@
 type t = string
 
-(* type for labels *)
-type l = string
+(* type l = string (* type for label *)*)
 
 let to_string x = x
 
