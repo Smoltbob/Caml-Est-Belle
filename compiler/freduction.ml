@@ -1,6 +1,9 @@
 open Fknormal;;
 
 let rec reduc k = match k with
+    | LetRec (f, a) ->
+        LetRec ({ name = f.name; args = f.args ; body = (reduc f.body) },
+                reduc a)
     | Let (x, a, b) -> (match a with
         | Let (y, a2, b2) -> reduc (Let (y, a2, (reduc (Let (x, b2, b)))))
         | _ -> Let (x, a, reduc b))

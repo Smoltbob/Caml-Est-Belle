@@ -57,7 +57,6 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     | Eq (a, b) -> Eq (clos_exp a, clos_exp b)
     | LE (a, b) -> LE (clos_exp a, clos_exp b)
     | Var a -> Var a
-    (* |App (a,b) -> AppD (clos_exp a, List.map clos_exp b) *)
     | IfEq (x, y, b, c) -> IfEq (x, y, clos_exp b, clos_exp c)
     | IfLE (x, y, b, c) -> IfLE (x, y, clos_exp b, clos_exp c)
     (* |IfBool (a, b, c) -> IfBool (clos_exp a, clos_exp b, clos_exp c) *)
@@ -66,10 +65,11 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     | Array (a, b) -> Array (clos_exp a, clos_exp b)
     | Get (a, b) -> Get (clos_exp a, clos_exp b)
     | Put (a, b, c) -> Put (clos_exp a, clos_exp b, clos_exp c)
+    | Let (x, a, b) -> Let (x, clos_exp a, clos_exp b)
     (*/tmp*)
 
 (* Nested letrec have not been unnested yet (in reduction) *)
-let rec clos (k:Fknormal.t) :t = match k with
+(* let rec clos (k:Fknormal.t) :t = match k with
 (* We now consider that there are no free variable inside our nested letrecs *)
     | LetRec (fundef, t) ->
         let (fname, fargs, fbody) = (fundef.name, fundef.args, fundef.body) in
@@ -82,7 +82,14 @@ let rec clos (k:Fknormal.t) :t = match k with
                     LetRec (newfundef2, clos (LetRec (newfundef, t)))
             (* | Let (x, a, b) -> *)
             )
-    (* | Let (a, b, c) -> Let (a, clos b, clos c) *)
+    (* For now we assume there is no free variable so a let rec can't be after a let for now ? *)
+    | Let (x, a, b) -> (* lets have already been unnested *)
+        match a with
+        | LetRec (f, c) ->
+            LetRec ({name = f.name; args = f.args; formal_fv = []; body = (clos_exp f.body)},
+                    Let (x, c, b))
+        |_ -> *)
+
     (* | App (f, l) ->
         let rec clos_args l = match l with
             | [] -> []

@@ -26,7 +26,7 @@ type t =
   | Array of t * t
   | Get of t * t
   | Put of t * t * t
-and fundef = { name : Fid.t * Ftype.t; args : (Fid.t * Ftype.t) list; body : t }   
+and fundef = { name : Fid.t * Ftype.t; args : (Fid.t * Ftype.t) list; body : t }
 
 val knormal : Fsyntax.t -> t
 
