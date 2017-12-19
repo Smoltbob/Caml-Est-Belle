@@ -28,7 +28,5 @@ let rec fundef_to_arm fundef =
     | Body b -> asmt_to_arm b
 
 let rec toplevel_to_arm toplevel =
-    print_string ".text\n.global _start\n";
-    print_string "_start:\n";
     match toplevel with
-    | Fundefs f -> print_string (sprintf "%s %s" (fundef_to_arm (List.hd f))  "\n\tBL min_caml_exit\n")
+    | Fundefs f -> sprintf ".text\n.global _start\n_start:\n%s\n\tBL min_caml_exit\n" (fundef_to_arm (List.hd f))
