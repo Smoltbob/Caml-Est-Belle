@@ -79,7 +79,7 @@ let rec to_string_top top =
 (* Bellow : WIP ARM generation *)
 (* Put this in a new file ? *)
 (* Handle return values ? *)
-let rec to_arm exp =
+let rec exp_to_arm exp dest =
     match exp with
   | Int i -> sprintf "#%s" (string_of_int i)
   | Float f -> sprintf "%.2f" f  (* Not implem *)
@@ -89,10 +89,10 @@ let rec to_arm exp =
   | Fsub (id1, id2) -> sprintf "(fsub %s %s)" (Bid.to_register id1) (Bid.to_register id2)(* Not implem *)
   | Fmul (id1, id2) -> sprintf "(fmul %s %s)" (Bid.to_register id1) (Bid.to_register id2)(* Not implem *)
   | Fdiv (id1, id2) -> sprintf "(fdiv %s %s)" (Bid.to_register id1) (Bid.to_register id2)(* Not implem *)
-  | Add (e1, e2) -> sprintf "ADD %s, %s" (Bid.to_register e1) (to_arm e2)
-  | Sub (e1, e2) -> sprintf "SUB %s, %s" (Bid.to_register e1) (to_arm e2)
+  | Add (e1, e2) -> sprintf "ADD %s, %s, %s" (Bid.to_register dest) (Bid.to_register e1) (exp_to_arm e2 "")
+  | Sub (e1, e2) -> sprintf "SUB %s, %s, %s" (Bid.to_register dest) (Bid.to_register e1) (exp_to_arm e2 "")
   | Var id -> sprintf "%s" (Bid.to_register id)
-  | Eq (e1, e2) -> sprintf "(%s = %s)" (Bid.to_register e1) (to_arm e2)
+  | Eq (e1, e2) -> sprintf "(%s = %s)" (Bid.to_register e1) (exp_to_arm e2 "")
   | Call (l1, a1) -> sprintf ("TODO")
   | Nop -> sprintf "nop"
 
@@ -104,13 +104,9 @@ let rec to_arm_formal_args args =
 let rec to_arm_asm asm =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP Bid Bid Bid/Imm" *)
-    | Let (id, e, a) -> (match e with
-                            | Add (e1, e2) -> sprintf "ADD %s, %s, %s\n%s" (Bid.to_register id) (Bid.to_register e1) (to_arm e2) (to_arm_asm a)
-                            | Sub (e1, e2) -> sprintf "SUB %s, %s, %s\n%s" (Bid.to_register id) (Bid.to_register e1) (to_arm e2) (to_arm_asm a)
-                            | Int i -> sprintf "ADD %s, %s, #0\n%s" (Bid.to_register id) (string_of_int i) (to_arm_asm a) (* Good traduction ? *)
-                            | Var id2 -> sprintf "ADD %s, %s, #0\n%s" (Bid.to_register id) (Bid.to_register id2) (to_arm_asm a)
-    )
-    | Expression e -> sprintf "%s" (to_arm e)
+    | Let (id, e, a) -> sprintf "%s %s" (exp_to_arm e id) (to_arm_asm a)
+    
+    | Expression e -> sprintf "%s" (exp_to_arm e "")
 
 let rec to_arm_fundef fund =
     match fund with
