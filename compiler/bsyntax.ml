@@ -81,7 +81,7 @@ let rec print_list_idx l i =
 (* Bellow : WIP ARM generation *)
 (* Put this in a new file ? *)
 (* Handle return values ? *)
-
+(*
 let rec movegen l i =
     match l with
         | [] -> sprintf ""
@@ -129,3 +129,4 @@ let rec to_arm_top top =
     print_string "_start:\n";
     match top with
     | Fundefs f -> sprintf "%s %s" (to_arm_fundef (hd f)) "\nBL min_caml_exit\n"
+    *)

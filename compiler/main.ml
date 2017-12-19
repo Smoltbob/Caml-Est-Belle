@@ -10,7 +10,9 @@ let print_asml l =
     (* print_string (Fknormal.k_to_string (Fknormal.knormal s)); print_newline () *)
     (* print_string (Fknormal.k_to_string (Freduction.reduc (Fknormal.knormal s))); print_newline () *)
     (* print_string (Fasmlgen.closure_to_asmlstring_main (Fclosure.clos (Freduction.reduc (Fknormal.knormal s)))); print_newline () *)
-    Barmgenerator.toplevel_to_arm (Fasmlgen.asml_head (Fclosure.clos_exp (Freduction.reduc (Fknormal.knormal s))))
+    let prog = Fasmlgen.asml_head (Fclosure.clos_exp (Freduction.reduc (Fknormal.knormal s))) in
+    (*Bbasicregist.regist prog vartbl_r;*)
+    Barmgenerator.toplevel_to_arm prog
 
 let file fin fout =
     let inchan = open_in fin in
