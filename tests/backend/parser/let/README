@@ -1,0 +1,7 @@
+These are test programs with let statements but no function definitions and no function calls.
+
+They have the form of :
+Let _ =
+    Let Id = exp in ...
+
+

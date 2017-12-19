@@ -1,26 +1,17 @@
-(* The maximum number of variables we allow.
- * It will be used to create a table used to associate a unique index to
- * each variable *)
-let register_number = 12 
-let variabletable = Array.make register_number "" 
+open Bsyntax;;
 
-(* Returns the index of a variable by using the table.
- * If the variable is not in the table then we put it inside. *)
-let registVar x = 
-	let i = ref 4 in
-	while ((!i <= register_number && variabletable.(!i) <> "") && (x <> variabletable.(!i))) do
-		i := !i + 1;
-	done;
-	if !i = register_number then
-        (failwith "variabletable is full")
-    else
-        (variabletable.(!i) <- x; !i)
-(*
-in
+let register_nb = 12
+let vartbl_r = Hashtbl.create register_nb
+let register_i = ref 3
 
+let registVar x =
+	if (not (Hashtbl.mem vartbl_r x)) then
+		register_i := !register_i + 1;
+		Hashtbl.add vartbl_r x (true, !register_i)
 
 let rec regist prog table =
 	match prog with
+	
 	|Neg(x) -> registVar x
 	|Fneg(x) -> registVar x
 	|Fsub(a,b) -> registVar a; registVar b
@@ -29,14 +20,5 @@ let rec regist prog table =
 	|Fdiv(a,b) -> registVar a; registVar b
 	|Add(a,b) -> registVar a; regist b table
 	|Sub(a,b) -> registVar a; regist b table
-	|Let(a,b,c) -> registVar a; regist b table; regist c table
 	|Eq(a,b) -> registVar a; regist b table
 	|Var(x) -> registVar x
-in	 
-
-let () =
-	let prog = Sub("a", Var("b")) in(* Fparser.toplevel is the input*)
-	regist prog variabletable;
-	Array.iter print_string variabletable
-	in ()
-*)

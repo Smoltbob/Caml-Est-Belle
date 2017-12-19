@@ -9,14 +9,17 @@ let print_asml l =
     let s = (Fparser.exp Flexer.token l) in
     (* print_string (Fknormal.k_to_string (Fknormal.knormal s)); print_newline () *)
     (* print_string (Fknormal.k_to_string (Freduction.reduc (Fknormal.knormal s))); print_newline () *)
-    (* print_string (Fasmlgen.closure_to_asmlstring_main (Fclosure.clos_exp (Freduction.reduc (Fknormal.knormal s)))); print_newline () *)
-    Barmgenerator.toplevel_to_arm (Fasmlgen.asml_head (Fclosure.clos_exp (Freduction.reduc (Fknormal.knormal s))))
+    (* print_string (Fasmlgen.closure_to_asmlstring_main (Fclosure.clos (Freduction.reduc (Fknormal.knormal s)))); print_newline () *)
+    let prog = Fasmlgen.asml_head (Fclosure.clos_exp (Freduction.reduc (Fknormal.knormal s))) in
+    (*Bbasicregist.regist prog vartbl_r;*)
+    Barmgenerator.toplevel_to_arm prog
 
 let file fin fout =
     let inchan = open_in fin in
-    let outchan = open_out fout in
+    let outchan = open_out fout in| t::q -> sprintf "MOV r%s, %s\n%s" (string_of_int i) (Id.to_register t) (movegen q (i + 1))
     try
         Printf.fprintf outchan "%s" (print_asml (Lexing.from_channel inchan));
+        print_endline (Printf.sprintf "Successfully created file %s" !output_file);
         close_in inchan;
         close_out outchan
     with e -> (close_in inchan; close_out outchan; raise e)
