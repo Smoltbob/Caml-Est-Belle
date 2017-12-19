@@ -22,8 +22,8 @@ type t =
   | FDiv of t * t
   | Eq of t * t
   | LE of t * t
-  | IfEq of t * t * t
-  | IfLE of t * t * t
+  | IfEq of Fid.t * Fid.t * t * t
+  | IfLE of Fid.t * Fid.t * t * t
   (*| IfBool of t * t * t*)
   | Let of (Fid.t * Ftype.t) * t * t
   | Var of Fid.t
@@ -112,7 +112,26 @@ let rec knormal (ast:Fsyntax.t) : t =
                     Let((f, t), knormal a, aux b [])
 
     (*tmp*)
-    |If (a, b, c) -> IfEq (knormal a, knormal b, knormal c) (*TODO*)
+    |If (a, b, c) ->(match a with
+                     | LE(x, y) -> let (x',t) = newvar () in
+                                    let (y',t) = newvar () in
+                                    Let((x',t), knormal x,
+                                    Let((y',t), knormal y,
+                                    IfLE(x', y', knormal b, knormal c)))
+
+                     | Eq(x, y) ->  let (x',t) = newvar () in
+                                    let (y',t) = newvar () in
+                                    Let((x',t), knormal x,
+                                    Let((y',t), knormal y,
+                                    IfEq(x', y', knormal b, knormal c)))
+                     | Not(x) -> knormal (If(x, c, b))
+
+                     | _ ->  let (x',t) = newvar () in 
+                             let (y',t) = newvar () in
+                             Let((x',t), knormal a,
+                              Let((y',t), Bool(true),
+                               IfEq(x', y', knormal b, knormal c)))
+                    )
     |Tuple a -> Tuple(List.map knormal a)
     |LetTuple (a, b, c) -> LetTuple (a, knormal b, knormal c)
     |Array (a, b) -> Array (knormal a, knormal b)
@@ -142,10 +161,10 @@ let rec k_to_string (exp:t) : string =
   | FDiv (e1, e2) -> sprintf "(%s /. %s)" (k_to_string e1) (k_to_string e2)
   | Eq (e1, e2) -> sprintf "(%s = %s)" (k_to_string e1) (k_to_string e2)
   | LE (e1, e2) -> sprintf "(%s <= %s)" (k_to_string e1) (k_to_string e2)
-  | IfEq (e1, e2, e3) ->
-          sprintf "(if %s then %s else %s)" (k_to_string e1) (k_to_string e2) (k_to_string e3)
-  | IfLE (e1, e2, e3) ->
-          sprintf "(if %s then %s else %s)" (k_to_string e1) (k_to_string e2) (k_to_string e3)
+  | IfEq (x, y, e2, e3) ->
+          sprintf "(if %s=%s then %s else %s)" (Fid.to_string x) (Fid.to_string y) (k_to_string e2) (k_to_string e3)
+  | IfLE (x, y, e2, e3) ->
+          sprintf "(if %s <= %s then %s else %s)" (Fid.to_string x) (Fid.to_string y) (k_to_string e2) (k_to_string e3)
   | Let ((id,t), e1, e2) ->
           sprintf "(let %s = %s in %s)" (Fid.to_string id) (k_to_string e1) (k_to_string e2)
   | Var id -> Fid.to_string id
