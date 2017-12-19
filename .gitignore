@@ -11,4 +11,5 @@ armgen
 *.s
 *.arm
 *.elf
+*.out
 

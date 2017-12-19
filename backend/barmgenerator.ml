@@ -15,7 +15,7 @@ let rec exp_to_arm exp dest =
     | Add (e1, e2) -> sprintf "\tADD %s, %s, %s\n" (Bid.to_register dest) (Bid.to_register e1) (ident_or_imm_expression_to_arm e2)
     | Sub (e1, e2) -> sprintf "\tSUB %s, %s, %s\n" (Bid.to_register dest) (Bid.to_register e1) (ident_or_imm_expression_to_arm e2)
     | Call (l1, a1) -> sprintf ("TODO")
-    | Nop -> sprintf "nop"
+    | Nop -> sprintf "\tNOP"
 
 let rec asmt_to_arm asm =
     match asm with
