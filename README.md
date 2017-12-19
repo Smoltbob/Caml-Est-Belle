@@ -2,6 +2,9 @@
 Private compiler project repository.</br>
 ```diff
 - Please do not commit on master branch /compiler if it doesn't work :-(
+- It's acutally very important.
+- "master branch passes all tests" should be an invariant.
++ Thanks!
 ```
 Organization of the repository:</br>
 
