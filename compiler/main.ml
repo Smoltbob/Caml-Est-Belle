@@ -19,6 +19,7 @@ let file fin fout =
     let outchan = open_out fout in
     try
         Printf.fprintf outchan "%s" (print_asml (Lexing.from_channel inchan));
+        print_endline (Printf.sprintf "Successfully created file %s" !output_file);
         close_in inchan;
         close_out outchan
     with e -> (close_in inchan; close_out outchan; raise e)
