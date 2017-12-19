@@ -1,16 +1,28 @@
 # Caml-Est-Belle
-Private compiler project repository.
-Organization of the repository.
+Private compiler project repository.</br>
+Organization of the repository:</br>
 
-ARM/     arm source example and compilation with libmincaml   
-asml/    asml examples
-doc/     all the documentation, start with index.hml
-mincaml/ MinCaml examples
-ocaml/   MinCaml parser in OCaml, if you do the project in OCaml
-scripts/ put your test scripts and symbolic links there, and add this 
-         directory to your path
-tests/   put your tests there
-tools/   asml intepreter (linux binary)
+| Folder | Description |
+| --- | --- |
+| __ARM/__ | arm source example and compilation with libmincaml |
+| __asml/__ | asml examples |
+| __compiler/__ | compiler source files |
+| __doc/__ | all the documentation, start with index.html |
+| __mincaml/__ | MinCaml examples |
+| __ocaml/__ | MinCaml parser in OCaml |
+| __scripts/__ | test scripts and symbolic links to binaries |
+| __tests/__ | ASML and MinCaml tests |
+| __tools/__ | asml intepreter (linux binary) |
 
-It's recommend that you add scripts/ and the dir that contains mincamlc 
-to PATH.
+## Installation
+Running command `make` in the __compiler/__ folder will create two binaries:
+- `mincamlc` is the compiler binary, compiling a MinCaml file into a ARM assembly file
+- `armgen` is only the backend binary, converting an ASML file into a ARM assembly file
+
+You can add the __compiler__/ dir to your PATH.
+
+## Usage
+A basic usage of the compiler is
+```
+$ mincamlc mincaml_program.ml -o program.s
+```
