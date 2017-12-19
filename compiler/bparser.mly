@@ -5,8 +5,8 @@ let addtyp x = (x, Btype.gentyp ())
 
 %token <int> INT
 %token <float> FLOAT
-%token <Bid.t> IDENT
-%token <Bid.t> LABEL
+%token <Id.t> IDENT
+%token <Id.t> LABEL
 %token LPAREN
 %token RPAREN
 %token PLUS

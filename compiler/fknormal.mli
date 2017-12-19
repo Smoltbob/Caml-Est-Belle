@@ -14,19 +14,19 @@ type t =
   | FDiv of t * t
   | Eq of t * t
   | LE of t * t
-  | IfEq of Fid.t * Fid.t * t * t
-  | IfLE of Fid.t * Fid.t * t * t
+  | IfEq of Id.t * Id.t * t * t
+  | IfLE of Id.t * Id.t * t * t
   (*| IfBool of t * t * t*)
-  | Let of (Fid.t * Ftype.t) * t * t
-  | Var of Fid.t
+  | Let of (Id.t * Ftype.t) * t * t
+  | Var of Id.t
   | LetRec of fundef * t
   | App of t * t list
   | Tuple of t list
-  | LetTuple of (Fid.t * Ftype.t) list * t * t
+  | LetTuple of (Id.t * Ftype.t) list * t * t
   | Array of t * t
   | Get of t * t
   | Put of t * t * t
-and fundef = { name : Fid.t * Ftype.t; args : (Fid.t * Ftype.t) list; body : t }
+and fundef = { name : Id.t * Ftype.t; args : (Id.t * Ftype.t) list; body : t }
 
 val knormal : Fsyntax.t -> t
 

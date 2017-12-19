@@ -4,7 +4,7 @@ open Printf;;
 
 (*
 let addtyp x = (x, Ftype.gentyp ())
-let newid () = addtyp (Fid.genid ())
+let newid () = addtyp (Id.genid ())
 *)
 type t =
   | Unit
@@ -22,19 +22,19 @@ type t =
   | FDiv of t * t
   | Eq of t * t
   | LE of t * t
-  | IfEq of Fid.t * Fid.t * t * t
-  | IfLE of Fid.t * Fid.t * t * t
+  | IfEq of Id.t * Id.t * t * t
+  | IfLE of Id.t * Id.t * t * t
   (*| IfBool of t * t * t*)
-  | Let of (Fid.t * Ftype.t) * t * t
-  | Var of Fid.t
+  | Let of (Id.t * Ftype.t) * t * t
+  | Var of Id.t
   | LetRec of fundef * t
   | App of t * t list
   | Tuple of t list
-  | LetTuple of (Fid.t * Ftype.t) list * t * t
+  | LetTuple of (Id.t * Ftype.t) list * t * t
   | Array of t * t
   | Get of t * t
   | Put of t * t * t
-and fundef = { name : Fid.t * Ftype.t; args : (Fid.t * Ftype.t) list; body : t }
+and fundef = { name : Id.t * Ftype.t; args : (Id.t * Ftype.t) list; body : t }
 
 
 let last = ref 97
@@ -126,7 +126,7 @@ let rec knormal (ast:Fsyntax.t) : t =
                                     IfEq(x', y', knormal b, knormal c)))
                      | Not(x) -> knormal (If(x, c, b))
 
-                     | _ ->  let (x',t) = newvar () in 
+                     | _ ->  let (x',t) = newvar () in
                              let (y',t) = newvar () in
                              Let((x',t), knormal a,
                               Let((y',t), Bool(true),
@@ -162,22 +162,22 @@ let rec k_to_string (exp:t) : string =
   | Eq (e1, e2) -> sprintf "(%s = %s)" (k_to_string e1) (k_to_string e2)
   | LE (e1, e2) -> sprintf "(%s <= %s)" (k_to_string e1) (k_to_string e2)
   | IfEq (x, y, e2, e3) ->
-          sprintf "(if %s=%s then %s else %s)" (Fid.to_string x) (Fid.to_string y) (k_to_string e2) (k_to_string e3)
+          sprintf "(if %s=%s then %s else %s)" (Id.to_string x) (Id.to_string y) (k_to_string e2) (k_to_string e3)
   | IfLE (x, y, e2, e3) ->
-          sprintf "(if %s <= %s then %s else %s)" (Fid.to_string x) (Fid.to_string y) (k_to_string e2) (k_to_string e3)
+          sprintf "(if %s <= %s then %s else %s)" (Id.to_string x) (Id.to_string y) (k_to_string e2) (k_to_string e3)
   | Let ((id,t), e1, e2) ->
-          sprintf "(let %s = %s in %s)" (Fid.to_string id) (k_to_string e1) (k_to_string e2)
-  | Var id -> Fid.to_string id
+          sprintf "(let %s = %s in %s)" (Id.to_string id) (k_to_string e1) (k_to_string e2)
+  | Var id -> Id.to_string id
   | App (e1, le2) -> sprintf "(%s %s)" (k_to_string e1) (infix_to_string k_to_string le2 " ")
   | LetRec (fd, e) ->
           sprintf "(let rec %s %s = %s in %s)"
-          (let (x, _) = fd.name in (Fid.to_string x))
-          (infix_to_string (fun (x,_) -> (Fid.to_string x)) fd.args " ")
+          (let (x, _) = fd.name in (Id.to_string x))
+          (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
           (k_to_string fd.body)   (*CHANGE LATER*)
           (k_to_string e)
   | LetTuple (l, e1, e2)->
           sprintf "(let (%s) = %s in %s)"
-          (infix_to_string (fun (x, _) -> Fid.to_string x) l ", ")
+          (infix_to_string (fun (x, _) -> Id.to_string x) l ", ")
           (k_to_string e1)
           (k_to_string e2)
   | Get(e1, e2) -> sprintf "%s.(%s)" (k_to_string e1) (k_to_string e2)

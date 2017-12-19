@@ -23,7 +23,7 @@ let addtyp x = (x, Ftype.gentyp ())
 %token IF
 %token THEN
 %token ELSE
-%token <Fid.t> IDENT
+%token <Id.t> IDENT
 %token LET
 %token IN
 %token REC
@@ -127,7 +127,7 @@ exp: /* expressions */
 | simple_exp DOT LPAREN exp RPAREN LESS_MINUS exp
     { Put($1, $4, $7) }
 | exp SEMICOLON exp
-    { Let((Fid.genid (), Ftype.Unit), $1, $3) }
+    { Let((Id.genid (), Ftype.Unit), $1, $3) }
 | ARRAY_CREATE simple_exp simple_exp
     %prec prec_app
     { Array($2, $3) }

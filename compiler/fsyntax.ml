@@ -17,16 +17,16 @@ type t =
   | Eq of t * t
   | LE of t * t
   | If of t * t * t
-  | Let of (Fid.t * Ftype.t) * t * t
-  | Var of Fid.t
+  | Let of (Id.t * Ftype.t) * t * t
+  | Var of Id.t
   | LetRec of fundef * t
   | App of t * t list
   | Tuple of t list
-  | LetTuple of (Fid.t * Ftype.t) list * t * t
+  | LetTuple of (Id.t * Ftype.t) list * t * t
   | Array of t * t
   | Get of t * t
   | Put of t * t * t
-and fundef = { name : Fid.t * Ftype.t; args : (Fid.t * Ftype.t) list; body : t }
+and fundef = { name : Id.t * Ftype.t; args : (Id.t * Ftype.t) list; body : t }
 
 let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : string = 
     match l with 
@@ -54,18 +54,18 @@ let rec to_string exp =
   | If (e1, e2, e3) -> 
           sprintf "(if %s then %s else %s)" (to_string e1) (to_string e2) (to_string e3)   
   | Let ((id,t), e1, e2) -> 
-          sprintf "(let %s = %s in %s)" (Fid.to_string id) (to_string e1) (to_string e2)   
-  | Var id -> Fid.to_string id 
+          sprintf "(let %s = %s in %s)" (Id.to_string id) (to_string e1) (to_string e2)   
+  | Var id -> Id.to_string id 
   | App (e1, le2) -> sprintf "(%s %s)" (to_string e1) (infix_to_string to_string le2 " ") 
   | LetRec (fd, e) ->  
           sprintf "(let rec %s %s = %s in %s)" 
-          (let (x, _) = fd.name in (Fid.to_string x))
-          (infix_to_string (fun (x,_) -> (Fid.to_string x)) fd.args " ") 
+          (let (x, _) = fd.name in (Id.to_string x))
+          (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ") 
           (to_string fd.body)
           (to_string e)
   | LetTuple (l, e1, e2)-> 
           sprintf "(let (%s) = %s in %s)" 
-          (infix_to_string (fun (x, _) -> Fid.to_string x) l ", ")
+          (infix_to_string (fun (x, _) -> Id.to_string x) l ", ")
           (to_string e1)
           (to_string e2)
   | Get(e1, e2) -> sprintf "%s.(%s)" (to_string e1) (to_string e2)

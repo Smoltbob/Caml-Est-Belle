@@ -67,7 +67,7 @@ rule token = parse
 | ','
     { COMMA }
 | '_'
-    { IDENT(Fid.genid()) }
+    { IDENT(Id.genid()) }
 | "Array.create"
     { ARRAY_CREATE }
 | '.'

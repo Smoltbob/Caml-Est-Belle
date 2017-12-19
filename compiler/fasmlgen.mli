@@ -4,21 +4,21 @@ open Fclosure;;
 (* type t =
   | Int of int
   | Float of float
-  | Neg of Fid.t
-  | Fneg of Fid.t
-  | Fsub of Fid.t * Fid.t
-  | Fadd of Fid.t * Fid.t
-  | Fmul of Fid.t * Fid.t
-  | Fdiv of Fid.t * Fid.t
-  | Add of Fid.t * t
-  | Sub of Fid.t * t
-  | Var of Fid.t
-  | Eq of Fid.t * t
+  | Neg of Id.t
+  | Fneg of Id.t
+  | Fsub of Id.t * Id.t
+  | Fadd of Id.t * Id.t
+  | Fmul of Id.t * Id.t
+  | Fdiv of Id.t * Id.t
+  | Add of Id.t * t
+  | Sub of Id.t * t
+  | Var of Id.t
+  | Eq of Id.t * t
   | Nop
   (* NOP ? *)
 
 and asmt =
-    | Let of Fid.t * t * asmt
+    | Let of Id.t * t * asmt
     | Expression of t
     (* | Additional case for parenthesis ? Don't think so ? *)
 

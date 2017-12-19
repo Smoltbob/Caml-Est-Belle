@@ -5,20 +5,20 @@ open Bsyntax;; (* Type for the asml file *)
 (* type t =
   | Int of int
   | Float of float
-  | Neg of Fid.t
-  | Fneg of Fid.t
-  | Fsub of Fid.t * Fid.t
-  | Fadd of Fid.t * Fid.t
-  | Fmul of Fid.t * Fid.t
-  | Fdiv of Fid.t * Fid.t
-  | Add of Fid.t * t
-  | Sub of Fid.t * t
-  | Var of Fid.t
-  | Eq of Fid.t * t
+  | Neg of Id.t
+  | Fneg of Id.t
+  | Fsub of Id.t * Id.t
+  | Fadd of Id.t * Id.t
+  | Fmul of Id.t * Id.t
+  | Fdiv of Id.t * Id.t
+  | Add of Id.t * t
+  | Sub of Id.t * t
+  | Var of Id.t
+  | Eq of Id.t * t
   | Nop
 
 and asmt =
-    | Let of Fid.t * t * asmt
+    | Let of Id.t * t * asmt
     | Expression of t
     (* | Additional case for parenthesis ? Don't think so ? *)
 
@@ -60,6 +60,13 @@ let rec asml_exp (c:Fclosure.t) :asmt = match c with
     | Sub (x, a) -> (match x with (Var y) -> Expression (Sub (y, asml_t_triv a)))
     | Var x -> Expression (Var x)
     | Eq (x, a) -> (match x with (Var y) -> Expression (Eq (y, asml_t_triv a)))
+    | AppD (f, l) ->
+        (let rec trans (l:Fclosure.t list) :Bsyntax.formal_args = match l with
+            | [] -> []
+            | (Var x)::q -> (x:Id.t)::(trans q)
+            | _ -> failwith "not a list of variables. Maybe the argument is of type unit ?"
+        in
+        Expression (Call (f, trans l)))
 
 (* let rec asml_asmt c = match c with
     | Let (x, a, asmt) -> Let (fst x, asml_exp a, asml_asmt asmt)
@@ -72,7 +79,7 @@ let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
   | Unit -> "nop"
   (* | Bool b -> if b then "true" else "false" *)
   | Int i -> string_of_int i
-  | Var id -> Fid.to_string id
+  | Var id -> Id.to_string id
   (* | Let (x, a, b) -> sprintf *)
   | Add (e1, e2) -> sprintf "add %s %s \n" (closure_to_asmlstring e1) (closure_to_asmlstring e2)
   | Sub (e1, e2) -> sprintf "sub %s %s \n" (closure_to_asmlstring e1) (closure_to_asmlstring e2)
@@ -94,17 +101,17 @@ let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
   | IfLE (e1, e2, e3) ->
           sprintf "(if %s then %s else %s)" (closure_to_asmlstring e1) (closure_to_asmlstring e2) (closure_to_asmlstring e3)
   | Let ((id,t), e1, e2) ->
-          sprintf "(let %s = %s in %s)" (Fid.to_string id) (closure_to_asmlstring e1) (closure_to_asmlstring e2)
+          sprintf "(let %s = %s in %s)" (Id.to_string id) (closure_to_asmlstring e1) (closure_to_asmlstring e2)
   | App (e1, le2) -> sprintf "(%s %s)" (closure_to_asmlstring e1) (infix_to_string closure_to_asmlstring le2 " ")
   | LetRec (fd, e) ->
           sprintf "(let rec %s %s = %s in %s)"
-          (let (x, _) = fd.name in (Fid.to_string x))
-          (infix_to_string (fun (x,_) -> (Fid.to_string x)) fd.args " ")
+          (let (x, _) = fd.name in (Id.to_string x))
+          (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
           (closure_to_asmlstring fd.body)   (*CHANGE LATER*)
           (closure_to_asmlstring e)
   | LetTuple (l, e1, e2)->
           sprintf "(let (%s) = %s in %s)"
-          (infix_to_string (fun (x, _) -> Fid.to_string x) l ", ")
+          (infix_to_string (fun (x, _) -> Id.to_string x) l ", ")
           (closure_to_asmlstring e1)
           (closure_to_asmlstring e2)
   | Get(e1, e2) -> sprintf "%s.(%s)" (closure_to_asmlstring e1) (closure_to_asmlstring e2)

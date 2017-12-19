@@ -1,8 +1,8 @@
 type t =
 (* uncomment those lines when ready to create closures *)
-    (*| LetFclosure of (Fid.t * Ftype.t) * (Fid.l * Ftype.t) * t list*)
-    (* | AppD of (Fid.t * t list) *)
-    (*| AppC of (Fid.l * t list)*)
+    (*| LetFclosure of (Id.t * Ftype.t) * (Id.l * Ftype.t) * t list*)
+    (*| AppC of (Id.l * t list)*)
+    | AppD of (Id.t * t list)
     | Unit
     | Bool of bool
     | Int of int
@@ -18,21 +18,21 @@ type t =
     | FDiv of t * t
     | Eq of t * t
     | LE of t * t
-    | IfEq of Fid.t * Fid.t * t * t
-    | IfLE of Fid.t * Fid.t * t * t
+    | IfEq of Id.t * Id.t * t * t
+    | IfLE of Id.t * Id.t * t * t
     | IfBool of t * t * t
-    | Let of (Fid.t * Ftype.t) * t * t
-    | Var of Fid.t
+    | Let of (Id.t * Ftype.t) * t * t
+    | Var of Id.t
     | LetRec of fundef * t
     | Tuple of t list
-    | LetTuple of (Fid.t * Ftype.t) list * t * t
+    | LetTuple of (Id.t * Ftype.t) list * t * t
     | Array of t * t
     | Get of t * t
     | Put of t * t * t
 and fundef = {
-                name : Fid.t * Ftype.t;
-                args : (Fid.t * Ftype.t) list;
-                formal_fv : (Fid.t * Ftype.t) list;
+                name : Id.t * Ftype.t;
+                args : (Id.t * Ftype.t) list;
+                formal_fv : (Id.t * Ftype.t) list;
                 body : t
             }
 
@@ -65,11 +65,14 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     | Array (a, b) -> Array (clos_exp a, clos_exp b)
     | Get (a, b) -> Get (clos_exp a, clos_exp b)
     | Put (a, b, c) -> Put (clos_exp a, clos_exp b, clos_exp c)
+    (* TODO remove let later *)
     | Let (x, a, b) -> Let (x, clos_exp a, clos_exp b)
+    | App (f, l) -> match f with (Var id) -> AppD ("_"^id, List.map clos_exp l)
+    | _-> failwith "match not exhaustive in clos_exp fclosure.ml"
     (*/tmp*)
 
 (* Nested letrec have not been unnested yet (in reduction) *)
-(* let rec clos (k:Fknormal.t) :t = match k with
+let rec clos (k:Fknormal.t) :t = match k with
 (* We now consider that there are no free variable inside our nested letrecs *)
     | LetRec (fundef, t) ->
         let (fname, fargs, fbody) = (fundef.name, fundef.args, fundef.body) in
@@ -86,9 +89,10 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     | Let (x, a, b) -> (* lets have already been unnested *)
         match a with
         | LetRec (f, c) ->
-            LetRec ({name = f.name; args = f.args; formal_fv = []; body = (clos_exp f.body)},
-                    Let (x, c, b))
-        |_ -> *)
+            LetRec ({name = f.name; args = f.args; formal_fv = []; body = (clos_exp f.body)}, Let (x, clos c, clos b))
+        | _ -> Let (x, clos a, clos b) (* TODO we assume we can't have let ... in let ... let rec ... in in*)
+    | App (f, l) -> match f with (Var id) -> AppD ("_"^id, List.map clos_exp l)
+    | _ -> clos_exp k
 
     (* | App (f, l) ->
         let rec clos_args l = match l with
