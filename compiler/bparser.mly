@@ -99,12 +99,12 @@ exp:
 	   (Parsing.symbol_end ())) }
 
 formal_args:
+| NIL
+    { [] }
 | IDENT
     { [$1] }
 | IDENT formal_args
     { $1 :: $2 }
-| NIL
-    { [] }
 
 ident_or_imm:
 | INT

@@ -46,7 +46,7 @@ rule token = parse
     { CALL }
 | "nop" 
     { NOP }
-| "()" 
+| "()" | ""
     { NIL }
 | '_'
     { UNDERSC }

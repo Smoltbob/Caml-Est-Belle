@@ -16,8 +16,7 @@ type t =
   | Eq of Bid.t * t
   | Call of Bid.t * formal_args
   | Nop
-  (* NOP ? *)
-  (* Too allowing: should be ADD of Bid.t * imm (that can be float or int) *)
+
 and formal_args = Bid.t list
 
 and asmt =
@@ -34,8 +33,9 @@ type toplevel =
 
 let rec to_string_args argu =
     match argu with
-    | [] -> sprintf ""
-    | t::q -> sprintf "(%s %s)" t (to_string_args q) 
+    | [] -> ""
+    | [x] -> Bid.to_string x
+    | t::q -> sprintf "%s %s" t (to_string_args q) 
 
 let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : string =
     match l with
