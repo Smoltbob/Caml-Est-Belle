@@ -1,5 +1,8 @@
 # Caml-Est-Belle
 Private compiler project repository.</br>
+```diff
+- Please do not commit on master branch /compiler if it doesn't work :-(
+```
 Organization of the repository:</br>
 
 | Folder | Description |
