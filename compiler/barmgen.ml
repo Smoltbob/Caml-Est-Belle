@@ -1,6 +1,6 @@
 let print_arm l =
   let s = (Bparser.toplevel Blexer.token l) in
-  print_string (Barmgenerator.toplevel_to_arm s); print_newline ()
+  print_string (Barmspillgenerator.toplevel_to_arm s); print_newline ()
 
 let file f = 
     let inchan = open_in f in

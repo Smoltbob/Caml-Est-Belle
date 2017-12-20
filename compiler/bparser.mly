@@ -68,9 +68,9 @@ exp:
     { Var($1) }
 | LABEL
     { Var($1) } /* Make a special label function ? */
-| ADD IDENT ident_or_imm /* addition */
+| ADD IDENT IDENT /* addition */
     { Add($2, $3) }
-| SUB IDENT ident_or_imm
+| SUB IDENT IDENT
     { Sub($2, $3) }
 | CALL LABEL formal_args
     { Call($2, $3) }
