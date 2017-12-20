@@ -1,3 +1,5 @@
+open Fknormal;;
+
 type t =
 (* uncomment those lines when ready to create closures *)
     (*| LetFclosure of (Id.t * Ftype.t) * (Id.l * Ftype.t) * t list*)
@@ -67,7 +69,9 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     | Put (a, b, c) -> Put (clos_exp a, clos_exp b, clos_exp c)
     (* TODO remove let later *)
     | Let (x, a, b) -> Let (x, clos_exp a, clos_exp b)
-    | App (f, l) -> match f with (Var id) -> AppD ("_"^id, List.map clos_exp l)
+    | App (f, l) -> (match f with
+                        | (Var id) -> AppD ("_"^id, List.map clos_exp l)
+                        | _ -> failwith "matchfailure App")
     | _-> failwith "match not exhaustive in clos_exp fclosure.ml"
     (*/tmp*)
 
@@ -79,19 +83,24 @@ let rec clos (k:Fknormal.t) :t = match k with
             (match fbody with
             | LetRec (fundef2, t2) ->
                 let (newfundef : Fknormal.fundef) = {name = fname; args = fargs; body = t2} in
-                match (clos (LetRec (fundef2, Unit))) with
-                LetRec (f, _) ->
+                (match (clos (LetRec (fundef2, Unit))) with
+                | LetRec (f, _) ->
                     let newfundef2 = {name = f.name; args = f.args; formal_fv = []; body = (clos_exp t2)} in
                     LetRec (newfundef2, clos (LetRec (newfundef, t)))
+                | _ -> failwith "matchfailure Neg")
+            | _ -> failwith "matchfailure Neg")
+
             (* | Let (x, a, b) -> *)
-            )
+
     (* For now we assume there is no free variable so a let rec can't be after a let for now ? *)
     | Let (x, a, b) -> (* lets have already been unnested *)
-        match a with
+        (match a with
         | LetRec (f, c) ->
             LetRec ({name = f.name; args = f.args; formal_fv = []; body = (clos_exp f.body)}, Let (x, clos c, clos b))
-        | _ -> Let (x, clos a, clos b) (* TODO we assume we can't have let ... in let ... let rec ... in in*)
-    | App (f, l) -> match f with (Var id) -> AppD ("_"^id, List.map clos_exp l)
+        | _ -> Let (x, clos a, clos b)) (* TODO we assume we can't have let ... in let ... let rec ... in in*)
+    | App (f, l) -> (match f with
+                        | (Var id) -> AppD ("_"^id, List.map clos_exp l)
+                        | _ -> failwith "matchfailure Neg")
     | _ -> clos_exp k
 
     (* | App (f, l) ->

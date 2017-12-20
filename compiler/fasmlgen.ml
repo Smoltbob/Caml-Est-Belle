@@ -33,15 +33,32 @@ let rec asml_t_triv t = match t with
     | Unit -> Nop
     | Int a -> Int a
     | Float a -> Float a
-    | Neg x -> (match x with (Var y) -> Neg y)
-    | FNeg x -> (match x with (Var y) -> Fneg y)
-    | FSub (x, y) -> (match x, y with (Var x2, Var y2) -> Fsub (x2, y2))
-    | FAdd (x, y) -> (match x, y with (Var x2, Var y2) -> Fadd (x2, y2))
-    | FMul (x, y) -> (match x, y with (Var x2, Var y2) -> Fmul (x2, y2))
-    | FDiv (x, y) -> (match x, y with (Var x2, Var y2) -> Fdiv (x2, y2))
-    | Add (x, a) -> (match x with (Var y) -> Add (y, asml_t_triv a))
-    | Sub (x, a) -> (match x with (Var y) -> Sub (y, asml_t_triv a))
+    | Neg x -> (match x with
+                        | (Var y) -> Neg y
+                        | _ -> failwith "matchfailure Neg")
+    | FNeg x -> (match x with
+                        | (Var y) -> Fneg y
+                        | _ -> failwith "matchfailure FNeg")
+    | FSub (x, y) -> (match x, y with
+                        | (Var x2, Var y2) -> Fsub (x2, y2)
+                        | _ -> failwith "matchfailure FSub")
+    | FAdd (x, y) -> (match x, y with
+                        | (Var x2, Var y2) -> Fadd (x2, y2)
+                        | _ -> failwith "matchfailure FAdd")
+    | FMul (x, y) -> (match x, y with
+                        | (Var x2, Var y2) -> Fmul (x2, y2)
+                        | _ -> failwith "matchfailure FMul")
+    | FDiv (x, y) -> (match x, y with
+                        | (Var x2, Var y2) -> Fdiv (x2, y2)
+                        | _ -> failwith "matchfailure FDiv")
+    | Add (x, a) -> (match x with
+                        | (Var y) -> Add (y, asml_t_triv a)
+                        | _ -> failwith "matchfailure Add")
+    | Sub (x, a) -> (match x with
+                        | (Var y) -> Sub (y, asml_t_triv a)
+                        | _ -> failwith "matchfailure Sub")
     | Var x -> Var x
+    | _ -> failwith "asml_t_triv matchfailure"
 
 
 let rec asml_exp (c:Fclosure.t) :asmt = match c with
@@ -50,16 +67,34 @@ let rec asml_exp (c:Fclosure.t) :asmt = match c with
     | Unit -> Expression Nop
     | Int a -> Expression (Int a)
     | Float a -> Expression (Float a)
-    | Neg x -> (match x with (Var y) -> Expression (Neg y))
-    | FNeg x -> (match x with (Var y) -> Expression (Fneg y))
-    | FSub (x, y) -> (match x, y with (Var x2, Var y2) -> Expression (Fsub (x2, y2)))
-    | FAdd (x, y) -> (match x, y with (Var x2, Var y2) -> Expression (Fadd (x2, y2)))
-    | FMul (x, y) -> (match x, y with (Var x2, Var y2) -> Expression (Fmul (x2, y2)))
-    | FDiv (x, y) -> (match x, y with (Var x2, Var y2) -> Expression (Fdiv (x2, y2)))
-    | Add (x, a) -> (match x with (Var y) -> Expression (Add (y, asml_t_triv a)))
-    | Sub (x, a) -> (match x with (Var y) -> Expression (Sub (y, asml_t_triv a)))
+    | Neg x -> (match x with
+                        | (Var y) -> Expression (Neg y)
+                        | _ -> failwith "matchfailure Neg")
+    | FNeg x -> (match x with
+                        | (Var y) -> Expression (Fneg y)
+                        | _ -> failwith "matchfailure Neg")
+    | FSub (x, y) -> (match x, y with
+                        | (Var x2, Var y2) -> Expression (Fsub (x2, y2))
+                        | _ -> failwith "matchfailure FSub")
+    | FAdd (x, y) -> (match x, y with
+                        | (Var x2, Var y2) -> Expression (Fadd (x2, y2))
+                        | _ -> failwith "matchfailure FAdd")
+    | FMul (x, y) -> (match x, y with
+                        | (Var x2, Var y2) -> Expression (Fmul (x2, y2))
+                        | _ -> failwith "matchfailure FMul")
+    | FDiv (x, y) -> (match x, y with
+                        | (Var x2, Var y2) -> Expression (Fdiv (x2, y2))
+                        | _ -> failwith "matchfailure FDiv")
+    | Add (x, a) -> (match x with
+                        | (Var y) -> Expression (Add (y, asml_t_triv a))
+                        | _ -> failwith "matchfailure Add")
+    | Sub (x, a) -> (match x with
+                        | (Var y) -> Expression (Sub (y, asml_t_triv a))
+                        | _ -> failwith "matchfailure Sub")
     | Var x -> Expression (Var x)
-    | Eq (x, a) -> (match x with (Var y) -> Expression (Eq (y, asml_t_triv a)))
+    | Eq (x, a) -> (match x with
+                        | (Var y) -> Expression (Eq (y, asml_t_triv a))
+                        | _ -> failwith "matchfailure Eq")
     | AppD (f, l) ->
         (let rec trans (l:Fclosure.t list) :Bsyntax.formal_args = match l with
             | [] -> []
@@ -67,6 +102,7 @@ let rec asml_exp (c:Fclosure.t) :asmt = match c with
             | _ -> failwith "not a list of variables. Maybe the argument is of type unit ?"
         in
         Expression (Call (f, trans l)))
+    | _ -> failwith "asml_exp matchfailure"
 
 (* let rec asml_asmt c = match c with
     | Let (x, a, asmt) -> Let (fst x, asml_exp a, asml_asmt asmt)
