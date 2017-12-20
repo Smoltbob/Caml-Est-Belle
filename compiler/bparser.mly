@@ -64,30 +64,14 @@ exp:
     { $2 }
 | INT
     { Int($1) }
-| FLOAT
-    { Float($1) }
 | IDENT
     { Var($1) }
 | LABEL
     { Var($1) } /* Make a special label function ? */
-| NEG IDENT
-    { Neg($2) }
-| FNEG IDENT
-    { Fneg($2) }
-| FADD IDENT IDENT
-    { Fadd($2, $3) }
-| FSUB IDENT IDENT
-    { Fsub($2, $3) }
-| FMUL IDENT IDENT
-    { Fmul($2, $3) }
-| FDIV IDENT IDENT
-    { Fdiv($2, $3) }
 | ADD IDENT ident_or_imm /* addition */
     { Add($2, $3) }
 | SUB IDENT ident_or_imm
     { Sub($2, $3) }
-| EQUAL IDENT ident_or_imm
-    { Eq($2, $3) }
 | CALL LABEL formal_args
     { Call($2, $3) }
 | NOP

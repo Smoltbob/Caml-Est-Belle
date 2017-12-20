@@ -6,12 +6,12 @@ type t =
   | Float of float
   | Neg of Id.t
   | Fneg of Id.t
-  | Fsub of Id.t * Id.t
-  | Fadd of Id.t * Id.t
-  | Fmul of Id.t * Id.t
-  | Fdiv of Id.t * Id.t
-  | Add of Id.t * Id.t
-  | Sub of Id.t * Id.t
+  | Fsub of Id.t * t
+  | Fadd of Id.t * t
+  | Fmul of Id.t * t
+  | Fdiv of Id.t * t
+  | Add of Id.t * t
+  | Sub of Id.t * t
   | Var of Id.t
   | Eq of Id.t * t
   | Call of Id.t * formal_args
