@@ -10,8 +10,8 @@ type t =
   | Fadd of Bid.t * Bid.t
   | Fmul of Bid.t * Bid.t
   | Fdiv of Bid.t * Bid.t
-  | Add of Bid.t * t
-  | Sub of Bid.t * t
+  | Add of Bid.t * Bid.t
+  | Sub of Bid.t * Bid.t
   | Var of Bid.t
   | Eq of Bid.t * t
   | Call of Bid.t * formal_args
@@ -43,6 +43,7 @@ let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : stri
     | [x] -> to_s x
     | hd :: tl -> (to_s hd) ^ op ^ (infix_to_string to_s tl op)
 
+ (*   
 let rec to_string exp =
     match exp with
   | Int i -> string_of_int i
@@ -77,7 +78,7 @@ let rec print_list_idx l i =
    match i with
     | i when i = 0 -> sprintf "%s" (Bid.to_string (hd l))
     | _ -> print_list_idx (tl l) (i - 1) 
-
+*)
 (* Bellow : WIP ARM generation *)
 (* Put this in a new file ? *)
 (* Handle return values ? *)

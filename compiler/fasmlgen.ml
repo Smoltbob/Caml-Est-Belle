@@ -39,8 +39,8 @@ let rec asml_t_triv t = match t with
     | FAdd (x, y) -> (match x, y with (Var x2, Var y2) -> Fadd (x2, y2))
     | FMul (x, y) -> (match x, y with (Var x2, Var y2) -> Fmul (x2, y2))
     | FDiv (x, y) -> (match x, y with (Var x2, Var y2) -> Fdiv (x2, y2))
-    | Add (x, a) -> (match x with (Var y) -> Add (y, asml_t_triv a))
-    | Sub (x, a) -> (match x with (Var y) -> Sub (y, asml_t_triv a))
+    | Add (x, a) -> (match x with (Var y) -> match a with (Var z) -> Add (y, z))
+    | Sub (x, a) -> (match x with (Var y) -> match a with (Var z) -> Sub (y, z))
     | Var x -> Var x
 
 
@@ -56,8 +56,8 @@ let rec asml_exp (c:Fclosure.t) :asmt = match c with
     | FAdd (x, y) -> (match x, y with (Var x2, Var y2) -> Expression (Fadd (x2, y2)))
     | FMul (x, y) -> (match x, y with (Var x2, Var y2) -> Expression (Fmul (x2, y2)))
     | FDiv (x, y) -> (match x, y with (Var x2, Var y2) -> Expression (Fdiv (x2, y2)))
-    | Add (x, a) -> (match x with (Var y) -> Expression (Add (y, asml_t_triv a)))
-    | Sub (x, a) -> (match x with (Var y) -> Expression (Sub (y, asml_t_triv a)))
+    | Add (x, a) -> (match x with (Var y) -> match a with (Var z) -> Expression (Add (y, z)))
+    | Sub (x, a) -> (match x with (Var y) -> match a with (Var z) -> Expression (Sub (y, z)))
     | Var x -> Expression (Var x)
     | Eq (x, a) -> (match x with (Var y) -> Expression (Eq (y, asml_t_triv a)))
 
