@@ -51,10 +51,10 @@ let rec asml_t_triv t = match t with
     | FDiv (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Fdiv (x2, y2)
                         | _ -> failwith "matchfailure FDiv")
-    | Add (x, a) -> (match x, y with
+    | Add (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Add (x2, y2)
                         | _ -> failwith "matchfailure Add")
-    | Sub (x, a) -> (match x, y with
+    | Sub (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Sub (x2, y2)
                         | _ -> failwith "matchfailure Sub")
     | Var x -> Var x
@@ -85,10 +85,10 @@ let rec asml_exp (c:Fclosure.t) :asmt = match c with
     | FDiv (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Expression (Fdiv (x2, y2))
                         | _ -> failwith "matchfailure FDiv")
-    | Add (x, a) -> (match x, y with
+    | Add (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Expression (Add (x2, y2))
                         | _ -> failwith "matchfailure Add")
-    | Sub (x, a) -> (match x, y with
+    | Sub (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Expression (Sub (x2, y2))
                         | _ -> failwith "matchfailure Sub")
     | Var x -> Expression (Var x)
