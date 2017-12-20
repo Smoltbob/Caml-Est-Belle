@@ -7,7 +7,7 @@ let frame_index = ref 0
 
 (* WIP ARM generation *)
 
-let frame_position operand =
+let frame_position variable_name =
 	if (not (Hashtbl.mem vartbl_s variable_name)) then
         begin
 		    frame_index := !frame_index + 4;
@@ -39,7 +39,7 @@ let rec exp_to_arm exp dest =
     | Add (e1, e2)  -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tadd r6, r4, r5\n\tstr r6, [fp, #%i]\n\n" (frame_position e1) (frame_position e2) (frame_position dest)
     | Sub (e1, e2) -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tsub r6, r4, r5\n\tstr r6, [fp, #%i]\n\n" (frame_position e1) (frame_position e2) (frame_position dest)
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))
-    | Nop -> sprintf "\tnop"
+    | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
 (* OK *)
