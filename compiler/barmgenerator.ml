@@ -37,10 +37,9 @@ let to_register variable_name =
 let rec movegen l i =
     match l with
         | [] -> sprintf ""
-        | t::q -> sprintf "MOV r%s, %s\n%s" (string_of_int i) (to_register t) (movegen q (i + 1))
+        | t::q -> sprintf "mov r%s, %s\n%s" (string_of_int i) (to_register t) (movegen q (i + 1))
 
-let recto_arm_formal_args args =
-
+let rec to_arm_formal_args args =
     (* if len(args) <= 4:
         * for i in range(len(args)):
             * print mov rito_string(args[i])*)
@@ -59,12 +58,18 @@ let rec ident_or_imm_expression_to_arm ident_or_imm =
 (* OK *)
 let rec exp_to_arm exp dest =
     match exp with
-    | Int i -> sprintf "\tMOV %s, #%s\n" (to_register dest) (string_of_int i)
-    | Var id -> sprintf "\tMOV %s, %s\n" (to_register dest) (to_register id)
-    | Add (e1, e2) -> sprintf "\tADD %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2)
-    | Sub (e1, e2) -> sprintf "\tSUB %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2)
-    (*| Call (l1, a1) -> let l = (to_string l1) in sprintf "%sBL %s" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))*)
-    | Nop -> sprintf "\tNOP"
+    | Int i -> sprintf "mov %s, #%s\n" (to_register dest) (string_of_int i)
+    | Var id -> sprintf "mov %s, %s\n" (to_register dest) (to_register id)
+    | Add (e1, e2) -> (match dest with 
+                    | "" -> sprintf "add r0, %s, %s\n" (to_register e1) (ident_or_imm_expression_to_arm e2)
+                    | _ -> sprintf "add %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2))
+    | Sub (e1, e2) -> (match dest with
+                    | "" -> sprintf "add r0, %s, %s\n" (to_register e1) (ident_or_imm_expression_to_arm e2)
+                    | _ -> sprintf "add %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2))
+    | Call (l1, a1) -> (match dest with
+                    | "" ->let l = (Id.to_string l1) in sprintf "%sBL %s\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))
+                    | _ ->let l = (Id.to_string l1) in sprintf "%sBL %s\nmov %s, r0\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1)) (to_register dest))
+    | Nop -> sprintf "nop\n"
 	| _ -> failwith "matchfailure in barmgenerator"
 
 (* OK *)
@@ -82,4 +87,4 @@ let rec fundef_to_arm fundef =
 (* OK *)
 let rec toplevel_to_arm toplevel =
     match toplevel with
-    | Fundefs f -> sprintf ".text\n.global _start\n_start:\n%s\n\tBL min_caml_exit\n" (fundef_to_arm (List.hd f))
+    | Fundefs f -> sprintf ".text\n.global _start\n_start:\n%sBL min_caml_exit" (fundef_to_arm (List.hd f))

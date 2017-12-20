@@ -10,12 +10,16 @@ type t =
   | Fadd of Id.t * Id.t
   | Fmul of Id.t * Id.t
   | Fdiv of Id.t * Id.t
-  | Add of Id.t * Id.t
-  | Sub of Id.t * Id.t
+  | Add of Id.t * ident_or_imm
+  | Sub of Id.t * ident_or_imm
   | Var of Id.t
   | Eq of Id.t * t
   | Call of Id.t * formal_args
   | Nop
+
+and ident_or_imm =
+    | Int of int
+    | Var of Id.t
 
 and formal_args = Id.t list
 

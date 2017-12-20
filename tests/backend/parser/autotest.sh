@@ -12,7 +12,7 @@ verb=0
 # -v alone (verbose)
 # -d with an argument (folder)
 # -p with an argument (executable)
-while getopts "vd:p:" opt; do
+while getopts "vd:p:t:" opt; do
     case "$opt" in
         v)
             verb=1
@@ -23,7 +23,10 @@ while getopts "vd:p:" opt; do
         p)
             prog="./$OPTARG"
             ;;
-        *) echo "Options : -v [verbose] -d [asml files directory]"
+        t)  
+            typ=$OPTARG
+            ;;
+        *) echo "Options : -v [verbose] -d [asml files directory] -t [type]"
             exit 0
             ;;
     esac
@@ -46,7 +49,7 @@ for file in "$folder"/*.asml; do
         echo ""
     fi
     # Printing the expected output
-    EXP=$(cat "$folder"/"$filename".exp)
+    EXP=$(cat "$folder"/expected_$typ/"$filename".exp)
     if [[ $verb = 1 ]]; then
         echo -e "\e[35mExpected :$EXP\e[0m"
         echo ""
