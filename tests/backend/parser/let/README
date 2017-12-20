@@ -4,4 +4,13 @@ They have the form of :
 Let _ =
     Let Id = exp in ...
 
+With several exp and some nesting.
 
+We have exp = 
+nop
+LPAREN exp RPAREN
+INT
+IDENT
+LABEL
+ADD IDENT ident_or_imm
+SUB IDENT ident_or_imm
