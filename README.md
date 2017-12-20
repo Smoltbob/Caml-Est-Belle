@@ -6,6 +6,9 @@ Private compiler project repository.</br>
 - "master branch passes all tests" should be an invariant.
 + Thanks!
 ```
+
+**Feel free to read the [wiki](https://github.com/Smoltbob/Caml-Est-Belle/wiki) for more documentation.**
+
 Organization of the repository:</br>
 
 | Folder | Description |
