@@ -15,13 +15,13 @@ let frame_position variable_name =
         end;
     Hashtbl.find vartbl_s variable_name
 
-(*
+
 let rec movegen l i =
     match l with
         | [] -> sprintf ""
-        | t::q -> sprintf "MOV r%s, %s\n%s" (string_of_int i) (to_register t) (movegen q (i + 1))
+        | t::q -> sprintf "\tldr r4, [fp, #%i]\n\tmov r%i, r4\n%s" (frame_position t) i (movegen q (i + 1))
 
-let recto_arm_formal_args args =
+let rec to_arm_formal_args args =
     
     (* if len(args) <= 4:
         * for i in range(len(args)):
@@ -30,15 +30,15 @@ let recto_arm_formal_args args =
     | [] -> sprintf ""
     | l when (List.length l <= 4) -> movegen l 0
     | t::q -> sprintf "%s %s" t (to_string_args q) 
-*)    
+
 (* OK *)
 let rec exp_to_arm exp dest =
     match exp with
     | Int i -> sprintf "\tmov r4, #%s\n\tstr r4, [fp, #%i]\n" (string_of_int i) (frame_position dest)
-    | Var id -> sprintf "\tldr r4, [fp, #%i]\n\tmov r5, r4\nstr r5, [fp, #%i]\n" (frame_position id) (frame_position dest)
+    | Var id -> sprintf "\tldr r4, [fp, #%i]\n\tmov r5, r4\n\tstr r5, [fp, #%i]\n" (frame_position id) (frame_position dest)
     | Add (e1, e2) -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tadd r6, r4, r5\n\tstr r6, [fp, #%i]\n" (frame_position e1) (frame_position e2) (frame_position dest)
     | Sub (e1, e2) -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tsub r6, r4, r5\n\tstr r6, [fp, #%i]\n" (frame_position e1) (frame_position e2) (frame_position dest)
-    (*| Call (l1, a1) -> let l = (to_string l1) in sprintf "%sBL %s" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))*)
+    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))
     | Nop -> sprintf "\tnop"
 
 (* OK *)
@@ -56,4 +56,4 @@ let rec fundef_to_arm fundef =
 (* OK *)
 let rec toplevel_to_arm toplevel =
     match toplevel with
-    | Fundefs f -> sprintf ".text\n.global _start\n_start:\n%s\n\tbl min_caml_exit\n" (fundef_to_arm (List.hd f))
+    | Fundefs f -> sprintf ".text\n.global _start\n_start:\n\tmov fp, sp\n%s\n\tbl min_caml_exit\n" (fundef_to_arm (List.hd f))
