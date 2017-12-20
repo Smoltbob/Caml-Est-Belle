@@ -45,12 +45,16 @@ let rec exp_to_arm exp dest =
     match exp with
     | Int i -> sprintf "mov %s, #%s\n" (to_register dest) (string_of_int i)
     | Var id -> sprintf "mov %s, %s\n" (to_register dest) (to_register id)
-    | Add (e1, e2) -> sprintf "add %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2)
-    | Sub (e1, e2) -> sprintf "sub %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2)
+    | Add (e1, e2) -> (match dest with 
+                    | "" -> sprintf "add r0, %s, %s\n" (to_register e1) (ident_or_imm_expression_to_arm e2)
+                    | _ -> sprintf "add %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2))
+    | Sub (e1, e2) -> (match dest with
+                    | "" -> sprintf "add r0, %s, %s\n" (to_register e1) (ident_or_imm_expression_to_arm e2)
+                    | _ -> sprintf "add %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2))
     | Call (l1, a1) -> (match dest with
-                        | "" ->let l = (Id.to_string l1) in sprintf "%sBL %s\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))
-                        | _ ->let l = (Id.to_string l1) in sprintf "%sBL %s\nmov %s, r0\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1)) (to_register dest))
-    | Nop -> sprintf "nop"
+                    | "" ->let l = (Id.to_string l1) in sprintf "%sBL %s\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))
+                    | _ ->let l = (Id.to_string l1) in sprintf "%sBL %s\nmov %s, r0\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1)) (to_register dest))
+    | Nop -> sprintf "nop\n"
 	| _ -> failwith "matchfailure in barmgenerator"
 
 (* OK *)
