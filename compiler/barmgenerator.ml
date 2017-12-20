@@ -50,6 +50,7 @@ let rec exp_to_arm exp dest =
     | Sub (e1, e2) -> sprintf "\tSUB %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2)
     (*| Call (l1, a1) -> let l = (to_string l1) in sprintf "%sBL %s" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))*)
     | Nop -> sprintf "\tNOP"
+	| _ -> failwith "matchfailure in barmgenerator"
 
 (* OK *)
 let rec asmt_to_arm asm =

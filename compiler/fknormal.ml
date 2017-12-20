@@ -141,6 +141,7 @@ let rec knormal (ast:Fsyntax.t) : t =
     |Let (a, b, c) -> Let (a, knormal b, knormal c) (*OK*)
     (*tmp*)
     |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b)
+    (* | _ -> failwith "fknormal matchfailure" *)
     (*/tmp*)
 
 let rec k_to_string (exp:t) : string =
@@ -186,3 +187,4 @@ let rec k_to_string (exp:t) : string =
   | Tuple(l) -> sprintf "(%s)" (infix_to_string k_to_string l ", ")
   | Array(e1,e2) -> sprintf "(Array.create %s %s)"
        (k_to_string e1) (k_to_string e2)
+  (* | _ -> failwith "fknormal matchfailure" *)

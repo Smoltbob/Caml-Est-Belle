@@ -7,8 +7,6 @@ let output_file = ref "a.out"
 
 let print_asml l =
     let s = (Fparser.exp Flexer.token l) in
-    (* print_string (Fknormal.k_to_string (Fknormal.knormal s)); print_newline () *)
-    (* print_string (Fknormal.k_to_string (Freduction.reduc (Fknormal.knormal s))); print_newline () *)
     (* print_string (Fasmlgen.closure_to_asmlstring_main (Fclosure.clos (Freduction.reduc (Fknormal.knormal s)))); print_newline () *)
     let prog = Fasmlgen.asml_head (Fclosure.clos_exp (Freduction.reduc (Fknormal.knormal s))) in
     (*Bbasicregist.regist prog vartbl_r;*)
