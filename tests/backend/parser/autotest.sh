@@ -60,5 +60,4 @@ for file in "$folder"/*.asml; do
     else 
         echo -e "\e[7mResult\e[27m \e[31mKO\e[0m"
     fi
-    echo "*********"
 done
