@@ -35,7 +35,7 @@ let recto_arm_formal_args args =
     | t::q -> sprintf "%s %s" t (to_string_args q)
 
 (* Useless ? *)
-let rec ident_or_imm_expressionto_arm ident_or_imm =
+let rec ident_or_imm_expression_to_arm ident_or_imm =
     match ident_or_imm with
     | Int i -> sprintf "#%s" (string_of_int i)
     | Var id -> sprintf "%s" (to_register id)
@@ -46,8 +46,8 @@ let rec exp_to_arm exp dest =
     match exp with
     | Int i -> sprintf "\tMOV %s, #%s\n" (to_register dest) (string_of_int i)
     | Var id -> sprintf "\tMOV %s, %s\n" (to_register dest) (to_register id)
-    | Add (e1, e2) -> sprintf "\tADD %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expressionto_arm e2)
-    | Sub (e1, e2) -> sprintf "\tSUB %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expressionto_arm e2)
+    | Add (e1, e2) -> sprintf "\tADD %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2)
+    | Sub (e1, e2) -> sprintf "\tSUB %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2)
     (*| Call (l1, a1) -> let l = (to_string l1) in sprintf "%sBL %s" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))*)
     | Nop -> sprintf "\tNOP"
 	| _ -> failwith "matchfailure in barmgenerator"

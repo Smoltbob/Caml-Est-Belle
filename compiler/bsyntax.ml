@@ -10,8 +10,8 @@ type t =
   | Fadd of Id.t * Id.t
   | Fmul of Id.t * Id.t
   | Fdiv of Id.t * Id.t
-  | Add of Id.t * t
-  | Sub of Id.t * t
+  | Add of Id.t * Id.t
+  | Sub of Id.t * Id.t
   | Var of Id.t
   | Eq of Id.t * t
   | Call of Id.t * formal_args
@@ -43,6 +43,7 @@ let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : stri
     | [x] -> to_s x
     | hd :: tl -> (to_s hd) ^ op ^ (infix_to_string to_s tl op)
 
+ (*   
 let rec to_string exp =
     match exp with
   | Int i -> string_of_int i
@@ -76,8 +77,8 @@ let rec to_string_top top =
 let rec print_list_idx l i =
    match i with
     | i when i = 0 -> sprintf "%s" (Id.to_string (hd l))
-    | _ -> print_list_idx (tl l) (i - 1)
-
+    | _ -> print_list_idx (tl l) (i - 1) 
+*)
 (* Bellow : WIP ARM generation *)
 (* Put this in a new file ? *)
 (* Handle return values ? *)
