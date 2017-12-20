@@ -1,16 +1,28 @@
+(** This file is to generate arm code from Bsyntax.toplevel stutructure*)
 open Bsyntax;;
 open Printf;;
 
+(** the number of free registers *)
 let register_nb = 12
+
+(** A hashtable: the keys are the name of variables and the contant of each key is a tuple (bool, int), if bool is equal to "true", then the variable is in the register and the int is the index of register, else the variable is in the memory, the int is the address . *)
 let vartbl_r = Hashtbl.create register_nb
+
+(** register counter *)
 let register_i = ref 3
 
+(** This function is to load a register for variable x and update the vartbl_r
+* @param x: the variable name in type id.t
+* @return : unit *)
 let registVar x =
 	if (not (Hashtbl.mem vartbl_r x)) then
 		register_i := !register_i + 1;
 		Hashtbl.add vartbl_r x (true, !register_i)
 (* WIP ARM generation *)
 
+(** This function is to get the register associated with variable_name according to the index of register in vartbl_r,
+* @param variable_name: the variable name in type id.t
+* @return : string "Ri" *)
 let to_register variable_name =
     registVar variable_name;
     let is_in_register, register_id = Hashtbl.find vartbl_r variable_name in
@@ -19,6 +31,9 @@ let to_register variable_name =
     else
         failwith "Error while allocating a register"
 
+(** This function is to get the register associated with variable_name according to the index of register in vartbl_r,
+* @param variable_name: the variable name in type id.t
+* @return : string "Ri" *)
 let rec movegen l i =
     match l with
         | [] -> sprintf ""
