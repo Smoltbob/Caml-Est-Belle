@@ -1,9 +1,0 @@
-In this tests we check the external function calls.
-We have several types of external function calls.
-
-- no parameters and no return value
-- a return value
-- less than 5 parameters (we put them in registers r0 -> r3)
-- more than 4 parameters (we have to put the rest in the stack) - Not implemented right now.
-
-

@@ -1,7 +1,16 @@
+(** This module is used to test the backend only. It takes an .asml file as input, parses it and returns ARM code
+ *)
+
+(** Calls toplevel_to_arm on the ast of an asml program to generate ARM code.
+ @param l The output of the lexer for the program
+ *)
 let print_arm l =
   let s = (Bparser.toplevel Blexer.token l) in
+  (*print_string (Barmspillgenerator.toplevel_to_arm s); print_newline ()*)
   print_string (Barmgenerator.toplevel_to_arm s); print_newline ()
 
+(** Opens the *.asml file and parses it in order to generate ARM 
+    @param f The *.asml file *)
 let file f = 
     let inchan = open_in f in
     try

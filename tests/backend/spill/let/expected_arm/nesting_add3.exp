@@ -1,0 +1,7 @@
+.text
+.global _start
+_start:
+add R5, R5, #1
+ add R5, R5, #1
+ add r0, R5, R4
+BL min_caml_exit

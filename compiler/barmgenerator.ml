@@ -54,7 +54,6 @@ let rec to_arm_formal_args args =
     | l when (List.length l <= 4) -> movegen l 0
     | t::q -> sprintf "%s %s" t (to_string_args q) 
 
-(** *)
 (* Useless ? *)
 let rec ident_or_imm_expression_to_arm ident_or_imm =
     match ident_or_imm with
@@ -68,11 +67,11 @@ let rec exp_to_arm exp dest =
     | Int i -> sprintf "mov %s, #%s\n" (to_register dest) (string_of_int i)
     | Var id -> sprintf "mov %s, %s\n" (to_register dest) (to_register id)
     | Add (e1, e2) -> (match dest with 
-                    | "" -> sprintf "add r0, %s, %s\n" (to_register e1) (ident_or_imm_expression_to_arm e2)
-                    | _ -> sprintf "add %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2))
+                    | "" -> sprintf "add r0, %s, %s\n" (to_register e1) (to_register e2)
+                    | _ -> sprintf "add %s, %s, %s\n" (to_register dest) (to_register e1) (to_register e2))
     | Sub (e1, e2) -> (match dest with
-                    | "" -> sprintf "add r0, %s, %s\n" (to_register e1) (ident_or_imm_expression_to_arm e2)
-                    | _ -> sprintf "add %s, %s, %s\n" (to_register dest) (to_register e1) (ident_or_imm_expression_to_arm e2))
+                    | "" -> sprintf "add r0, %s, %s\n" (to_register e1) (to_register e2)
+                    | _ -> sprintf "add %s, %s, %s\n" (to_register dest) (to_register e1) (to_register e2))
     | Call (l1, a1) -> (match dest with
                     | "" ->let l = (Id.to_string l1) in sprintf "%sBL %s\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))
                     | _ ->let l = (Id.to_string l1) in sprintf "%sBL %s\nmov %s, r0\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1)) (to_register dest))

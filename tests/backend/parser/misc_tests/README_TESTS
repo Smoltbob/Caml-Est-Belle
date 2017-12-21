@@ -1,8 +1,0 @@
-test 1 : fundef -> exp -> int
-test 2 : fundef -> LET IDENT EQUAL exp IN
-test 3 : fundef -> exp -> add 
-test 4 : fundef -> exp -> add | sub
-test 5 : fundef -> LET IDENT EQUAL exp IN asmt
-test 5 : fundef -> exp -> add | sub
-test 6 : test 5 with float
-test 7 : should not work (float in add)
