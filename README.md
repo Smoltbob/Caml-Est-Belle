@@ -16,6 +16,7 @@ Organization of the repository:</br>
 | __ARM/__ | arm source example and compilation with libmincaml |
 | __asml/__ | asml examples |
 | __compiler/__ | compiler source files |
+| __compiler\_very\_basic/__ | very basic compiler with only very basic register allocation |
 | __doc/__ | all the documentation, start with index.html |
 | __mincaml/__ | MinCaml examples |
 | __ocaml/__ | MinCaml parser in OCaml |
