@@ -1,0 +1,4 @@
+let _ = 
+    let x = 2 in
+    let y = sub z 2 in
+    nop
