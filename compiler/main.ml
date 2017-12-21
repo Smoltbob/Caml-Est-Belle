@@ -2,7 +2,7 @@ let display_version = ref false
 let type_check_only = ref false
 let parse_only = ref false
 let asml_only = ref false
-let version = ref "Version: Tasty Reblochon"
+let version = ref "Version: Fancy Camembert"
 let output_file = ref "a.out"
 (**
 module

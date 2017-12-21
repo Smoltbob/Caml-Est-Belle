@@ -1,4 +1,6 @@
 open Fknormal;;
+open Fsyntax;;
+open Printf;;
 
 type t =
 (* uncomment those lines when ready to create closures *)
@@ -149,3 +151,47 @@ let clos_out k = clos_exp (clos k)
 (*
 let rec clos_toplevel k = match k with
     | -> Toplevel (clos l) *)
+
+let rec clos_to_string (c:t) : string =
+    match c with
+  | Unit -> "()"
+  | Bool b -> if b then "true" else "false"
+  | Int i -> string_of_int i
+  | Float f -> sprintf "%.2f" f
+  | Not e -> sprintf "(not %s)" (clos_to_string e)
+  | Neg e -> sprintf "(- %s)" (clos_to_string e)
+  | Add (e1, e2) -> sprintf "(%s + %s)" (clos_to_string e1) (clos_to_string e2)
+  | Sub (e1, e2) -> sprintf "(%s - %s)" (clos_to_string e1) (clos_to_string e2)
+  | FNeg e -> sprintf "(-. %s)" (clos_to_string e)
+  | FAdd (e1, e2) -> sprintf "(%s +. %s)" (clos_to_string e1) (clos_to_string e2)
+  | FSub (e1, e2) -> sprintf "(%s -. %s)" (clos_to_string e1) (clos_to_string e2)
+  | FMul (e1, e2) -> sprintf "(%s *. %s)" (clos_to_string e1) (clos_to_string e2)
+  | FDiv (e1, e2) -> sprintf "(%s /. %s)" (clos_to_string e1) (clos_to_string e2)
+  | Eq (e1, e2) -> sprintf "(%s = %s)" (clos_to_string e1) (clos_to_string e2)
+  | LE (e1, e2) -> sprintf "(%s <= %s)" (clos_to_string e1) (clos_to_string e2)
+  | IfEq (x, y, e2, e3) ->
+          sprintf "(if %s=%s then %s else %s)" (Id.to_string x) (Id.to_string y) (clos_to_string e2) (clos_to_string e3)
+  | IfLE (x, y, e2, e3) ->
+          sprintf "(if %s <= %s then %s else %s)" (Id.to_string x) (Id.to_string y) (clos_to_string e2) (clos_to_string e3)
+  | Let ((id,t), e1, e2) ->
+          sprintf "(let %s = %s in %s)" (Id.to_string id) (clos_to_string e1) (clos_to_string e2)
+  | Var id -> Id.to_string id
+  | AppD (e1, le2) -> sprintf "(%s %s)" (Id.to_string e1) (infix_to_string clos_to_string le2 " ")
+  | LetRec (fd, e) ->
+          sprintf "(let rec %s %s = %s in %s)"
+          (let (x, _) = fd.name in (Id.to_string x))
+          (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
+          (clos_to_string fd.body)
+          (clos_to_string e)
+  | LetTuple (l, e1, e2)->
+          sprintf "(let (%s) = %s in %s)"
+          (infix_to_string (fun (x, _) -> Id.to_string x) l ", ")
+          (clos_to_string e1)
+          (clos_to_string e2)
+  | Get(e1, e2) -> sprintf "%s.(%s)" (clos_to_string e1) (clos_to_string e2)
+  | Put(e1, e2, e3) -> sprintf "(%s.(%s) <- %s)"
+                 (clos_to_string e1) (clos_to_string e2) (clos_to_string e3)
+  | Tuple(l) -> sprintf "(%s)" (infix_to_string clos_to_string l ", ")
+  | Array(e1,e2) -> sprintf "(Array.create %s %s)"
+       (clos_to_string e1) (clos_to_string e2)
+   | _-> "NotYetImplemented"

@@ -125,14 +125,14 @@ let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
     (* | Let (x, a, b) -> sprintf *)
     | Add (e1, e2) -> sprintf "add %s %s \n" (closure_to_asmlstring e1) (closure_to_asmlstring e2)
     | Sub (e1, e2) -> sprintf "sub %s %s \n" (closure_to_asmlstring e1) (closure_to_asmlstring e2)
-    | Let ((id,t), e1, e2) -> sprintf "(let %s = %s in\n %s)"
+    | Let ((id,t), e1, e2) -> sprintf "let %s = %s in\n %s"
         (Id.to_string id)
         (closure_to_asmlstring e1)
         (closure_to_asmlstring e2)
-    | AppD (f, args) -> sprintf "Call (%s) %s\n"
+    | AppD (f, args) -> sprintf "Call %s %s\n"
         (f)
         (infix_to_string closure_to_asmlstring args " ")
-    | LetRec (fd, e) -> sprintf "(let rec %s %s = %s in\n %s)"
+    | LetRec (fd, e) -> sprintf "let rec %s %s =\n %s in\n %s"
         (let (x, _) = fd.name in (Id.to_string x))
         (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
         (closure_to_asmlstring fd.body)   (*CHANGE LATER*)

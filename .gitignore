@@ -6,10 +6,14 @@ min-ml
 *.pdf
 asmlparse
 *.swp
+backend/asml_parser
 armgen
 *.o
 *.s
 *.arm
 *.elf
 *.out
-
+*.html
+*.stamp
+*.swo
+*.docdir
