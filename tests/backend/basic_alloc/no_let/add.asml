@@ -1,3 +1,0 @@
-let _ = 
-    add x x
-    add x 1

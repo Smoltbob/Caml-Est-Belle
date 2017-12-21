@@ -20,6 +20,7 @@ echo:
 
 clean:
 	rm *.arm
+	rm *.o
 
 test: ${PRG}
 	@for p in ${PRG} ; do \

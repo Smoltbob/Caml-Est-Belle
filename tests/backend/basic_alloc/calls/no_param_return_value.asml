@@ -1,3 +1,0 @@
-let _ =
-    let x = _function in
-    nop

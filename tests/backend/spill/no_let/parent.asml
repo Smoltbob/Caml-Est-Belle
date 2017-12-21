@@ -1,5 +1,0 @@
-let _ = 
-   (1)
-   (x)
-   (add x 1)
-   (sub x x)
