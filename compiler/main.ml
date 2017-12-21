@@ -1,3 +1,4 @@
+open Ftype;;
 let display_version = ref false
 let type_check_only = ref false
 let parse_only = ref false

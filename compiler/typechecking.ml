@@ -27,11 +27,10 @@ let rec getTypeString t=
     | Fun (a,b)-> "fun"
     | Tuple  a-> "tuple"
     | Array a-> "array"
-    | Var a->  "var"; (match !a with 
-                                            |None ->  " none"
-                                            |Some x -> getTypeString x
-                                  )
-    | _->  "undef"
+    | Var a->   (match !a with 
+                                |None ->  "var none"
+                                |Some x -> getTypeString x
+                      )
 
 
 let rec print_Type t=
@@ -85,7 +84,7 @@ let  updateEq x =
   (* eq:=x::!eq;!eq *)
   if (fst x) = (snd x) || checkForVar (snd x)  || checkForVar (fst x)then  
     begin
-          eq:=x::!eq;!eq
+          eq:=x::!eq;
     end
     else   let s1= getTypeString(fst x) in let s2= getTypeString(snd x) in 
       failwith (Printf.sprintf "Expression has type %s but an expression was 
@@ -101,7 +100,7 @@ let rec append l1 l2 =
 
 (*TODO enhance the return of eq*)
 (*we could return the well typed AST*)
-let rec genEquations  (expr:Fsyntax.t) tp :(Ftype.t* Ftype.t) list =
+let rec genEquations  (expr:Fsyntax.t) tp  =
   match expr with
     | Unit ->   updateEq (Unit, tp)
     | Bool b -> updateEq(Bool, tp) 
@@ -164,7 +163,7 @@ let rec genEquations  (expr:Fsyntax.t) tp :(Ftype.t* Ftype.t) list =
                        (* print_string "eq letrec3 \n";*)
                         genEquations e tp;
                       (*  print_string "eq letrec4 \n";*)
-                        !eq
+                       
   
 
     |_ ->failwith "Not implemented yet"
