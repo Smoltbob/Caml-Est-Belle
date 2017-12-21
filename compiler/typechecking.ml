@@ -6,8 +6,9 @@ open Ftype;;
 let  eq = ref []
 
 (* env has a type of (Fid.t* Ftype.t) list *)
-let  env = ref [("print_int" ,Fun( [Int] , Unit ))]
+let  env = ref []
 
+(*let  env = ref [("print_int" ,Fun( [Int] , Unit ))]*)
 (*for later : after defining string type*)
 (*let  env = ref [( "print_string",Fun([string],Unit )); ("print_int" ,Fun( [Int] , Unit ))]*)
 
@@ -17,32 +18,38 @@ let  printSize lst =
   let i= List.length lst in print_int i  
 
 
-let rec print_Type t=
+let rec getTypeString t=
   match t with
-    | Unit -> print_string "unit"
-    | Bool-> print_string "bool"
-    | Int-> print_string "int"
-    | Float-> print_string "float"
-    | Fun (a,b)->print_string "fun"
-    | Tuple  a->print_string "tuple"
-    | Array a->print_string "array"
-    | Var a-> print_string "var"; (match !a with 
-                                            |None -> print_string "none"
-                                            |Some x -> print_Type x
+    | Unit ->  "unit"
+    | Bool->  "bool"
+    | Int->  "int"
+    | Float->  "float"
+    | Fun (a,b)-> "fun"
+    | Tuple  a-> "tuple"
+    | Array a-> "array"
+    | Var a->  "var"; (match !a with 
+                                            |None ->  " none"
+                                            |Some x -> getTypeString x
                                   )
-    | _-> print_string "undef"
+    | _->  "undef"
+
+
+let rec print_Type t=
+  let str=  getTypeString t in 
+    print_string str
 
 
 let rec findVar lst x =
-  let i= List.length lst in print_int i;
-  (*print_string "\n";
+ (* let i= List.length lst in print_int i;
+  print_string "\n";
   print_string "find in environment the variable " ;
   print_string x ;print_string "\n";*)
   match lst with
     |(id, t)::tl -> (*print_string id ; print_string "\n";print_Type t;print_string "\n";*)
                     if id =  x then  t
                     else findVar tl  x
-    |_ ->  failwith " Undefined Varible" (*print x : the name of the variable*)
+    |_ ->   failwith (Printf.sprintf "Unbound value: %s" x)
+   (*print x : the name of the variable*)
 
 
 let rec print_Eq lst =
@@ -52,7 +59,7 @@ let rec print_Eq lst =
                      print_Type t2;
                      print_string "\n";
                      print_Eq tl  
-    |_ -> print_string "!!!\n"          
+    |_ -> print_string "done\n"          
                   
 
 let  getType () =
@@ -62,7 +69,7 @@ let  getType () =
 
 
 let checkForVar x=
-  print_Type x;print_string "\n";
+  (*print_Type x;print_string "\n";*)
    match x with
    | Var a -> true
    | _ -> false
@@ -80,8 +87,10 @@ let  updateEq x =
     begin
           eq:=x::!eq;!eq
     end
-    else 
-      failwith "Type mismatch"
+    else   let s1= getTypeString(fst x) in let s2= getTypeString(snd x) in 
+      failwith (Printf.sprintf "Expression has type %s but an expression was 
+        expected of type  %s" s1 s2)
+     
  
 
 let rec append l1 l2 =
@@ -96,17 +105,17 @@ let rec genEquations  (expr:Fsyntax.t) tp :(Ftype.t* Ftype.t) list =
   match expr with
     | Unit ->   updateEq (Unit, tp)
     | Bool b -> updateEq(Bool, tp) 
-    | Int i -> print_string "eq int \n"; updateEq(Int, tp) 
-    | Float f -> print_string "eq float \n"; updateEq(Float, tp) 
+    | Int i -> (*print_string "eq int \n";*) updateEq(Int, tp) 
+    | Float f -> (*print_string "eq float \n";*) updateEq(Float, tp) 
 
     | Not e ->  genEquations e Bool ;
                 updateEq(Bool, tp) 
 
-    | Add (e1, e2) ->  print_string "eq add1 \n";
+    | Add (e1, e2) ->  (*print_string "eq add1 \n"; *)
                         genEquations e1 Int ;
-                        print_string "eq add2 \n";
+                        (*print_string "eq add2 \n";*)
                         genEquations e2 Int ;
-                        print_string "eq add3 \n";
+                       (* print_string "eq add3 \n";*)
                         updateEq(Int, tp)  
 
     | Sub (e1, e2) -> genEquations e1 Int;
@@ -137,24 +146,24 @@ let rec genEquations  (expr:Fsyntax.t) tp :(Ftype.t* Ftype.t) list =
 
    | Let ((id,t), e1, e2) -> genEquations  e1 t ;
                              (* TODO maybewe should update the AST types t:=getType ();*)
-                             print_Type t;  print_string "\n";
+                          (*   print_Type t;  print_string "\n";*)
                              env:=(id, getType ())::!env;
                              genEquations e2 tp 
 
 
-    | Var x ->  print_string "eq var \n";updateEq(findVar !env x, tp) 
+    | Var x -> (* print_string "eq var \n";*)updateEq(findVar !env x, tp) 
 
 
     | LetRec (fd, e) -> 
                         env:= append fd.args !env;
-                        print_string "eq letrec1 \n";
+                       (* print_string "eq letrec1 \n";*)
                         genEquations fd.body (Var(ref None));
-                        print_string "eq letrec2 \n";
+                       (* print_string "eq letrec2 \n";*)
                         let (a,b)= fd.name in
                         env:=(a, getType ())::!env;
-                        print_string "eq letrec3 \n";
+                       (* print_string "eq letrec3 \n";*)
                         genEquations e tp;
-                        print_string "eq letrec4 \n";
+                      (*  print_string "eq letrec4 \n";*)
                         !eq
   
 
