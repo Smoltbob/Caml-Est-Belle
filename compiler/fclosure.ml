@@ -85,6 +85,7 @@ let rec clos_aux (k:Fknormal.t) :(Fknormal.fundef option * Fknormal.t) = match k
         let (extract, newfbody) = (clos_aux fbody) in
             (match extract with
             | None ->
+                print_string "None";
                 (None, LetRec ({name = fname; args = fargs; body = newfbody}, clos t)) (* we can put newfbody or fbody here*)
             | Some extract ->
                 let (ename, eargs, ebody) = (extract.name, extract.args, extract.body) in
