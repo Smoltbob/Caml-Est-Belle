@@ -13,4 +13,5 @@ armgen
 *.arm
 *.elf
 *.out
-
+*.html
+*.stamp

@@ -1,3 +1,2 @@
 let _ = 
-    sub x 1
     sub x x

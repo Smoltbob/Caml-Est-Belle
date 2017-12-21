@@ -11,6 +11,9 @@ armgen:
 	ocamlbuild barmgen.byte 
 	mv barmgen.byte armgen
 
+doc:
+	ocamlbuild mincamlc.docdir/index.html
+
 clean:
 	rm -rf _build
 

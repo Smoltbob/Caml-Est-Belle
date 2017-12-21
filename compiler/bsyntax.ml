@@ -1,6 +1,8 @@
 open Printf;;
 open List;;
 
+(** This module defines the type of the AST as well as functions
+  to display it.*)
 type t =
   | Int of int
   | Float of float
@@ -31,19 +33,24 @@ type toplevel =
     | Fundefs of (fundef list) (* Once we implement functions we will have a list *)
 
 
+(** Prints the functions arguments. They are stored in a list. 
+   @param argu the list of arguments
+*)
 let rec to_string_args argu =
     match argu with
     | [] -> ""
     | [x] -> Id.to_string x
     | t::q -> sprintf "%s %s" t (to_string_args q)
 
+(* Useless? *)
 let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : string =
     match l with
     | [] -> ""
     | [x] -> to_s x
     | hd :: tl -> (to_s hd) ^ op ^ (infix_to_string to_s tl op)
 
-   
+(** Prints expressions occuring in the program.
+    @param exp The expression to print. *)
 let rec exp_to_string exp =
     match exp with
   | Int i -> string_of_int i
@@ -61,15 +68,24 @@ let rec exp_to_string exp =
   | Call (l1, a1) -> sprintf "(call %s %s)" (Id.to_string l1) (to_string_args a1)
   | Nop -> sprintf "nop"
 
+(** Prints an asmt. It can be an assignement (with a let) or an expression alone.
+    @param asm The asmt to print.
+*)
 let rec to_string_asm asm =
     match asm with
  | Let (id, e1, a) -> sprintf "(Let %s = %s in %s)" (Id.to_string id) (exp_to_string e1) (to_string_asm a)
  | Expression e -> sprintf "(%s)" (exp_to_string e)
 
+(** Prints the functions in the list of fundefs/
+    @param fund the list of function definitions.
+*)
 let rec to_string_fundef fund =
     match fund with
  | Body b -> sprintf "(%s)" (to_string_asm b)
 
+(** Prints the root of the ast of an asml program. This is the function to call to print the whole tree.
+    @param top The ast as provided by the parser.
+    *)
 let rec to_string_top top =
     match top with
   | Fundefs f -> sprintf "(%s)" (to_string_fundef (hd f))
