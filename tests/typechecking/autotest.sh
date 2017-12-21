@@ -43,7 +43,7 @@ for file in "$folder"/*.ml; do
     # Printing filename + path
     echo -e "File: \e[34m$file\e[0m"
     # Printing output from parsing + ARM generation
-    RESULT=$("$prog" -t "$file")
+    RESULT=$("$prog" -t "$file" 2>&1)
     if [[ $verb = 1 ]]; then
         echo -e "\e[33mOutput  : $RESULT\e[0m"
         echo ""
