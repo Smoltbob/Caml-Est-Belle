@@ -6,8 +6,8 @@
  *)
 let print_arm l =
   let s = (Bparser.toplevel Blexer.token l) in
-  (*print_string (Barmspillgenerator.toplevel_to_arm s); print_newline ()*)
-  print_string (Barmgenerator.toplevel_to_arm s); print_newline ()
+  print_string (Barmspillgenerator.toplevel_to_arm s); print_newline ()
+  (*print_string (Barmgenerator.toplevel_to_arm s); print_newline ()*)
 
 (** Opens the *.asml file and parses it in order to generate ARM 
     @param f The *.asml file *)

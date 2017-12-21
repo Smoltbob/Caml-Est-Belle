@@ -9,8 +9,8 @@ let print_asml l =
     let s = (Fparser.exp Flexer.token l) in
     (* print_string (Fasmlgen.closure_to_asmlstring_main (Fclosure.clos (Freduction.reduc (Fknormal.knormal s)))); print_newline () *)
     let prog = Fasmlgen.asml_head (Fclosure.clos_exp (Freduction.reduc (Fknormal.knormal s))) in
-    (*Barmgenerator.toplevel_to_arm prog*)
-    Barmspillgenerator.toplevel_to_arm prog
+    Barmgenerator.toplevel_to_arm prog
+    (*Barmspillgenerator.toplevel_to_arm prog*)
 
 let file fin fout =
     let inchan = open_in fin in
