@@ -1,12 +1,21 @@
+(** This file is to generate arm code from Bsyntax.toplevel stutructure by spill eveyrthing variables allocation method*)
+
 open Bsyntax;;
 open Printf;;
 
+(** the number of free registers *)
 let register_nb = 12
+
+(** A hashtable: the keys are the name of variables and the contant of each key is a tuple (bool, int), if bool is equal to "true", then the variable is in the register and the int is the index of register, else the variable is in the memory, the int is the address . *)
 let vartbl_s = Hashtbl.create register_nb
+
+(** address in virtual memory stack refer to current fp*)
 let frame_index = ref 0
 
 (* WIP ARM generation *)
-
+(** This function is to allocate 4 bits for variable x and update the vartbl_s, and return the address
+@param x the variable name in type id.t
+@return the relative address of x in type int *)
 let frame_position variable_name =
 	if (not (Hashtbl.mem vartbl_s variable_name)) then
         begin
@@ -15,7 +24,10 @@ let frame_position variable_name =
         end;
     Hashtbl.find vartbl_s variable_name
 
-
+(** This function is to return the address for arguments in function call when the arguments are less than 4;
+@param l the list of args, in type string;
+@param i the conuter of arguments, int;
+@return string "\tldr r4, [fp, #%i]\n\tmov r%i, r4\n%s" *)
 let rec movegen l i =
     match l with
         | [] -> sprintf ""

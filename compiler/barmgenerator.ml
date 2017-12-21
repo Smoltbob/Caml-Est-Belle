@@ -1,4 +1,4 @@
-(** This file is to generate arm code from Bsyntax.toplevel stutructure*)
+(** This file is to generate arm code from Bsyntax.toplevel stutructure by very basic method of variables registation*)
 
 open Bsyntax;; 
 open Printf;;
@@ -14,8 +14,8 @@ let vartbl_r = Hashtbl.create register_nb
 let register_i = ref 3
 
 (** This function is to load a register for variable x and update the vartbl_r
-@param x: the variable name in type id.t
-@return : unit *)
+@param x the variable name in type id.t
+@return unit *)
 let registVar x =
 	if (not (Hashtbl.mem vartbl_r x)) then
 		register_i := !register_i + 1;
