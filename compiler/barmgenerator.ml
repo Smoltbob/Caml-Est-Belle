@@ -54,13 +54,19 @@ let rec to_arm_formal_args args =
     | l when (List.length l <= 4) -> movegen l 0
     | t::q -> sprintf "%s %s" t (to_string_args q) 
 
+(**/**)
 (* Useless ? *)
 let rec ident_or_imm_expression_to_arm ident_or_imm =
     match ident_or_imm with
     | Int i -> sprintf "#%s" (string_of_int i)
     | Var id -> sprintf "%s" (to_register id)
     | _ -> failwith "Not a valid identifiant or immediate"
+(**/**)
 
+(** This function is to convert assignments into arm code 
+@param exp expression in the assigment
+@param dest the variable which is assigned in this assignment
+@return unit*)
 (* OK *)
 let rec exp_to_arm exp dest =
     match exp with
@@ -77,7 +83,9 @@ let rec exp_to_arm exp dest =
                     | _ ->let l = (Id.to_string l1) in sprintf "%sBL %s\nmov %s, r0\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1)) (to_register dest))
     | Nop -> sprintf "nop\n"
 	| _ -> failwith "matchfailure in barmgenerator"
-
+(** This function is a recursive function to convert type asmt into assignments
+@param asm program in type asmt
+@return unit*)
 (* OK *)
 let rec asmt_to_arm asm =
     match asm with
@@ -85,11 +93,17 @@ let rec asmt_to_arm asm =
     | Let (id, e, a) -> sprintf "%s %s" (exp_to_arm e id) (asmt_to_arm a)
     | Expression e -> sprintf "%s" (exp_to_arm e "")
 
+(** This function is a recursive function to conver tpye fundef into type asmt
+@param fundef program in type fundef
+@return unit*)
 (* OK *)
 let rec fundef_to_arm fundef =
     match fundef with
     | Body b -> asmt_to_arm b
 
+(** This function is a recursive function to conver tpye toplevel into type fundef
+@param toplevel program in type toplevel
+@return unit*)
 (* OK *)
 let rec toplevel_to_arm toplevel =
     match toplevel with
