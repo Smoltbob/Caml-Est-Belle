@@ -57,6 +57,13 @@ let rec asml_t_triv t = match t with
     | Sub (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Sub (x2, y2)
                         | _ -> failwith "matchfailure Sub")
+    | AppD (f, l) ->
+        (let rec trans (l:Fclosure.t list) :Bsyntax.formal_args = match l with
+            | [] -> []
+            | (Var x)::q -> (x:Id.t)::(trans q)
+            | _ -> failwith "not a list of variables. Maybe the argument is of type unit ?"
+        in
+        Call (f, trans l))
     | Var x -> Var x
     | _ -> failwith "asml_t_triv matchfailure"
 

@@ -31,7 +31,7 @@ let frame_position variable_name =
 let rec movegen l i =
     match l with
         | [] -> sprintf ""
-        | t::q -> sprintf "\tldr r4, [fp, #%i]\n\tmov r%i, r4\n%s" (frame_position t) i (movegen q (i + 1))
+        | t::q -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (frame_position t) (movegen q (i + 1))
 
 let rec to_arm_formal_args args =
     (* if len(args) <= 4:
