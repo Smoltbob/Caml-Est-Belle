@@ -52,6 +52,7 @@ let rec to_arm_formal_args args =
     match args with
     | [] -> sprintf ""
     | l when (List.length l <= 4) -> movegen l 0
+	| _ -> failwith "Not handled yet"
     | t::q -> sprintf "%s %s" t (to_string_args q) 
 
 (**/**)
@@ -83,6 +84,7 @@ let rec exp_to_arm exp dest =
                     | _ ->let l = (Id.to_string l1) in sprintf "%sBL %s\nmov %s, r0\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1)) (to_register dest))
     | Nop -> sprintf "nop\n"
 	| _ -> failwith "matchfailure in barmgenerator"
+
 (** This function is a recursive function to convert type asmt into assignments
 @param asm program in type asmt
 @return unit*)

@@ -14,7 +14,7 @@ let frame_index = ref 0
 
 (* WIP ARM generation *)
 (** This function is to allocate 4 bits for variable x and update the vartbl_s, and return the address
-@param x the variable name in type id.t
+@param variable_name the variable name in type id.t
 @return the relative address of x in type int *)
 let frame_position variable_name =
 	if (not (Hashtbl.mem vartbl_s variable_name)) then
@@ -27,12 +27,15 @@ let frame_position variable_name =
 (** This function is to return the address for arguments in function call when the arguments are less than 4;
 @param l the list of args, in type string;
 @param i the conuter of arguments, int;
-@return string "\tldr r4, [fp, #%i]\n\tmov r%i, r4\n%s" *)
+@return string "ldr ri, [fp,i]" *)
 let rec movegen l i =
     match l with
         | [] -> sprintf ""
         | t::q -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (frame_position t) (movegen q (i + 1))
-
+        
+(** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
+@param args the list of arguments, in type string
+@return unit *)
 let rec to_arm_formal_args args =
     (* if len(args) <= 4:
         * for i in range(len(args)):
@@ -43,6 +46,10 @@ let rec to_arm_formal_args args =
     | _ -> failwith "Not handled yet"
     (*| t::q -> sprintf "%s %s" (Id.to_string t) (to_arm_formal_args q *) 
 
+(** This function is to convert assignments into arm code 
+@param exp expression in the assigment
+@param dest the variable which is assigned in this assignment
+@return unit*)
 (* OK *)
 let rec exp_to_arm exp dest =
     match exp with
@@ -54,6 +61,9 @@ let rec exp_to_arm exp dest =
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
+(** This function is a recursive function to convert type asmt into assignments
+@param asm program in type asmt
+@return unit*)
 (* OK *)
 let rec asmt_to_arm asm =
     match asm with
@@ -61,11 +71,17 @@ let rec asmt_to_arm asm =
     | Let (id, e, a) -> sprintf "%s %s" (exp_to_arm e id) (asmt_to_arm a)
     | Expression e -> sprintf "%s" (exp_to_arm e "")
 
+(** This function is a recursive function to conver tpye fundef into type asmt
+@param fundef program in type fundef
+@return unit*)
 (* OK *)
 let rec fundef_to_arm fundef =
     match fundef with
     | Body b -> asmt_to_arm b
 
+(** This function is a recursive function to conver tpye toplevel into type fundef
+@param toplevel program in type toplevel
+@return unit*)
 (* OK *)
 let rec toplevel_to_arm toplevel =
     match toplevel with
