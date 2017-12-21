@@ -15,3 +15,5 @@ armgen
 *.out
 *.html
 *.stamp
+*.swo
+*.docdir
