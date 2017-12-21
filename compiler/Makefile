@@ -12,6 +12,7 @@ armgen:
 
 doc:
 	ocamlbuild mincamlc.docdir/index.html
+	mv mincamlc.docdir/* ../docs
 
 clean:
 	rm -rf _build
