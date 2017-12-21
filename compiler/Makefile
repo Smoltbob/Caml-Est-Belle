@@ -1,4 +1,3 @@
-
 all: 
 	ocamlbuild main.byte 
 	mv main.byte mincamlc
