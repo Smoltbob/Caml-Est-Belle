@@ -154,7 +154,7 @@ let rec knormal (ast:Fsyntax.t) : t =
     (*/tmp*)
     |Let (a, b, c) -> Let (a, knormal b, knormal c) (*OK*)
     (*tmp*)
-    |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b)
+    |LetRec (a, b) ->  LetRec ({name=("min_caml_"^(fst a.name), snd a.name); args=a.args; body=(knormal a.body)}, knormal b)
     (* | _ -> failwith "fknormal matchfailure" *)
     (*/tmp*)
 
