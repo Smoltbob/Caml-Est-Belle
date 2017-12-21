@@ -2,7 +2,7 @@ let display_version = ref false
 let type_check_only = ref false
 let parse_only = ref false
 let asml_only = ref false
-let version = ref "Version: Fancy Camembert"
+let version = ref "Version: Very Simple Cheese"
 let output_file = ref "a.out"
 
 let print_asml l =
