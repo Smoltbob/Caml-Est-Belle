@@ -8,18 +8,19 @@ PRG=$(subst .s,.arm,${ASM})
 
 all: ${PRG}
 
-echo:
-	echo ${ASM}
-	echo ${PRG}
-
 %.o : %.s libmincaml.S
 	${AS} -o $@ $^
 
 %.arm : %.o
 	${LD} -o $@ $^
 
+.PHONY: clean test echo
 clean:
 	rm *.arm
+
+echo:
+	echo ${ASM}
+	echo ${PRG}
 
 test: ${PRG}
 	@for p in ${PRG} ; do \
