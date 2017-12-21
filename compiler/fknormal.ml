@@ -107,7 +107,7 @@ let rec knormal (ast:Fsyntax.t) : t =
                     |Var(fct) -> (  (*a temporary solution to prevent functions from being renamed*)
                         let rec aux vars_rem k_vars =
                             match vars_rem with
-                            |[] -> App(Var(fct), List.rev k_vars)
+                            |[] -> App(Var("min_caml_"^fct), List.rev k_vars)
                             |h::q -> let (x,t) = newvar () in Let((x,t), knormal h, aux q ((Var x)::k_vars))
                         in
                         aux b []
