@@ -63,8 +63,21 @@ let rec asml_t_triv t = match t with
 
 let rec asml_exp (c:Fclosure.t) :asmt = match c with
     | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
-    (* | _ -> Expression asml_t_triv c *)
-    | Unit -> Expression Nop
+    (* | LetRec (fundef, a) -> LetRec ({name = }) *)
+    | AppD (f, l) ->
+        (let rec trans (l:Fclosure.t list) :Bsyntax.formal_args = match l with
+            | [] -> []
+            | (Var x)::q -> (x:Id.t)::(trans q)
+            | _ -> failwith "not a list of variables. Maybe the argument is of type unit ?"
+        in
+        Expression (Call (f, trans l)))
+    | _ -> Expression (asml_t_triv c)
+
+    (* | _ -> failwith "asml_exp matchfailure" *)
+
+    (* TODO remove those lines*)
+    (* vvv *)
+    (* | Unit -> Expression Nop
     | Int a -> Expression (Int a)
     | Float a -> Expression (Float a)
     | Neg x -> (match x with
@@ -94,15 +107,8 @@ let rec asml_exp (c:Fclosure.t) :asmt = match c with
     | Var x -> Expression (Var x)
     | Eq (x, a) -> (match x with
                         | (Var y) -> Expression (Eq (y, asml_t_triv a))
-                        | _ -> failwith "matchfailure Eq")
-    | AppD (f, l) ->
-        (let rec trans (l:Fclosure.t list) :Bsyntax.formal_args = match l with
-            | [] -> []
-            | (Var x)::q -> (x:Id.t)::(trans q)
-            | _ -> failwith "not a list of variables. Maybe the argument is of type unit ?"
-        in
-        Expression (Call (f, trans l)))
-    | _ -> failwith "asml_exp matchfailure"
+                        | _ -> failwith "matchfailure Eq") *)
+    (* ^^^ *)
 
 (* let rec asml_asmt c = match c with
     | Let (x, a, asmt) -> Let (fst x, asml_exp a, asml_asmt asmt)
@@ -112,15 +118,28 @@ let asml_head c =
     Fundefs [Body (asml_exp c)]
 
 let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
-  | Unit -> "nop"
-  (* | Bool b -> if b then "true" else "false" *)
-  | Int i -> string_of_int i
-  | Var id -> Id.to_string id
-  (* | Let (x, a, b) -> sprintf *)
-  | Add (e1, e2) -> sprintf "add %s %s \n" (closure_to_asmlstring e1) (closure_to_asmlstring e2)
-  | Sub (e1, e2) -> sprintf "sub %s %s \n" (closure_to_asmlstring e1) (closure_to_asmlstring e2)
-  | Let (x, a, b) -> sprintf "let %s = %s in \n %s" (fst x) (closure_to_asmlstring a) (closure_to_asmlstring b)
-  | _ -> ""
+    | Unit -> "nop"
+    | Int i -> string_of_int i
+    | Float f -> string_of_float f
+    | Var id -> Id.to_string id
+    (* | Let (x, a, b) -> sprintf *)
+    | Add (e1, e2) -> sprintf "add %s %s \n" (closure_to_asmlstring e1) (closure_to_asmlstring e2)
+    | Sub (e1, e2) -> sprintf "sub %s %s \n" (closure_to_asmlstring e1) (closure_to_asmlstring e2)
+    | Let ((id,t), e1, e2) -> sprintf "(let %s = %s in\n %s)"
+        (Id.to_string id)
+        (closure_to_asmlstring e1)
+        (closure_to_asmlstring e2)
+    | AppD (f, args) -> sprintf "Call (%s) %s\n"
+        (f)
+        (infix_to_string closure_to_asmlstring args " ")
+    | LetRec (fd, e) -> sprintf "(let rec %s %s = %s in\n %s)"
+        (let (x, _) = fd.name in (Id.to_string x))
+        (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
+        (closure_to_asmlstring fd.body)   (*CHANGE LATER*)
+        (closure_to_asmlstring e)
+    | _ -> ""
+
+
 (*
   | Not e -> sprintf "(not %s)" (closure_to_asmlstring e)
   | Neg e -> sprintf "(- %s)" (closure_to_asmlstring e)
@@ -136,15 +155,6 @@ let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
           sprintf "(if %s then %s else %s)" (closure_to_asmlstring e1) (closure_to_asmlstring e2) (closure_to_asmlstring e3)
   | IfLE (e1, e2, e3) ->
           sprintf "(if %s then %s else %s)" (closure_to_asmlstring e1) (closure_to_asmlstring e2) (closure_to_asmlstring e3)
-  | Let ((id,t), e1, e2) ->
-          sprintf "(let %s = %s in %s)" (Id.to_string id) (closure_to_asmlstring e1) (closure_to_asmlstring e2)
-  | App (e1, le2) -> sprintf "(%s %s)" (closure_to_asmlstring e1) (infix_to_string closure_to_asmlstring le2 " ")
-  | LetRec (fd, e) ->
-          sprintf "(let rec %s %s = %s in %s)"
-          (let (x, _) = fd.name in (Id.to_string x))
-          (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
-          (closure_to_asmlstring fd.body)   (*CHANGE LATER*)
-          (closure_to_asmlstring e)
   | LetTuple (l, e1, e2)->
           sprintf "(let (%s) = %s in %s)"
           (infix_to_string (fun (x, _) -> Id.to_string x) l ", ")

@@ -69,6 +69,7 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     | Put (a, b, c) -> Put (clos_exp a, clos_exp b, clos_exp c)
     (* TODO remove let later *)
     | Let (x, a, b) -> Let (x, clos_exp a, clos_exp b)
+    | LetRec (fundef, a) -> LetRec ({name = fundef.name; args = fundef.args; formal_fv = []; body = (clos_exp fundef.body)}, (clos_exp a))
     | App (f, l) -> (match f with
                         | (Var id) -> AppD ("_"^id, List.map clos_exp l)
                         | _ -> failwith "matchfailure App")
@@ -76,9 +77,43 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     (*/tmp*)
 
 (* Nested letrec have not been unnested yet (in reduction) *)
-let rec clos (k:Fknormal.t) :t = match k with
-(* We now consider that there are no free variable inside our nested letrecs *)
+let rec clos_aux (k:Fknormal.t) :(Fknormal.fundef option * Fknormal.t) = match k with
     | LetRec (fundef, t) ->
+        let (fname, fargs, fbody) = (fundef.name, fundef.args, fundef.body) in
+        let (extract, newfbody) = (clos_aux fbody) in
+            (match extract with
+            | None ->
+                (None, LetRec ({name = fname; args = fargs; body = newfbody}, clos t)) (* we can put newfbody or fbody here*)
+            | Some extract ->
+                let (ename, eargs, ebody) = (extract.name, extract.args, extract.body) in
+                    (* the first clos_aux will unnest ebody
+                    the second will continue unnesting the let recs that are on the same level as extract
+                    So this is both a depth and width modification at the same time *)
+                    let (retextract, retnewbody) =
+                        clos_aux (LetRec ({name = ename;
+                                          args = eargs;
+                                          body = ebody},
+                                          clos (LetRec ({name = fname;
+                                                        args = fargs;
+                                                        body = newfbody},
+                                                        t)
+                                                    )
+                                          )
+                                 )
+                    in (retextract, retnewbody))
+    | Let (x, a, b) ->
+        let (extract, newbody) = (clos_aux b) in
+            (extract, Let (x, a, newbody))
+        (*concat newbody obtained with clos aux*)
+    | _ -> (None, k)
+
+and clos (k:Fknormal.t) =
+    let (_, a) = (clos_aux k) in a
+
+let clos_out k = clos_exp (clos k)
+
+(* We now consider that there are no free variable inside our nested letrecs *)
+    (* | LetRec (fundef, t) ->
         let (fname, fargs, fbody) = (fundef.name, fundef.args, fundef.body) in
             (match fbody with
             | LetRec (fundef2, t2) ->
@@ -88,26 +123,28 @@ let rec clos (k:Fknormal.t) :t = match k with
                     let newfundef2 = {name = f.name; args = f.args; formal_fv = []; body = (clos_exp t2)} in
                     LetRec (newfundef2, clos (LetRec (newfundef, t)))
                 | _ -> failwith "matchfailure Neg")
-            | _ -> failwith "matchfailure Neg")
+            | _ -> failwith "matchfailure Neg") *)
 
             (* | Let (x, a, b) -> *)
 
     (* For now we assume there is no free variable so a let rec can't be after a let for now ? *)
-    | Let (x, a, b) -> (* lets have already been unnested *)
+    (* | Let (x, a, b) -> (* lets have already been unnested *)
         (match a with
         | LetRec (f, c) ->
-            LetRec ({name = f.name; args = f.args; formal_fv = []; body = (clos_exp f.body)}, Let (x, clos c, clos b))
+            let (iden, typ) = f.name in
+            LetRec ({name = ("_"^iden, typ); args = f.args; formal_fv = []; body = (clos_exp f.body)}, Let (x, clos c, clos b))
         | _ -> Let (x, clos a, clos b)) (* TODO we assume we can't have let ... in let ... let rec ... in in*)
     | App (f, l) -> (match f with
                         | (Var id) -> AppD ("_"^id, List.map clos_exp l)
                         | _ -> failwith "matchfailure Neg")
-    | _ -> clos_exp k
+    | _ -> clos_exp k *)
 
     (* | App (f, l) ->
         let rec clos_args l = match l with
             | [] -> []
             | t::q -> (clos t)::(clos_args q)
         in AppD (f, clos_args l) *)
+
 
 (*
 let rec clos_toplevel k = match k with
