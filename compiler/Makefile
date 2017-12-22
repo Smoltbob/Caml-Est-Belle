@@ -1,26 +1,22 @@
 all: asmlparser armgen
-	ocamlbuild main.byte 
+	ocamlbuild main.byte
 	mv main.byte mincamlc
 
 asmlparser:
-	ocamlbuild basmlparser.byte 
+	ocamlbuild basmlparser.byte
 	mv basmlparser.byte asmlparse
 
 armgen:
-	ocamlbuild barmgen.byte 
+	ocamlbuild barmgen.byte
 	mv barmgen.byte armgen
 
 doc:
 	ocamlbuild mincamlc.docdir/index.html
-<<<<<<< HEAD
-=======
-	mv mincamlc.docdir ../docs
->>>>>>> 79a41492337f8265e8fea40d1050bb818149b1a4
 
-test_asml:	
+test_asml:
 	(cd ../ && ./scripts/autotest_asml.sh -p ./scripts/asmlparse -d tests/asml_parser -t asml)
 
-test_gencode:	
+test_gencode:
 	(cd ../ && ./scripts/autotest_gencode.sh -p ./scripts/mincamlc -d tests/gen-code -t ml -o ARM)
 
 test_typecheck:
