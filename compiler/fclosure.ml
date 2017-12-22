@@ -1,6 +1,9 @@
+(** This module will unnest the letrecs in the next versions. For now it only transforms a Fknormal.t into a Fclosure.t
+The function returning a string is just a dbeugging function for now *)
 open Fknormal;;
 open Fsyntax;;
 open Printf;;
+
 
 type t =
 (* uncomment those lines when ready to create closures *)
@@ -44,6 +47,7 @@ and fundef = {
 
 (* type toplevel = fundef list *)
 
+(** This function transform unnested expressions into a Fclosure.t *)
 let rec clos_exp (k:Fknormal.t) :t = match k with
     | Unit -> Unit
     | Bool a -> Bool a
@@ -71,50 +75,13 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     | Put (a, b, c) -> Put (clos_exp a, clos_exp b, clos_exp c)
     (* TODO remove let later *)
     | Let (x, a, b) -> Let (x, clos_exp a, clos_exp b)
+    | LetRec (fundef, a) -> LetRec ({name = fundef.name; args = fundef.args; formal_fv = []; body = (clos_exp fundef.body)}, (clos_exp a))
     | App (f, l) -> (match f with
                         | (Var id) -> AppD ("_"^id, List.map clos_exp l)
                         | _ -> failwith "matchfailure App")
     | _-> failwith "match not exhaustive in clos_exp fclosure.ml"
-    (*/tmp*)
 
-(* Nested letrec have not been unnested yet (in reduction) *)
-let rec clos (k:Fknormal.t) :t = match k with
-(* We now consider that there are no free variable inside our nested letrecs *)
-    | LetRec (fundef, t) ->
-        let (fname, fargs, fbody) = (fundef.name, fundef.args, fundef.body) in
-            (match fbody with
-            | LetRec (fundef2, t2) ->
-                let (newfundef : Fknormal.fundef) = {name = fname; args = fargs; body = t2} in
-                (match (clos (LetRec (fundef2, Unit))) with
-                | LetRec (f, _) ->
-                    let newfundef2 = {name = f.name; args = f.args; formal_fv = []; body = (clos_exp t2)} in
-                    LetRec (newfundef2, clos (LetRec (newfundef, t)))
-                | _ -> failwith "matchfailure Neg")
-            | _ -> failwith "matchfailure Neg")
-
-            (* | Let (x, a, b) -> *)
-
-    (* For now we assume there is no free variable so a let rec can't be after a let for now ? *)
-    | Let (x, a, b) -> (* lets have already been unnested *)
-        (match a with
-        | LetRec (f, c) ->
-            LetRec ({name = f.name; args = f.args; formal_fv = []; body = (clos_exp f.body)}, Let (x, clos c, clos b))
-        | _ -> Let (x, clos a, clos b)) (* TODO we assume we can't have let ... in let ... let rec ... in in*)
-    | App (f, l) -> (match f with
-                        | (Var id) -> AppD ("_"^id, List.map clos_exp l)
-                        | _ -> failwith "matchfailure Neg")
-    | _ -> clos_exp k
-
-    (* | App (f, l) ->
-        let rec clos_args l = match l with
-            | [] -> []
-            | t::q -> (clos t)::(clos_args q)
-        in AppD (f, clos_args l) *)
-
-(*
-let rec clos_toplevel k = match k with
-    | -> Toplevel (clos l) *)
-
+(** This function is for debugging purpose only, it returns its argument as a string *)
 let rec clos_to_string (c:t) : string =
     match c with
   | Unit -> "()"

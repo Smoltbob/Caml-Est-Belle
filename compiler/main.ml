@@ -6,12 +6,13 @@ let asml_only = ref false
 let version = ref "Version: Fancy Camembert"
 let output_file = ref "a.out"
 
+
 let print_asml l =
     let s = (Fparser.exp Flexer.token l) in
     if !asml_only then
-        Fasmlgen.closure_to_asmlstring_main (Fclosure.clos (Freduction.reduc (Fknormal.knormal s)))
+        Fasmlgen.closure_to_asmlstring_main (Fclosure.clos_exp (Freduction.reduc (Fknormal.knormal s)))
     else
-        let prog = Fasmlgen.asml_head (Fclosure.clos_exp (Freduction.reduc (Fknormal.knormal s))) in
+        let prog = Fasmlgen.asml_head (Fclosure.clos_exp (Freduction.reduc (Falphaconversion.alpha(Fknormal.knormal s)))) in
         (*Barmgenerator.toplevel_to_arm prog*)
         Barmspillgenerator.toplevel_to_arm prog
 

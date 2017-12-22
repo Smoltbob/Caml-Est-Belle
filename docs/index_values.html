@@ -1,0 +1,228 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Bsyntax" rel="Chapter" href="Bsyntax.html">
+<link title="Barmgen" rel="Chapter" href="Barmgen.html">
+<link title="Barmgenerator" rel="Chapter" href="Barmgenerator.html">
+<link title="Barmspillgenerator" rel="Chapter" href="Barmspillgenerator.html">
+<link title="Typechecking" rel="Chapter" href="Typechecking.html"><title>Index of values</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;</div>
+<h1>Index of values</h1>
+<table>
+<tr><td align="left"><br>A</td></tr>
+<tr><td><a href="Typechecking.html#VALappend">append</a> [<a href="Typechecking.html">Typechecking</a>]</td>
+<td><div class="info">
+This is function is to append two lists
+</div>
+</td></tr>
+<tr><td><a href="Barmspillgenerator.html#VALasmt_to_arm">asmt_to_arm</a> [<a href="Barmspillgenerator.html">Barmspillgenerator</a>]</td>
+<td><div class="info">
+This function is a recursive function to convert type asmt into assignments
+</div>
+</td></tr>
+<tr><td><a href="Barmgenerator.html#VALasmt_to_arm">asmt_to_arm</a> [<a href="Barmgenerator.html">Barmgenerator</a>]</td>
+<td><div class="info">
+This function is a recursive function to convert type asmt into assignments
+</div>
+</td></tr>
+<tr><td align="left"><br>C</td></tr>
+<tr><td><a href="Typechecking.html#VALcheckForVar">checkForVar</a> [<a href="Typechecking.html">Typechecking</a>]</td>
+<td><div class="info">
+This function is to check if the variable type is equal to Var
+</div>
+</td></tr>
+<tr><td align="left"><br>E</td></tr>
+<tr><td><a href="Typechecking.html#VALenv">env</a> [<a href="Typechecking.html">Typechecking</a>]</td>
+<td></td></tr>
+<tr><td><a href="Typechecking.html#VALeq">eq</a> [<a href="Typechecking.html">Typechecking</a>]</td>
+<td><div class="info">
+list of equations , it has a type of (Ftype.t* Ftype.t) list
+</div>
+</td></tr>
+<tr><td><a href="Barmspillgenerator.html#VALexp_to_arm">exp_to_arm</a> [<a href="Barmspillgenerator.html">Barmspillgenerator</a>]</td>
+<td><div class="info">
+This function is to convert assignments into arm code
+</div>
+</td></tr>
+<tr><td><a href="Barmgenerator.html#VALexp_to_arm">exp_to_arm</a> [<a href="Barmgenerator.html">Barmgenerator</a>]</td>
+<td><div class="info">
+This function is to convert assignments into arm code
+</div>
+</td></tr>
+<tr><td><a href="Bsyntax.html#VALexp_to_string">exp_to_string</a> [<a href="Bsyntax.html">Bsyntax</a>]</td>
+<td><div class="info">
+Prints expressions occuring in the program.
+</div>
+</td></tr>
+<tr><td align="left"><br>F</td></tr>
+<tr><td><a href="Barmgen.html#VALfile">file</a> [<a href="Barmgen.html">Barmgen</a>]</td>
+<td><div class="info">
+Opens the *.asml file and parses it in order to generate ARM
+</div>
+</td></tr>
+<tr><td><a href="Typechecking.html#VALfindVar">findVar</a> [<a href="Typechecking.html">Typechecking</a>]</td>
+<td><div class="info">
+This fuction is to search for a variable in the environment
+</div>
+</td></tr>
+<tr><td><a href="Barmspillgenerator.html#VALframe_index">frame_index</a> [<a href="Barmspillgenerator.html">Barmspillgenerator</a>]</td>
+<td><div class="info">
+address in virtual memory stack refer to current fp
+</div>
+</td></tr>
+<tr><td><a href="Barmspillgenerator.html#VALframe_position">frame_position</a> [<a href="Barmspillgenerator.html">Barmspillgenerator</a>]</td>
+<td><div class="info">
+This function is to allocate 4 bits for variable x and update the vartbl_s, and return the address
+</div>
+</td></tr>
+<tr><td><a href="Barmspillgenerator.html#VALfundef_to_arm">fundef_to_arm</a> [<a href="Barmspillgenerator.html">Barmspillgenerator</a>]</td>
+<td><div class="info">
+This function is a recursive function to conver tpye fundef into type asmt
+</div>
+</td></tr>
+<tr><td><a href="Barmgenerator.html#VALfundef_to_arm">fundef_to_arm</a> [<a href="Barmgenerator.html">Barmgenerator</a>]</td>
+<td><div class="info">
+This function is a recursive function to conver tpye fundef into type asmt
+</div>
+</td></tr>
+<tr><td align="left"><br>G</td></tr>
+<tr><td><a href="Typechecking.html#VALgenEquations">genEquations</a> [<a href="Typechecking.html">Typechecking</a>]</td>
+<td><div class="info">
+This function is to caculate the types for the AST 
+    and generate the the equation list and the environment
+</div>
+</td></tr>
+<tr><td><a href="Typechecking.html#VALgetType">getType</a> [<a href="Typechecking.html">Typechecking</a>]</td>
+<td><div class="info">
+This function is to get the head of equation list and return first type
+</div>
+</td></tr>
+<tr><td><a href="Typechecking.html#VALgetTypeString">getTypeString</a> [<a href="Typechecking.html">Typechecking</a>]</td>
+<td><div class="info">
+This is just a helpful function that  get the string of Ftype.t 
+to display the equation or the environment content
+</div>
+</td></tr>
+<tr><td align="left"><br>I</td></tr>
+<tr><td><a href="Bsyntax.html#VALinfix_to_string">infix_to_string</a> [<a href="Bsyntax.html">Bsyntax</a>]</td>
+<td></td></tr>
+<tr><td align="left"><br>M</td></tr>
+<tr><td><a href="Barmspillgenerator.html#VALmovegen">movegen</a> [<a href="Barmspillgenerator.html">Barmspillgenerator</a>]</td>
+<td><div class="info">
+This function is to return the address for arguments in function call when the arguments are less than 4;
+</div>
+</td></tr>
+<tr><td><a href="Barmgenerator.html#VALmovegen">movegen</a> [<a href="Barmgenerator.html">Barmgenerator</a>]</td>
+<td><div class="info">
+This function is to return the register for arguments in function call when the arguments are less than 4;
+</div>
+</td></tr>
+<tr><td align="left"><br>P</td></tr>
+<tr><td><a href="Typechecking.html#VALprint_Eq">print_Eq</a> [<a href="Typechecking.html">Typechecking</a>]</td>
+<td><div class="info">
+This is just a helpful function to print the content of equation list
+</div>
+</td></tr>
+<tr><td><a href="Barmgen.html#VALprint_arm">print_arm</a> [<a href="Barmgen.html">Barmgen</a>]</td>
+<td><div class="info">
+Calls toplevel_to_arm on the ast of an asml program to generate ARM code.
+</div>
+</td></tr>
+<tr><td><a href="Bsyntax.html#VALprint_list_idx">print_list_idx</a> [<a href="Bsyntax.html">Bsyntax</a>]</td>
+<td></td></tr>
+<tr><td align="left"><br>R</td></tr>
+<tr><td><a href="Barmgenerator.html#VALregistVar">registVar</a> [<a href="Barmgenerator.html">Barmgenerator</a>]</td>
+<td><div class="info">
+This function is to load a register for variable x and update the vartbl_r
+</div>
+</td></tr>
+<tr><td><a href="Barmgenerator.html#VALregister_i">register_i</a> [<a href="Barmgenerator.html">Barmgenerator</a>]</td>
+<td><div class="info">
+register counter
+</div>
+</td></tr>
+<tr><td><a href="Barmspillgenerator.html#VALregister_nb">register_nb</a> [<a href="Barmspillgenerator.html">Barmspillgenerator</a>]</td>
+<td><div class="info">
+the number of free registers
+</div>
+</td></tr>
+<tr><td><a href="Barmgenerator.html#VALregister_nb">register_nb</a> [<a href="Barmgenerator.html">Barmgenerator</a>]</td>
+<td><div class="info">
+the number of free registers
+</div>
+</td></tr>
+<tr><td align="left"><br>T</td></tr>
+<tr><td><a href="Barmspillgenerator.html#VALto_arm_formal_args">to_arm_formal_args</a> [<a href="Barmspillgenerator.html">Barmspillgenerator</a>]</td>
+<td><div class="info">
+This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
+</div>
+</td></tr>
+<tr><td><a href="Barmgenerator.html#VALto_arm_formal_args">to_arm_formal_args</a> [<a href="Barmgenerator.html">Barmgenerator</a>]</td>
+<td><div class="info">
+This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
+</div>
+</td></tr>
+<tr><td><a href="Barmgenerator.html#VALto_register">to_register</a> [<a href="Barmgenerator.html">Barmgenerator</a>]</td>
+<td><div class="info">
+This function is to get the register associated with variable_name according to the index of register in vartbl_r,
+</div>
+</td></tr>
+<tr><td><a href="Bsyntax.html#VALto_string_args">to_string_args</a> [<a href="Bsyntax.html">Bsyntax</a>]</td>
+<td><div class="info">
+Prints the functions arguments.
+</div>
+</td></tr>
+<tr><td><a href="Bsyntax.html#VALto_string_asm">to_string_asm</a> [<a href="Bsyntax.html">Bsyntax</a>]</td>
+<td><div class="info">
+Prints an asmt.
+</div>
+</td></tr>
+<tr><td><a href="Bsyntax.html#VALto_string_fundef">to_string_fundef</a> [<a href="Bsyntax.html">Bsyntax</a>]</td>
+<td><div class="info">
+Prints the functions in the list of fundefs/
+</div>
+</td></tr>
+<tr><td><a href="Bsyntax.html#VALto_string_top">to_string_top</a> [<a href="Bsyntax.html">Bsyntax</a>]</td>
+<td><div class="info">
+Prints the root of the ast of an asml program.
+</div>
+</td></tr>
+<tr><td><a href="Barmspillgenerator.html#VALtoplevel_to_arm">toplevel_to_arm</a> [<a href="Barmspillgenerator.html">Barmspillgenerator</a>]</td>
+<td><div class="info">
+This function is a recursive function to conver tpye toplevel into type fundef
+</div>
+</td></tr>
+<tr><td><a href="Barmgenerator.html#VALtoplevel_to_arm">toplevel_to_arm</a> [<a href="Barmgenerator.html">Barmgenerator</a>]</td>
+<td><div class="info">
+This function is a recursive function to conver tpye toplevel into type fundef
+</div>
+</td></tr>
+<tr><td align="left"><br>U</td></tr>
+<tr><td><a href="Typechecking.html#VALupdateEq">updateEq</a> [<a href="Typechecking.html">Typechecking</a>]</td>
+<td><div class="info">
+This function is to check if the new calculated equation pair is valid and add it to the equation list
+</div>
+</td></tr>
+<tr><td align="left"><br>V</td></tr>
+<tr><td><a href="Barmgenerator.html#VALvartbl_r">vartbl_r</a> [<a href="Barmgenerator.html">Barmgenerator</a>]</td>
+<td><div class="info">
+A hashtable: the keys are the name of variables and the contant of each key is a tuple (bool, int), if bool is equal to "true", then the variable is in the register and the int is the index of register, else the variable is in the memory, the int is the address .
+</div>
+</td></tr>
+<tr><td><a href="Barmspillgenerator.html#VALvartbl_s">vartbl_s</a> [<a href="Barmspillgenerator.html">Barmspillgenerator</a>]</td>
+<td><div class="info">
+A hashtable: the keys are the name of variables and the contant of each key is a tuple (bool, int), if bool is equal to "true", then the variable is in the register and the int is the index of register, else the variable is in the memory, the int is the address .
+</div>
+</td></tr>
+</table>
+</body>
+</html>

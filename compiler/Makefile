@@ -12,6 +12,10 @@ armgen:
 
 doc:
 	ocamlbuild mincamlc.docdir/index.html
+<<<<<<< HEAD
+=======
+	mv mincamlc.docdir ../docs
+>>>>>>> 79a41492337f8265e8fea40d1050bb818149b1a4
 
 test_asml:	
 	(cd ../ && ./scripts/autotest_asml.sh -p ./scripts/asmlparse -d tests/asml_parser -t asml)

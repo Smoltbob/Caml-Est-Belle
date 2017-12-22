@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Barmgen.html">
+<link rel="next" href="Barmspillgenerator.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Bsyntax" rel="Chapter" href="Bsyntax.html">
+<link title="Barmgen" rel="Chapter" href="Barmgen.html">
+<link title="Barmgenerator" rel="Chapter" href="Barmgenerator.html">
+<link title="Barmspillgenerator" rel="Chapter" href="Barmspillgenerator.html">
+<link title="Typechecking" rel="Chapter" href="Typechecking.html"><title>Barmgenerator</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Barmgen.html" title="Barmgen">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Barmspillgenerator.html" title="Barmspillgenerator">Next</a>
+</div>
+<h1>Module <a href="type_Barmgenerator.html">Barmgenerator</a></h1>
+
+<pre><span class="keyword">module</span> Barmgenerator: <code class="code">sig</code> <a href="Barmgenerator.html">..</a> <code class="code">end</code></pre><div class="info module top">
+This file is to generate arm code from Bsyntax.toplevel stutructure by very basic method of variables registation<br>
+</div>
+<hr width="100%">
+
+<pre><span id="VALregister_nb"><span class="keyword">val</span> register_nb</span> : <code class="type">int</code></pre><div class="info ">
+the number of free registers<br>
+</div>
+
+<pre><span id="VALvartbl_r"><span class="keyword">val</span> vartbl_r</span> : <code class="type">(Id.t, bool * int) Hashtbl.t</code></pre><div class="info ">
+A hashtable: the keys are the name of variables and the contant of each key is a tuple (bool, int), if bool is equal to "true", then the variable is in the register and the int is the index of register, else the variable is in the memory, the int is the address .<br>
+</div>
+
+<pre><span id="VALregister_i"><span class="keyword">val</span> register_i</span> : <code class="type">int Pervasives.ref</code></pre><div class="info ">
+register counter<br>
+</div>
+
+<pre><span id="VALregistVar"><span class="keyword">val</span> registVar</span> : <code class="type">Id.t -> unit</code></pre><div class="info ">
+This function is to load a register for variable x and update the vartbl_r<br>
+<b>Returns</b> unit<br>
+</div>
+<div class="param_info"><code class="code">x</code> : the variable name in type id.t</div>
+
+<pre><span id="VALto_register"><span class="keyword">val</span> to_register</span> : <code class="type">Id.t -> string</code></pre><div class="info ">
+This function is to get the register associated with variable_name according to the index of register in vartbl_r,<br>
+<b>Returns</b> string "Ri"<br>
+</div>
+<div class="param_info"><code class="code">variable_name</code> : the variable name in type id.t</div>
+
+<pre><span id="VALmovegen"><span class="keyword">val</span> movegen</span> : <code class="type">Id.t list -> int -> string</code></pre><div class="info ">
+This function is to return the register for arguments in function call when the arguments are less than 4;<br>
+<b>Returns</b> string "mov ri arg"<br>
+</div>
+<div class="param_info"><code class="code">l</code> : the list of args, in type string;</div>
+<div class="param_info"><code class="code">i</code> : the conuter of arguments, int;</div>
+
+<pre><span id="VALto_arm_formal_args"><span class="keyword">val</span> to_arm_formal_args</span> : <code class="type">Id.t list -> string</code></pre><div class="info ">
+This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)<br>
+<b>Returns</b> unit<br>
+</div>
+<div class="param_info"><code class="code">args</code> : the list of arguments, in type string</div>
+
+<pre><span id="VALexp_to_arm"><span class="keyword">val</span> exp_to_arm</span> : <code class="type"><a href="Bsyntax.html#TYPEt">Bsyntax.t</a> -> Id.t -> string</code></pre><div class="info ">
+This function is to convert assignments into arm code<br>
+<b>Returns</b> unit<br>
+</div>
+<div class="param_info"><code class="code">exp</code> : expression in the assigment</div>
+<div class="param_info"><code class="code">dest</code> : the variable which is assigned in this assignment</div>
+
+<pre><span id="VALasmt_to_arm"><span class="keyword">val</span> asmt_to_arm</span> : <code class="type"><a href="Bsyntax.html#TYPEasmt">Bsyntax.asmt</a> -> string</code></pre><div class="info ">
+This function is a recursive function to convert type asmt into assignments<br>
+<b>Returns</b> unit<br>
+</div>
+<div class="param_info"><code class="code">asm</code> : program in type asmt</div>
+
+<pre><span id="VALfundef_to_arm"><span class="keyword">val</span> fundef_to_arm</span> : <code class="type"><a href="Bsyntax.html#TYPEfundef">Bsyntax.fundef</a> -> string</code></pre><div class="info ">
+This function is a recursive function to conver tpye fundef into type asmt<br>
+<b>Returns</b> unit<br>
+</div>
+<div class="param_info"><code class="code">fundef</code> : program in type fundef</div>
+
+<pre><span id="VALtoplevel_to_arm"><span class="keyword">val</span> toplevel_to_arm</span> : <code class="type"><a href="Bsyntax.html#TYPEtoplevel">Bsyntax.toplevel</a> -> string</code></pre><div class="info ">
+This function is a recursive function to conver tpye toplevel into type fundef<br>
+<b>Returns</b> unit<br>
+</div>
+<div class="param_info"><code class="code">toplevel</code> : program in type toplevel</div>
+</body></html>
