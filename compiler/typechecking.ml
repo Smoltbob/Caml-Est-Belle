@@ -8,9 +8,8 @@ let  eq = ref []
 
 (** the environment in which the program is typechecked 
     it has a type of (Fid.t* Ftype.t) list *)
-(*let  env = ref [] *)
-
 let  env = ref [("print_int" ,Fun( [Int] , Unit ))]
+(*let  env = ref [] *)
 (*for later : after defining string type*)
 (*let  env = ref [( "print_string",Fun([string],Unit )); ("print_int" ,Fun( [Int] , Unit ))]*)
 

@@ -12,7 +12,7 @@ let print_asml l =
     if !asml_only then
         Fasmlgen.closure_to_asmlstring_main (Fclosure.clos_exp (Freduction.reduc (Fknormal.knormal s)))
     else
-        let prog = Fasmlgen.asml_head (Fclosure.clos_exp (Freduction.reduc (Fknormal.knormal s))) in
+        let prog = Fasmlgen.asml_head (Fclosure.clos_exp (Freduction.reduc (Falphaconversion.alpha(Fknormal.knormal s)))) in
         (*Barmgenerator.toplevel_to_arm prog*)
         Barmspillgenerator.toplevel_to_arm prog
 
