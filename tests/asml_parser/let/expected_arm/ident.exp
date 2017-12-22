@@ -1,0 +1,6 @@
+.text
+.global _start
+_start:
+mov R5, R4
+ nop
+BL min_caml_exit

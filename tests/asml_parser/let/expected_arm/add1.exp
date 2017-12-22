@@ -1,0 +1,6 @@
+.text
+.global _start
+_start:
+add R4, R4, #1
+ nop
+BL min_caml_exit

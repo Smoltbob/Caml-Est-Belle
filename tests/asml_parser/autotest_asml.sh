@@ -12,13 +12,10 @@ verb=0
 # -v alone (verbose)
 # -d with an argument (folder)
 # -p with an argument (executable)
-while getopts "vd:p:t:o:" opt; do
+while getopts "vp:t:d:" opt; do
     case "$opt" in
         v)
             verb=1
-            ;;
-        d)
-            dir=$OPTARG
             ;;
         p)
             prog="./$OPTARG"
@@ -26,8 +23,8 @@ while getopts "vd:p:t:o:" opt; do
         t)  
             typ=$OPTARG
             ;;
-        o)
-            outarm=$OPTARG
+        d) 
+            dir=$OPTARG
             ;;
         *) echo "Options : -v [verbose] -d [asml files directory] -t [type]"
             exit 0
@@ -40,22 +37,14 @@ done
 
 # Going through asml files in the folder to execute them
 for folder in "$dir"/*/; do
-    for file in "$folder"*.ml; do
+    for file in "$folder"*.asml; do
         # Removing extention from filename
         filename=$(basename "$file")
         filename="${filename%.*}"
         # Printing filename + path
         echo -e "File: \e[34m$file\e[0m"
-        # Compiling
-        if [[ $verb = 1 ]]; then
-            "$prog" "$file" -o "$outarm"/"$filename".s
-            (cd "$outarm" && make "$filename".arm)
-        else
-            "$prog" "$file" -o "$outarm"/"$filename".s >> /dev/null
-            (cd "$outarm" && make "$filename".arm) >> /dev/null
-        fi
-        RESULT=$(cd "$outarm" && qemu-arm ./"$filename".arm)
         # Printing output from parsing + ARM generation
+        RESULT=$("$prog" "$file" 2>&1)
         if [[ $verb = 1 ]]; then
             echo -e "\e[33mOutput  : $RESULT\e[0m"
             echo ""
