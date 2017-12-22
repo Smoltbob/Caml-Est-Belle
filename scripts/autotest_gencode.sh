@@ -1,1 +1,1 @@
-/home/jules/Documents/2A/Project/Caml-Est-Belle/scripts/../tests/gen-code/autotest_gencode.sh
+../tests/gen-code/autotest_gencode.sh
