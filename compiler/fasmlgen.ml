@@ -2,32 +2,6 @@ open Fclosure;;
 open Printf;;
 open Bsyntax;; (* Type for the asml file *)
 
-(* type t =
-  | Int of int
-  | Float of float
-  | Neg of Id.t
-  | Fneg of Id.t
-  | Fsub of Id.t * Id.t
-  | Fadd of Id.t * Id.t
-  | Fmul of Id.t * Id.t
-  | Fdiv of Id.t * Id.t
-  | Add of Id.t * t
-  | Sub of Id.t * t
-  | Var of Id.t
-  | Eq of Id.t * t
-  | Nop
-
-and asmt =
-    | Let of Id.t * t * asmt
-    | Expression of t
-    (* | Additional case for parenthesis ? Don't think so ? *)
-
-and fundef =
-    | Body of asmt (* We will need the name, arguments and return type for functions *)
-
-type toplevel =
-    | Fundefs of (fundef list) (* Once we implement functions we will have a list *) *)
-
 
 let rec asml_t_triv t = match t with
     | Unit -> Nop
@@ -144,7 +118,7 @@ let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
         (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
         (closure_to_asmlstring fd.body)   (*CHANGE LATER*)
         (closure_to_asmlstring e)
-    | _ -> ""
+    | _ -> "\n[[ match not found in asml gen ]]\n"
 
 
 (*
