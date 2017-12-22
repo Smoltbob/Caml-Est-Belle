@@ -12,7 +12,7 @@ armgen:
 
 doc:
 	ocamlbuild mincamlc.docdir/index.html
-	mv mincamlc.docdir/* ../docs
+	mv mincamlc.docdir ../docs
 
 test_asml:	
 	(cd ../ && ./scripts/autotest_asml.sh -p ./scripts/asmlparse -d tests/asml_parser -t asml)
