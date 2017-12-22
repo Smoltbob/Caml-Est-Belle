@@ -1,3 +1,5 @@
+(** This module encapslates the K-normalization step.*)
+
 type t =
   | Unit
   | Bool of bool
@@ -28,6 +30,11 @@ type t =
   | Put of t * t * t
 and fundef = { name : Id.t * Ftype.t; args : (Id.t * Ftype.t) list; body : t }
 
+(** K-normalization. Applied to ast, return a flatter version of it: aside from let and letrec, all constructs will have a bounded depth.
+@param ast Abstract syntax Tree of a general mincaml program
+@return New K-normalized AST*)
 val knormal : Fsyntax.t -> t
-
+(** Produces a string out of a K-normalized ast
+@param exp t
+@return string*)
 val k_to_string : t -> string
