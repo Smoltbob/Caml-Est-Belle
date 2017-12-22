@@ -1,4 +1,5 @@
 open Ftype;;
+
 let display_version = ref false
 let type_check_only = ref false
 let parse_only = ref false
@@ -6,13 +7,17 @@ let asml_only = ref false
 let version = ref "Version: Fancy Camembert"
 let output_file = ref "a.out"
 
+let catchfailwith funct x = try (funct x) with
+    | Failure err -> (Printf.fprintf stdout "%s" err; exit 1)
+    | _ -> funct x
 
 let print_asml l =
-    let s = (Fparser.exp Flexer.token l) in
+    let s = Fparser.exp Flexer.token l in
+    let c = (Fclosure.clos_exp (Freduction.reduc (Falphaconversion.alpha (Fknormal.knormal s)))) in
     if !asml_only then
-        Fasmlgen.closure_to_asmlstring_main (Fclosure.clos_exp (Freduction.reduc (Fknormal.knormal s)))
+        Fasmlgen.closure_to_asmlstring_main c
     else
-        let prog = Fasmlgen.asml_head (Fclosure.clos_exp (Freduction.reduc (Falphaconversion.alpha(Fknormal.knormal s)))) in
+        let prog = Fasmlgen.asml_head c in
         (*Barmgenerator.toplevel_to_arm prog*)
         Barmspillgenerator.toplevel_to_arm prog
 
