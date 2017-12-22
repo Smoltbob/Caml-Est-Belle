@@ -21,7 +21,7 @@ test_gencode:
 	(cd ../ && ./scripts/autotest_gencode.sh -p ./scripts/mincamlc -d tests/gen-code -t ml -o ARM)
 
 test_typecheck:
-	(cd ../ && ./scripts/autotest_typecheck.sh -p ./scripts/mincamlc -d tests/typechecking -t tc)
+	(cd ../ && ./scripts/autotest_typecheck.sh -p ./scripts/mincamlc -d tests/typechecking -t tc -v)
 
 test:
 	@echo "LAUNCHING TESTS"
