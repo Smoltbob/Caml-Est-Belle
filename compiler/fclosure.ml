@@ -79,14 +79,19 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     (*/tmp*)
 
 (* Nested letrec have not been unnested yet (in reduction) *)
+
 let rec clos_aux (k:Fknormal.t) :(Fknormal.fundef option * Fknormal.t) = match k with
+    | Let (x, a, b) ->
+        let (extract, newbody) = (clos_aux b) in
+            (extract, Let (x, a, newbody))
+        (*concat newbody obtained with clos aux*)
     | LetRec (fundef, t) ->
         let (fname, fargs, fbody) = (fundef.name, fundef.args, fundef.body) in
         let (extract, newfbody) = (clos_aux fbody) in
             (match extract with
             | None ->
                 print_string "None";
-                (None, LetRec ({name = fname; args = fargs; body = newfbody}, clos t)) (* we can put newfbody or fbody here*)
+                (Some fundef, LetRec ({name = fname; args = fargs; body = newfbody}, clos t)) (* we can put newfbody or fbody here*)
             | Some extract ->
                 let (ename, eargs, ebody) = (extract.name, extract.args, extract.body) in
                     (* the first clos_aux will unnest ebody
@@ -104,17 +109,66 @@ let rec clos_aux (k:Fknormal.t) :(Fknormal.fundef option * Fknormal.t) = match k
                                           )
                                  )
                     in (retextract, retnewbody))
-    | Let (x, a, b) ->
-        let (extract, newbody) = (clos_aux b) in
-            (extract, Let (x, a, newbody))
-        (*concat newbody obtained with clos aux*)
     | _ -> (None, k)
 
 and clos (k:Fknormal.t) =
     let (_, a) = (clos_aux k) in a
 
-let clos_out k = clos_exp (clos k)
+(*let clos_out k = clos_exp (clos k)*)
 
+
+
+
+(* (*THE BEST VERSION SO FAR*)
+let rec the_savage_phi (fb:Fknormal.t) : (Fknormal.fundef option * Fknormal.t)  = 
+        match fb with
+        |Let(a,b,c) -> (
+                        let recbody, newin = the_savage_phi c in
+                        match recbody with
+                        |None -> (None, Let(a, b, newin))
+                        |Some fbody -> (Some fbody, Let(a,b, newin))
+                        )
+        |LetRec(fbody, recin) -> (Some fbody, recin)
+        |_ -> (None, fb)
+
+and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
+    match ast with
+    |LetRec(fd, een) -> (
+                        let recbody, newin = the_savage_phi fd.body in
+                        match recbody with
+                        |None -> LetRec(chi fd, een)
+                        |Some fbody -> the_cunning_psi ( LetRec(chi fbody, the_cunning_psi (LetRec({name=fd.name; args=fd.args; body=newin}, een))))
+                        ) 
+    |Let(a,b,c) -> Let(a, the_cunning_psi b, the_cunning_psi c)
+    |_ -> ast
+*)
+
+let rec the_savage_phi (fb:Fknormal.t) : (Fknormal.fundef option * Fknormal.t)  = 
+        match fb with
+        |Let(a,b,c) -> (
+                        let recbody, newin = the_savage_phi c in
+                        match recbody with
+                        |None -> (None,  Let(a, b, newin))
+                        |Some fbody -> (Some fbody, Let(a,b, newin))
+                        )
+        |LetRec(fbody, recin) -> (Some fbody, recin)
+        |_ -> (None, fb)
+
+and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
+    match ast with
+    |LetRec(fd, een) -> (
+                        let recbody, newin = the_savage_phi fd.body in
+                        match recbody with
+                        |None -> LetRec(fd, een)
+                        |Some fbody -> the_cunning_psi ( LetRec(fbody, the_cunning_psi (LetRec({name=fd.name; args=fd.args; body=newin}, een))))
+                        ) 
+    |Let(a,b,c) -> Let(a, the_cunning_psi b, the_cunning_psi c)
+    |_ -> ast
+
+
+(*and chi fd = fd*)
+    
+let clos_out k = clos_exp (the_cunning_psi k)
 (* We now consider that there are no free variable inside our nested letrecs *)
     (* | LetRec (fundef, t) ->
         let (fname, fargs, fbody) = (fundef.name, fundef.args, fundef.body) in
