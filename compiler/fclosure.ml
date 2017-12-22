@@ -80,13 +80,23 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
 
 (* Nested letrec have not been unnested yet (in reduction) *)
 let rec clos_aux (k:Fknormal.t) :(Fknormal.fundef option * Fknormal.t) = match k with
+(*concat newbody obtained with clos aux*)
+    | Let (x, a, b) ->
+        let (extract, newbody) = (clos_aux b) in (extract, Let (x, a, newbody))
+            (* (match newbody with
+                | None -> (None, Let (x, a, newbody))
+                | Some fundef -> (extract, Let (x, a, newbody))) *)
     | LetRec (fundef, t) ->
+        (* while extract = Some
+        let (extract, following_body) = clos_aux t in
+        (Some fundef, following_body)*)
         let (fname, fargs, fbody) = (fundef.name, fundef.args, fundef.body) in
         let (extract, newfbody) = (clos_aux fbody) in
             (match extract with
             | None ->
-                print_string "None";
-                (None, LetRec ({name = fname; args = fargs; body = newfbody}, clos t)) (* we can put newfbody or fbody here*)
+                print_string "None\n";
+                print_string (sprintf "%s\n" (let (n, _) = fundef.name in n));
+                (Some fundef, LetRec ({name = fname; args = fargs; body = newfbody}, clos t)) (* we can put newfbody or fbody here*)
             | Some extract ->
                 let (ename, eargs, ebody) = (extract.name, extract.args, extract.body) in
                     (* the first clos_aux will unnest ebody
@@ -104,10 +114,6 @@ let rec clos_aux (k:Fknormal.t) :(Fknormal.fundef option * Fknormal.t) = match k
                                           )
                                  )
                     in (retextract, retnewbody))
-    | Let (x, a, b) ->
-        let (extract, newbody) = (clos_aux b) in
-            (extract, Let (x, a, newbody))
-        (*concat newbody obtained with clos aux*)
     | _ -> (None, k)
 
 and clos (k:Fknormal.t) =
