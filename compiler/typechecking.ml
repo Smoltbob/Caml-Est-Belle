@@ -58,7 +58,7 @@ let rec print_Eq lst =
           else return a failwith message "Unbound value x"
 *)
 let rec findVar lst x =
-(*) let i= List.length lst in print_int i;
+(* let i= List.length lst in print_int i;
   print_string "\n";
   print_string "find in environment the variable " ;
   print_string x ;print_string "\n";*)
