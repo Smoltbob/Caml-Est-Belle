@@ -46,7 +46,7 @@ let newvar () = let res = ("v"^(Printf.sprintf "%d" !last), Ftype.gentyp ()) in 
 let newfct args body = let res = {name = newvar (); args = args; body = body } in res
 
 
-(*K-normalization. Applied to ast, return a flatter version of it: aside from let and letrec, all constructs will have a bounded depth.
+(** K-normalization. Applied to ast, return a flatter version of it: aside from let and letrec, all constructs will have a bounded depth.
 @param ast Abstract syntax Tree of a general mincaml program
 @return New K-normalized AST*)
 let rec knormal (ast:Fsyntax.t) : t =
@@ -118,7 +118,7 @@ let rec knormal (ast:Fsyntax.t) : t =
                         in
                         aux b []
                        )
-                        
+
 
                     |_ -> ( (*When constant propgation is implemnted, only this mechanism should remain*)
                         let (f,t) = newvar () in
