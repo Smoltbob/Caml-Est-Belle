@@ -8,7 +8,7 @@ let  eq = ref []
 
 (** the environment in which the program is typechecked 
     it has a type of (Fid.t* Ftype.t) list *)
-let  env = ref [("print_int" ,Fun( [Int] , Unit ))]
+let  env = ref [("print_int" ,Fun( [Int] , Unit ));("print_float" ,Fun( [Float] , Unit ))]
 (*let  env = ref [] *)
 (*for later : after defining string type*)
 (*let  env = ref [( "print_string",Fun([string],Unit )); ("print_int" ,Fun( [Int] , Unit ))]*)
@@ -58,12 +58,12 @@ let rec print_Eq lst =
           else return a failwith message "Unbound value x"
 *)
 let rec findVar lst x =
- (* let i= List.length lst in print_int i;
+(* let i= List.length lst in print_int i;
   print_string "\n";
   print_string "find in environment the variable " ;
   print_string x ;print_string "\n";*)
   match lst with
-    |(id, t)::tl -> (*print_string id ; print_string "\n";print_Type t;print_string "\n";*)
+    |(id, t)::tl ->(* print_string id ; print_string "\n";print_string(getTypeString t);print_string "\n";*)
                     if id =  x then  t
                     else findVar tl  x
     |_ ->   failwith (Printf.sprintf "Unbound value: %s" x)
@@ -197,22 +197,29 @@ let rec genEquations  (expr:Fsyntax.t) tp  =
                         genEquations e tp;
                       (*  print_string "eq letrec4 \n";*)
 
-    (*just adding a stupid solution to check print_int.TODO enhance later*)
-    | App (e1, le2) -> if e1= Var("print_int") then
-                        begin
-                          if not ((List.length le2)=1) then
-                            failwith "a function expected one argument"
-                          else
-                            begin
-                              genEquations (List.hd le2) Int ; 
-                              updateEq(Unit, tp)  
-                            end     
-                        end
+    (*just check print_int and print_float.TODO enhance later*)
+    | App (e1, le2) -> (match e1 with
+                        | Var id -> (
+                            if id="print_int" || id= "print_float" then
+                              begin
+                                if not ((List.length le2)=1) then
+                                      failwith "a function expected one argument\n"
+                                else
+                                 begin  
+                                    let x=findVar !env id in 
+                                   ( match x with
+                                    | Fun (a,b)-> ( 
+                                      genEquations (List.hd le2) (List.hd a) ; 
+                                      updateEq(Unit, tp))
+                                    | _ -> failwith "Fun type was expected\n"
+                                   )
+                                  end
+                              end
+                            else
+                              print_string "calling functions not implemented yet\n"
+                        )
 
-                      else
-                        print_string "calling functions not implemented yet\n"
-
-  
+                        | _ -> print_string "calling functions not implemented yet\n")
 
     | If (e1, e2, e3) ->  genEquations e1 Bool ;
                           genEquations e2 tp;
