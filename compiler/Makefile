@@ -23,7 +23,7 @@ test_gencode:
 test_typecheck:
 	(cd ../ && ./scripts/autotest_typecheck.sh -p ./scripts/mincamlc -d tests/typechecking -t tc)
 
-test:
+test: all
 	@echo "LAUNCHING TESTS"
 	@echo "ASML PARSING ..."
 	$(MAKE) test_asml
