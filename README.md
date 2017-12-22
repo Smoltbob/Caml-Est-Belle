@@ -12,6 +12,7 @@ So far we are handling a subset of ML such that :
 * Arithmetic expressions
 * Calls to external functions (print_int)
 are supported.
+We are using the *spill everything* register allocation algorithm.
 
 We also have a wide range of tests regarding this subset.
 Finally we have documentation available, both in `docs` and on the wiki.
@@ -22,7 +23,7 @@ Organization of the repository:</br>
 | __ARM/__ | arm source example and compilation with libmincaml |
 | __asml/__ | asml examples |
 | __compiler/__ | compiler source files |
-| __compiler\_very\_basic/__ | very basic compiler with only very basic register allocation |
+| __compiler\_very\_basic/__ | compiler with very basic register allocation |
 | __doc/__ | all the documentation, start with index.html |
 | __mincaml/__ | MinCaml examples |
 | __ocaml/__ | MinCaml parser in OCaml |
