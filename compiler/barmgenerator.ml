@@ -1,6 +1,6 @@
 (** This file is to generate arm code from Bsyntax.toplevel stutructure by very basic method of variables registation*)
 
-open Bsyntax;; 
+open Bsyntax;;
 open Printf;;
 
 
@@ -53,7 +53,7 @@ let rec to_arm_formal_args args =
     | [] -> sprintf ""
     | l when (List.length l <= 4) -> movegen l 0
 	| _ -> failwith "Not handled yet"
-    | t::q -> sprintf "%s %s" t (to_string_args q) 
+	(* | t::q -> sprintf "%s %s" t (to_string_args q)  *)
 
 (**/**)
 (* Useless ? *)
@@ -64,7 +64,7 @@ let rec ident_or_imm_expression_to_arm ident_or_imm =
     | _ -> failwith "Not a valid identifiant or immediate"
 (**/**)
 
-(** This function is to convert assignments into arm code 
+(** This function is to convert assignments into arm code
 @param exp expression in the assigment
 @param dest the variable which is assigned in this assignment
 @return unit*)
@@ -73,7 +73,7 @@ let rec exp_to_arm exp dest =
     match exp with
     | Int i -> sprintf "mov %s, #%s\n" (to_register dest) (string_of_int i)
     | Var id -> sprintf "mov %s, %s\n" (to_register dest) (to_register id)
-    | Add (e1, e2) -> (match dest with 
+    | Add (e1, e2) -> (match dest with
                     | "" -> sprintf "add r0, %s, %s\n" (to_register e1) (to_register e2)
                     | _ -> sprintf "add %s, %s, %s\n" (to_register dest) (to_register e1) (to_register e2))
     | Sub (e1, e2) -> (match dest with
