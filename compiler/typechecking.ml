@@ -58,12 +58,12 @@ let rec print_Eq lst =
           else return a failwith message "Unbound value x"
 *)
 let rec findVar lst x =
- let i= List.length lst in print_int i;
+(*) let i= List.length lst in print_int i;
   print_string "\n";
   print_string "find in environment the variable " ;
-  print_string x ;print_string "\n";
+  print_string x ;print_string "\n";*)
   match lst with
-    |(id, t)::tl -> print_string id ; print_string "\n";print_string(getTypeString t);print_string "\n";
+    |(id, t)::tl ->(* print_string id ; print_string "\n";print_string(getTypeString t);print_string "\n";*)
                     if id =  x then  t
                     else findVar tl  x
     |_ ->   failwith (Printf.sprintf "Unbound value: %s" x)
@@ -109,7 +109,7 @@ let  updateEq x =
     end
     else   let s1= getTypeString(fst x) in let s2= getTypeString(snd x) in 
       failwith (Printf.sprintf "Expression has type %s but an expression was 
-        expected of type %s" s1 s2)
+        expected of type  %s" s1 s2)
      
  
 (** This is function is to append two lists
