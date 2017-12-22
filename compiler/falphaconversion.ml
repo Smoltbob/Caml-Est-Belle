@@ -1,12 +1,12 @@
 open Fknormal;;
 
 
-let ctr = ref 1 
+let ctr = ref 1
 let alphaMap = ref []
 
-let pop ()  = 
+let pop ()  =
   match !alphaMap with
-  | h::tl -> alphaMap:= tl 
+  | h::tl -> alphaMap:= tl
   |_ ->()
 
 let rec push   x =
@@ -22,29 +22,29 @@ let rec convert lst x =
 
 let rec alpha (k_t:Fknormal.t) : Fknormal.t  =
     match k_t with
-    |Let (a, b, c) -> (push  a); 
-                      let l=Let ((convert !alphaMap  (fst a), (snd a)), alpha b , alpha c ) 
+    |Let (a, b, c) -> (push  a);
+                      let l=Let ((convert !alphaMap  (fst a), (snd a)), alpha b , alpha c )
                       in pop ();l
-                      
-    |LetRec (a, b) -> List.map push a.args; 
-                     let l= LetRec ({name=(a.name); args= List.map (fun x -> (convert !alphaMap (fst x)), snd x) a.args; body=(alpha a.body)}, alpha b) 
+
+    |LetRec (a, b) -> List.map push a.args;
+                     let l= LetRec ({name=(a.name); args= List.map (fun x -> (convert !alphaMap (fst x)), snd x) a.args; body=(alpha a.body)}, alpha b)
                      in pop ();l
 
 
     |Var a -> Var (convert !alphaMap a)
 
-    |Unit -> Unit   
+    |Unit -> Unit
     |Bool a -> Bool a
     |Int a ->  Int a
     |Float a -> Float a
     |Not b -> Not (alpha b)
     |Neg b -> Neg (alpha  b)
-    |Sub (a, b) -> Sub(alpha  a, alpha  b)                  
-    |Add (a, b) -> Add(alpha  a, alpha b)                  
+    |Sub (a, b) -> Sub(alpha  a, alpha  b)
+    |Add (a, b) -> Add(alpha  a, alpha b)
     |FAdd (a, b) -> FAdd(alpha  a, alpha b)
     |FNeg b -> FNeg (alpha  b)
     |FSub (a, b) -> FSub(alpha a, alpha b)
-    |FMul (a, b) -> FMul(alpha a, alpha b)                 
+    |FMul (a, b) -> FMul(alpha a, alpha b)
     |FDiv (a, b) -> FDiv (alpha a, alpha b)
     |Eq (a, b) -> Eq (alpha a, alpha b)
     |LE (a, b) -> LE (alpha a, alpha b)
@@ -54,7 +54,5 @@ let rec alpha (k_t:Fknormal.t) : Fknormal.t  =
     |LetTuple (a, b, c) -> LetTuple ( a, alpha b,  alpha c )
     |Array (a, b) -> Array (alpha a, alpha b)
     |Get (a, b) -> Get (alpha a, alpha b)
-    |Put (a, b, c) -> Put (alpha a, alpha b,  alpha c)  
+    |Put (a, b, c) -> Put (alpha a, alpha b,  alpha c)
     |App (a,b) ->  App (alpha a,List.map alpha b)
-    
-

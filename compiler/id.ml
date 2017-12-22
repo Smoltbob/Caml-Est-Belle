@@ -1,6 +1,7 @@
 open Printf
 type t = string
 
+(** Function is a syntactic sugar *)
 let to_string x = x
 (*let to_register x = sprintf "r%s" (string_of_int (Bbasicregist.registVar x))*)
 

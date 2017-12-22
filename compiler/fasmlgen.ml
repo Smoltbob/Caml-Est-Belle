@@ -1,8 +1,13 @@
+(** This module contains functions which outputs a string from a Fclosure.t or outputs a Bsyntax.toplevel used as an input by the backend *)
+
 open Fclosure;;
 open Printf;;
-open Bsyntax;; (* Type for the asml file *)
+open Bsyntax;;
 
 
+(** This function takes care of the base cases such as sums and variables.
+@param t is a Fclosure.t
+@return a Bsyntax.t *)
 let rec asml_t_triv t = match t with
     | Unit -> Nop
     | Int a -> Int a
@@ -41,7 +46,9 @@ let rec asml_t_triv t = match t with
     | Var x -> Var x
     | _ -> failwith "asml_t_triv matchfailure"
 
-
+(** This function this is a recursive function on Let, AppD and (LetRec TBA). It calls asml_t_triv when it encounters a simple case that ends the recursion like a sum.
+@param c is an Fclosure.t
+@return an Bsyntax.asmt*)
 let rec asml_exp (c:Fclosure.t) :asmt = match c with
     | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
     (* | LetRec (fundef, a) -> LetRec ({name = }) *)
@@ -56,48 +63,12 @@ let rec asml_exp (c:Fclosure.t) :asmt = match c with
 
     (* | _ -> failwith "asml_exp matchfailure" *)
 
-    (* TODO remove those lines*)
-    (* vvv *)
-    (* | Unit -> Expression Nop
-    | Int a -> Expression (Int a)
-    | Float a -> Expression (Float a)
-    | Neg x -> (match x with
-                        | (Var y) -> Expression (Neg y)
-                        | _ -> failwith "matchfailure Neg")
-    | FNeg x -> (match x with
-                        | (Var y) -> Expression (Fneg y)
-                        | _ -> failwith "matchfailure Neg")
-    | FSub (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Expression (Fsub (x2, y2))
-                        | _ -> failwith "matchfailure FSub")
-    | FAdd (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Expression (Fadd (x2, y2))
-                        | _ -> failwith "matchfailure FAdd")
-    | FMul (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Expression (Fmul (x2, y2))
-                        | _ -> failwith "matchfailure FMul")
-    | FDiv (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Expression (Fdiv (x2, y2))
-                        | _ -> failwith "matchfailure FDiv")
-    | Add (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Expression (Add (x2, y2))
-                        | _ -> failwith "matchfailure Add")
-    | Sub (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Expression (Sub (x2, y2))
-                        | _ -> failwith "matchfailure Sub")
-    | Var x -> Expression (Var x)
-    | Eq (x, a) -> (match x with
-                        | (Var y) -> Expression (Eq (y, asml_t_triv a))
-                        | _ -> failwith "matchfailure Eq") *)
-    (* ^^^ *)
-
-(* let rec asml_asmt c = match c with
-    | Let (x, a, asmt) -> Let (fst x, asml_exp a, asml_asmt asmt)
-    | Expression exp -> Expression (asml_exp exp) *)
-
+(** Temporary function to correctly return a Bsyntax.toplevel *)
 let asml_head c =
     Fundefs [Body (asml_exp c)]
 
+(** This function is used to output the string to generate the asml file.
+@param exp is an Fclosure.t*)
 let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
     | Unit -> "nop"
     | Int i -> string_of_int i
@@ -110,7 +81,7 @@ let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
         (Id.to_string id)
         (closure_to_asmlstring e1)
         (closure_to_asmlstring e2)
-    | AppD (f, args) -> sprintf "Call %s %s\n"
+    | AppD (f, args) -> sprintf "call %s %s\n"
         (f)
         (infix_to_string closure_to_asmlstring args " ")
     | LetRec (fd, e) -> sprintf "let rec %s %s =\n %s in\n %s"
@@ -120,7 +91,7 @@ let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
         (closure_to_asmlstring e)
     | _ -> "\n[[ match not found in asml gen ]]\n"
 
-
+(* Do not delete this *)
 (*
   | Not e -> sprintf "(not %s)" (closure_to_asmlstring e)
   | Neg e -> sprintf "(- %s)" (closure_to_asmlstring e)
@@ -148,6 +119,6 @@ let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
   | Array(e1,e2) -> sprintf "(Array.create %s %s)"
        (closure_to_asmlstring e1) (closure_to_asmlstring e2) *)
 
-
+(** Temporary function to print the starting let _ = at the beginning of the asml file *)
 let closure_to_asmlstring_main (exp:Fclosure.t) : string =
    sprintf "let _ = \n %s" (closure_to_asmlstring exp)

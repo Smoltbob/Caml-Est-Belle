@@ -1,6 +1,9 @@
+(** This module will unnest the letrecs in the next versions. For now it only transforms a Fknormal.t into a Fclosure.t
+The function returning a string is just a dbeugging function for now *)
 open Fknormal;;
 open Fsyntax;;
 open Printf;;
+
 
 type t =
 (* uncomment those lines when ready to create closures *)
@@ -44,6 +47,7 @@ and fundef = {
 
 (* type toplevel = fundef list *)
 
+(** This function transform unnested expressions into a Fclosure.t *)
 let rec clos_exp (k:Fknormal.t) :t = match k with
     | Unit -> Unit
     | Bool a -> Bool a
@@ -77,7 +81,7 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
                         | _ -> failwith "matchfailure App")
     | _-> failwith "match not exhaustive in clos_exp fclosure.ml"
 
-
+(** This function is for debugging purpose only, it returns its argument as a string *)
 let rec clos_to_string (c:t) : string =
     match c with
   | Unit -> "()"
