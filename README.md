@@ -7,6 +7,14 @@ Private compiler project repository.</br>
 
 **Feel free to read the [wiki](https://github.com/Smoltbob/Caml-Est-Belle/wiki) for more documentation.**
 
+## State of the project
+So far we are handling a subset of ML such that :
+* Arithmetic expressions
+* Calls to external functions (print_int)
+are supported.
+
+We also have a wide range of tests regarding this subset.
+Finally we have documentation available, both in `docs` and on the wiki.
 Organization of the repository:</br>
 
 | Folder | Description |
