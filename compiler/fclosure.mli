@@ -1,3 +1,5 @@
+(** This module will unnest the letrecs in the next versions. For now it only transforms a Fknormal.t into a Fclosure.t
+The function returning a string is just a dbeugging function for now *)
 open Fknormal;;
 
 type t =
@@ -42,8 +44,11 @@ and fundef = {
 
 (* type toplevel = fundef list *)
 
+(** This function transform unnested expressions into a Fclosure.t *)
 val clos_exp : Fknormal.t -> t
+(** This function is for debugging purpose only, it returns its argument as a string *)
 val clos_to_string : t -> string
+
 (* val clos_toplevel : Fknormal.t -> toplevel *)
 (* val fv = t -> S.t *)
 
