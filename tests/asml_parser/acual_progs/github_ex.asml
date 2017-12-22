@@ -1,5 +1,5 @@
 let _ =
    let x = 0 in
    let y = 1 in
-   let x = add y 2 in
+   let x = add y x in
    nop
