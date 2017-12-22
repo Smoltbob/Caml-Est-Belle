@@ -1,3 +1,4 @@
+open Ftype;;
 let display_version = ref false
 let type_check_only = ref false
 let parse_only = ref false
@@ -28,10 +29,18 @@ let file fin fout =
     let inchan = open_in fin in
     let outchan = open_out fout in
     try
-        Printf.fprintf outchan "%s" (print_asml (Lexing.from_channel inchan));
-        print_endline (Printf.sprintf "Successfully created file %s" !output_file);
-        close_in inchan;
-        close_out outchan
+       if !type_check_only then
+       begin
+         let s = (Fparser.exp Flexer.token (Lexing.from_channel inchan)) in
+           Typechecking.genEquations s Unit; print_string "well typed\n"
+       end
+     else
+         begin
+            Printf.fprintf outchan "%s" (print_asml (Lexing.from_channel inchan));
+            print_endline (Printf.sprintf "Successfully created file %s" !output_file);
+        end;
+    close_in inchan;
+    close_out outchan
     with e -> (close_in inchan; close_out outchan; raise e)
 
 let () =
