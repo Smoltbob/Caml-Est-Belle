@@ -71,13 +71,6 @@ let rec asml_t_triv t = match t with
 let rec asml_exp (c:Fclosure.t) :asmt = match c with
     | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
     (* | LetRec (fundef, a) -> LetRec ({name = }) *)
-    | AppD (f, l) ->
-        (let rec trans (l:Fclosure.t list) :Bsyntax.formal_args = match l with
-            | [] -> []
-            | (Var x)::q -> (x:Id.t)::(trans q)
-            | _ -> failwith "not a list of variables. Maybe the argument is of type unit ?"
-        in
-        Expression (Call (f, trans l)))
     | _ -> Expression (asml_t_triv c)
 
     (* | _ -> failwith "asml_exp matchfailure" *)
