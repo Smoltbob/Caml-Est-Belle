@@ -1,4 +1,4 @@
-all: 
+all: asmlparser armgen
 	ocamlbuild main.byte 
 	mv main.byte mincamlc
 
