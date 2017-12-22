@@ -40,37 +40,37 @@ done
 
 # Going through asml files in the folder to execute them
 for folder in "$dir"/*/; do
-    for file in "$folder"*.ml; do
-        # Removing extention from filename
-        filename=$(basename "$file")
-        filename="${filename%.*}"
-        # Printing filename + path
-        echo -e "File: \e[34m$file\e[0m"
-        # Compiling
-        if [[ $verb = 1 ]]; then
-            "$prog" "$file" -o "$outarm"/"$filename".s
-            (cd "$outarm" && make "$filename".arm)
-        else
-            "$prog" "$file" -o "$outarm"/"$filename".s >> /dev/null
-            (cd "$outarm" && make "$filename".arm) >> /dev/null
-        fi
-        RESULT=$(cd "$outarm" && qemu-arm ./"$filename".arm)
-        # Printing output from parsing + ARM generation
-        if [[ $verb = 1 ]]; then
-            echo -e "\e[33mOutput  : $RESULT\e[0m"
-            echo ""
-        fi
-        # Printing the expected output
-        EXP=$(cat "$folder"expected_$typ/"$filename".exp)
-        if [[ $verb = 1 ]]; then
-            echo -e "\e[35mExpected :$EXP\e[0m"
-            echo ""
-        fi
-        # Comparison between the two
-        if [[ $RESULT == "$EXP" ]]; then
-            echo -e "\e[7mResult\e[27m \e[32mOK\e[0m"
-        else 
-            echo -e "\e[7mResult\e[27m \e[31mKO\e[0m"
-        fi
-    done
+    if [[ $(basename $folder) != "ARM" ]]; then
+        echo $(basename $folder)
+        for file in "$folder"*.ml; do
+            # Removing extention from filename
+            filename=$(basename "$file")
+            filename="${filename%.*}"
+            # Printing filename + path
+            echo -e "File: \e[34m$file\e[0m"
+            # Compiling
+            if [[ $verb = 1 ]]; then
+                "$prog" "$file" -o "$outarm"/"$filename".s
+                (cd "$outarm" && make "$filename".arm)
+            else
+                "$prog" "$file" -o "$outarm"/"$filename".s >> /dev/null
+                (cd "$outarm" && make "$filename".arm) >> /dev/null
+            fi
+            RESULT=$(cd "$outarm" && qemu-arm ./"$filename".arm)
+            # Printing output from parsing + ARM generation
+            # Printing the expected output
+            EXP=$(cat "$folder"expected_$typ/"$filename".exp)
+            if [[ $verb = 1 ]] || [[ $EXP != $RESULT ]]; then
+                echo -e "\e[33mOutput  : $RESULT\e[0m"
+                echo -e "\e[35mExpected :$EXP\e[0m"
+                echo ""
+            fi
+            # Comparison between the two
+            if [[ $RESULT == "$EXP" ]]; then
+                echo -e "\e[7mResult\e[27m \e[32mOK\e[0m"
+            else 
+                echo -e "\e[7mResult\e[27m \e[31mKO\e[0m"
+            fi
+        done
+    fi
 done

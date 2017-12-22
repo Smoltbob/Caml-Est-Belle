@@ -45,13 +45,10 @@ for folder in "$dir"/*/; do
         echo -e "File: \e[34m$file\e[0m"
         # Printing output from parsing + ARM generation
         RESULT=$("$prog" "$file" 2>&1)
-        if [[ $verb = 1 ]]; then
-            echo -e "\e[33mOutput  : $RESULT\e[0m"
-            echo ""
-        fi
         # Printing the expected output
         EXP=$(cat "$folder"expected_$typ/"$filename".exp)
-        if [[ $verb = 1 ]]; then
+        if [[ $verb = 1 ]] || [[ "$RESULT" != "$EXP" ]]; then
+            echo -e "\e[33mOutput  : $RESULT\e[0m"
             echo -e "\e[35mExpected :$EXP\e[0m"
             echo ""
         fi
