@@ -1,4 +1,4 @@
-(** This file is for program type checking*)
+(** This module is for program type checking*)
 open Fsyntax;;
 open Ftype;;
 
@@ -8,9 +8,8 @@ let  eq = ref []
 
 (** the environment in which the program is typechecked 
     it has a type of (Fid.t* Ftype.t) list *)
-let  env = ref []
-
-(*let  env = ref [("print_int" ,Fun( [Int] , Unit ))]*)
+let  env = ref [("print_int" ,Fun( [Int] , Unit ))]
+(*let  env = ref [] *)
 (*for later : after defining string type*)
 (*let  env = ref [( "print_string",Fun([string],Unit )); ("print_int" ,Fun( [Int] , Unit ))]*)
 
@@ -133,7 +132,6 @@ let rec append l1 l2 =
   @param expr the parsed program that we want to check
   @param tp  the type that the program must have (unit)
   @return unit if everything is correct or failwith 
-
 *)
 let rec genEquations  (expr:Fsyntax.t) tp  =
   match expr with
@@ -156,7 +154,7 @@ let rec genEquations  (expr:Fsyntax.t) tp  =
                       genEquations e2 Int ;
                       updateEq(Int, tp) 
 
-    | Neg e ->  genEquations e Bool ;
+    | Neg e ->  genEquations e Bool;
                 updateEq(Bool, tp) 
 
     | FNeg e -> genEquations e Bool ;
@@ -198,16 +196,38 @@ let rec genEquations  (expr:Fsyntax.t) tp  =
                        (* print_string "eq letrec3 \n";*)
                         genEquations e tp;
                       (*  print_string "eq letrec4 \n";*)
-                       
+
+    (*just adding a stupid solution to check print_int.TODO enhance later*)
+    | App (e1, le2) -> if e1= Var("print_int") then
+                        begin
+                          if not ((List.length le2)=1) then
+                            failwith "a function expected one argument"
+                          else
+                            begin
+                              genEquations (List.hd le2) Int ; 
+                              updateEq(Unit, tp)  
+                            end     
+                        end
+
+                      else
+                        print_string "calling functions not implemented yet\n"
+
   
 
-    |_ ->failwith "Not implemented yet"
+    | If (e1, e2, e3) ->  genEquations e1 Bool ;
+                          genEquations e2 tp;
+                          genEquations e3 tp
+
+    | Eq (e1, e2) -> genEquations e1 (Var(ref None));
+                     genEquations e2 (getType())
+
+    | LE (e1, e2) -> genEquations e1 (Var(ref None));
+                     genEquations e2 (getType ())
+
+    |_ ->print_string "there is a type not implemented yet\n"
 
 (*   
-  | App (e1, le2) ->
-  | Eq (e1, e2) -> 
-  | LE (e1, e2) -> 
-  | If (e1, e2, e3) ->          
+  | App (e1, le2) ->         
   | LetTuple (l, e1, e2)-> 
   | Get(e1, e2) -> 
   | Put(e1, e2, e3) ->               
