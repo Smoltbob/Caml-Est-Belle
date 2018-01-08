@@ -26,8 +26,11 @@ and asmt =
     | Expression of t
     (* | Additional case for parenthesis ? Don't think so ? *)
 
-and fundef =
-    | Body of asmt (* We will need the name, arguments and return type for functions *)
+and fundef =    {
+                    name : Id.t
+                    args : Id.t list
+                    body : asmt
+                }
 
 type toplevel =
     | Fundefs of (fundef list) (* Once we implement functions we will have a list *)
