@@ -99,7 +99,7 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
                        Bool(apply_polymorph {f=(<=)} a' b')
                    else LE(a',b')
     *)
-    |App (a,b) ->  (match a with |Var(a') -> let a = (if Hashtbl.mem m a' then Hashtbl.find m a' else a) in App (a, List.map (g m) b)
+    |App (a,b) ->  (match a with |Var(a') -> let a = (if Hashtbl.mem m a' then Hashtbl.find m a' else a) in App (a, b)
                                  |_->failwith "ConstFold.g: bad App"
                    )
     |_ -> failwith "ConstFold.g: NotYetImplemented"
