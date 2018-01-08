@@ -79,11 +79,11 @@ let rec knormal (ast:Fsyntax.t) : t =
     |Neg b -> knormal_unary (fun x->Neg x) b
     |Sub (a, b) -> knormal_binary (fun x->fun y->Sub(x,y)) a b  
     |Add (a, b) -> knormal_binary (fun x->fun y->Add(x,y)) a b  
-    |FAdd (a, b) -> knormal_binary (fun x->fun y->FAdd(x,y)) a b 
+    |FAdd (a, b) -> knormal_binary_brute (fun x->fun y->FAdd(x,y)) a b 
     |FNeg b -> knormal_unary (fun x->FNeg x) b
-    |FSub (a, b) -> knormal_binary (fun x->fun y->FSub(x,y)) a b  
-    |FMul (a, b) -> knormal_binary (fun x->fun y->FMul(x,y)) a b  
-    |FDiv (a, b) -> knormal_binary (fun x->fun y->FDiv(x,y)) a b  
+    |FSub (a, b) -> knormal_binary_brute (fun x->fun y->FSub(x,y)) a b  
+    |FMul (a, b) -> knormal_binary_brute (fun x->fun y->FMul(x,y)) a b  
+    |FDiv (a, b) -> knormal_binary_brute (fun x->fun y->FDiv(x,y)) a b  
     (*
     |Eq (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
@@ -178,11 +178,19 @@ knormal_binary (c:t->t->t) (a:Fsyntax.t) (b:Fsyntax.t) =
                 Let((b',t), knormal b,
                     c (Var a') (Var b')))
     )
+and
+knormal_binary_brute (c:t->t->t) (a:Fsyntax.t) (b:Fsyntax.t) =
+    let (a',t) = newvar () in
+    let (b',t) = newvar () in
+    Let((a',t), knormal a,
+        Let((b',t), knormal b,
+        c (Var a') (Var b')))
+    
+
 
 and
 knormal_unary c a =
-    if is_ident_or_const a then c (ident_or_const_to_k a)
-    else let (a',t) = newvar () in
+    let (a',t) = newvar () in
         Let((a',t), knormal a, c (Var a'))         
 
 
