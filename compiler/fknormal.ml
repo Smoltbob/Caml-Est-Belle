@@ -100,17 +100,18 @@ let rec knormal (ast:Fsyntax.t) : t =
     *)
 
     |App (a,b) ->  ( match a with
-                    |Var(fct) -> (  (*a temporary solution to prevent functions from being renamed*)
+                    
+                    |Var(fct) -> (  
                         let rec aux vars_rem k_vars =
                             match vars_rem with
-                            |[] -> App(Var("min_caml_"^fct), List.rev k_vars)
+                            |[] -> App(Var("min_caml_"^fct), List.rev k_vars) (*a temporary solution to name external functions*)
                             |h::q -> let (x,t) = newvar () in Let((x,t), knormal h, aux q ((Var x)::k_vars))
                         in
                         aux b []
                        )
+                    
 
-
-                    |_ -> ( (*When constant propgation is implemnted, only this mechanism should remain*)
+                    |_ -> ( 
                         let (f,t) = newvar () in
                         let rec aux vars_rem k_vars =
                             match vars_rem with

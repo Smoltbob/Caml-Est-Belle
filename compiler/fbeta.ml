@@ -1,5 +1,8 @@
 open Fknormal
 
+let find m x =
+    if Hashtbl.mem m x then Hashtbl.find m x else Var(x) (*Hashtbl uses = not ==*) 
+
 let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
     match k with
     |Let ((a,t), b, c) -> let b' = g m b in 
@@ -14,7 +17,7 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
     |Bool a -> Bool a
     |Int a ->  Int a
     |Float a -> Float a
-    |Var a -> if Hashtbl.mem m a then Hashtbl.find m a else Var a (*Hashtbl uses = not ==*) 
+    |Var a -> find m a 
     |Not b -> Not (g m b) 
     |Neg a -> Neg (g m a) 
     |Sub (a, b) -> Sub (g m a, g m b) 
@@ -26,11 +29,21 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
     |FDiv (a, b) -> FDiv (g m a, g m b) 
     |Eq (a, b) -> Eq (g m a, g m b)  
     |LE (a, b) -> LE (g m a, g m b) 
-    |App (Var(a),b) ->  let a' = if Hashtbl.mem m a then Hashtbl.find m a else Var(a) in App (a', List.map (g m) b)
+    |App (Var(a),b) ->  let a' = find m a in App (a', List.map (g m) b)
+    (*for now assume both sides on the comparisons of If's are IDENT*)
+    |IfEq (x, y, b, c) -> (let x' = find m x in
+                          let y' = find m y in
+                          match x',y' with
+                          |Var(u), Var(v) -> IfEq(u, v, g m b, g m c)
+                          |_ -> failwith "Beta.g: match failure IfEq")
+    |IfLE (x, y, b, c) -> (let x' = find m x in
+                          let y' = find m y in
+                          match x',y' with
+                          |Var(u), Var(v) -> IfLE(u, v, g m b, g m c)
+                          |_ -> failwith "Beta.g: match failure IfLE")
+
     |_ -> failwith "Beta.g: NotYetImplemented"
     (* 
-    |IfEq (x, y, b, c) -> IfEq (convert !alphaMap x, convert !alphaMap y, alpha b,  alpha c )
-    |IfLE (x, y, b, c) -> IfLE (convert !alphaMap x, convert !alphaMap y, alpha b,  alpha c )
     |Tuple a -> Tuple(List.map alpha a)
     |LetTuple (a, b, c) -> LetTuple ( a, alpha b,  alpha c )
     |Array (a, b) -> Array (alpha a, alpha b)

@@ -50,11 +50,13 @@ let rec alpha (k_t:Fknormal.t) : Fknormal.t  =
                       let l=Let ((convert !alphaMap  (fst a), (snd a)), alpha b , alpha c )
                       in pop ();l
 
-    |LetRec (a, b) -> List.iter push a.args;
-                     let l= LetRec ({name=(a.name); args= List.map (fun x -> (convert !alphaMap (fst x)), snd x) a.args; body=(alpha a.body)}, alpha b)
-                     in pop ();l
-
-
+    |LetRec (a, b) ->( List.iter push a.args;
+                       let newargs = List.map (fun x -> (convert !alphaMap (fst x)), snd x) a.args in
+                       let newbody = alpha a.body in
+                       List.iter (fun x ->pop ()) a.args;
+                       let newtail = alpha b in 
+                       LetRec ({name=a.name; args=newargs ; body=newbody}, newtail)
+                     )
     |Var a -> Var (convert !alphaMap a)
 
     |Unit -> Unit
