@@ -106,6 +106,7 @@ and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
 *)
 
 (*Ye new version*)
+(*
 let rec the_savage_phi (fb:Fknormal.t) : (Fknormal.fundef option * Fknormal.t)  =
     match fb with
     |Let(a,b,c) -> (
@@ -119,6 +120,24 @@ let rec the_savage_phi (fb:Fknormal.t) : (Fknormal.fundef option * Fknormal.t)  
                     |Some fbody -> (Some fbody, Let(a, newletbody, c))
                    )
     |LetRec(fbody, recin) -> (Some fbody, recin)
+    |IfEq(x, y, a, b) -> (let arecbody, anewbody = the_savage_phi a in
+                        match arecbody with
+                        |None ->  (let brecbody, bnewbody = the_savage_phi b in
+                                    match brecbody with
+                                    |None -> (None,  IfEq(x, y, a, b))
+                                    |Some fbody -> (Some fbody, IfEq(x, y, a, bnewbody))
+                                  )
+                        |Some fbody -> (Some fbody, IfEq(x, y, anewbody, b))
+                       )
+    |IfLE(x, y, a, b) -> (let arecbody, anewbody = the_savage_phi a in
+                        match arecbody with
+                        |None ->  (let brecbody, bnewbody = the_savage_phi b in
+                                    match brecbody with
+                                    |None -> (None,  IfLE(x, y, a, b))
+                                    |Some fbody -> (Some fbody, IfLE(x, y, a, bnewbody))
+                                  )
+                        |Some fbody -> (Some fbody, IfLE(x, y, anewbody, b))
+                       )
     |_ -> (None, fb)
 
 and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
@@ -136,7 +155,24 @@ and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
                         |Some fbody -> the_cunning_psi ( LetRec(fbody, Let(a, newin, c)))
                    )
     |_ -> ast
+*)
 
+let rec subphi cat (y:Fknormal.t) (z:Fknormal.t) lr : Fknormal.t = 
+    match (phi y) with
+    |LetRec(a, b) -> phi (LetRec(a, cat b z))
+    |_ -> (match (phi z) with
+            |LetRec(a, b) when lr -> cat y (phi (LetRec(a, b)))
+            |LetRec(a, b) -> phi (LetRec(a, cat y b))
+            |_ -> cat y z)
+and phi (ast:Fknormal.t) : Fknormal.t = 
+    match ast with
+    |Let(x,y,z) -> subphi (fun a->fun b->Let(x, a, b)) y z false
+    |LetRec(y,z) -> subphi (fun a->fun b->LetRec({name=y.name; args=y.args; body=a}, b)) y.body z true
+    |IfEq(u,v,y,z) -> subphi (fun a->fun b->IfEq(u,v,a,b)) y z false
+    |IfLE(u,v,y,z) -> subphi (fun a->fun b->IfLE(u,v,a,b)) y z false
+    |_ -> ast
+
+(*not really needed anymore*)
 let rec letrecs_at_top clos = match clos with
     | LetRec (f, een) -> LetRec (f, letrecs_at_top een)
     | Let (id, a, een) -> letrecs_at_top (een)
@@ -155,7 +191,8 @@ let rec merge_letrecs_lets letrecs lets = match letrecs with
 (*and chi fd = fd*)
 
 let clos_out k =
-    let clos = (clos_exp (the_cunning_psi k)) in
+    (*let clos = (clos_exp (the_cunning_psi k)) in*)
+    let clos = (clos_exp (phi k)) in
     merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos) 
 
 
