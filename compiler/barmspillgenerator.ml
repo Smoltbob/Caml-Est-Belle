@@ -28,11 +28,10 @@ let frame_position variable_name =
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
 @param args the list of arguments, in type string
 @return unit *)
-let rec to_arm_formal_args args =
+let rec to_arm_formal_args args i =
     match args with
     | [] -> sprintf ""
-    | l when (List.length l = 1) -> sprintf "\tpush {r0}\n"
-    | l when (List.length l <= 4) -> sprintf "\tpush {r0-r%i}\n" ((List.length l)-1)
+    | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (frame_position (List.hd l)) (to_arm_formal_args (List.tl l) (i-1))
     | _ -> failwith "Not handled yet"
 
 (** This function is to convert assignments into arm code 
@@ -46,7 +45,7 @@ let rec exp_to_arm exp dest =
     | Var id -> sprintf "\tldr r4, [fp, #%i]\n\tmov r5, r4\n\tstr r5, [fp, #%i]\n" (frame_position id) (frame_position dest)
     | Add (e1, e2)  -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tadd r6, r4, r5\n\tstr r6, [fp, #%i]\n" (frame_position e1) (frame_position e2) (frame_position dest)
     | Sub (e1, e2) -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tsub r6, r4, r5\n\tstr r6, [fp, #%i]\n" (frame_position e1) (frame_position e2) (frame_position dest)
-    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "\tadd sp, sp, #%i\n%s\tbl %s\n" (!frame_index - 4) (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))
+    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1 0) (String.sub l 1 ((String.length l) - 1))
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
@@ -64,9 +63,14 @@ let rec asmt_to_arm asm =
 let rec get_args args =
     match args with
     | [] -> sprintf ""
-    | l when (List.length l = 1) -> sprintf "\tldr r0, [sp]\n"
-    | l when (List.length l <= 4) -> sprintf "\tldm sp, {r0-r%i}" ((List.length l)-1)
+    | l when (List.length l = 1) -> sprintf "\tstmfd sp!, {r0}\n\n"
+    | l when (List.length l <= 4) -> sprintf "\tstmfd sp!, {r0-r%i}\n\n" ((List.length l)-1)
     | _ -> failwith "Not handled yet"
+
+let rec epilogue_to_arm args =
+    match args with
+    | [] -> ""
+    | l -> sprintf "\tadd sp, sp, #%i\n" (4*(List.length l))
 
 (** This function is a recursive function to conver tpye fundef into type asmt
 @param fundef program in type fundef
@@ -74,21 +78,21 @@ let rec get_args args =
 (* OK *)
 let rec fundef_to_arm fundef =
     (* Write down the label *)
-    sprintf ".global _%s\n_%s:\n\tmov fp, sp\n\tstmfd sp!, {lr}\n%s%s\tldmfd sp!, {lr}\n\tbx lr\n\n" fundef.name fundef.name (get_args fundef.args) (asmt_to_arm fundef.body)
+    sprintf "\t.globl %s\n%s:\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n%s%s\n%s\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name (get_args fundef.args) (asmt_to_arm fundef.body) (epilogue_to_arm fundef.args)
     (* Prepare the arguments. If <= 4 arguments, put them in r0 -> r3.
      * Else put them in the stack *)
     (* TODO *)
 
-
 let rec fundefs_to_arm fundefs =
     match fundefs with
-    | [] -> sprintf ""
+    | [start] -> sprintf "\t.globl _start\n_start:\n\tmov fp, sp\n\n%s\n\tbl min_caml_exit\n" (asmt_to_arm start.body)
     | h::l -> sprintf "%s%s" (fundef_to_arm h) (fundefs_to_arm l)
+    | _ -> failwith "No main function found"
 
 (** This function is a recursive function to conver tpye toplevel into type fundef
 @param toplevel program in type toplevel
 @return unit*)
 (* OK *)
 let rec toplevel_to_arm toplevel =
-    match toplevel with (* TODO match with h::l instead of doing tl and hd *)
-    | Fundefs f -> sprintf ".text\n%s.global _start\n_start:\n\tmov fp, sp\n%s\tbl min_caml_exit\n" (fundefs_to_arm (List.tl f)) (fundef_to_arm (List.hd f))
+    match toplevel with
+    | Fundefs functions_list -> sprintf "\t.text\n%s" (fundefs_to_arm functions_list)
