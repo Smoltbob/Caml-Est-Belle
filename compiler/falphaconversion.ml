@@ -46,16 +46,17 @@ let rec convert lst x =
 *)
 let rec alpha (k_t:Fknormal.t) : Fknormal.t  =
     match k_t with
-    |Let (a, b, c) -> (push  a);
+    |Let (a, b, c) -> (push a);
                       let l=Let ((convert !alphaMap  (fst a), (snd a)), alpha b , alpha c )
                       in pop ();l
 
-    |LetRec (a, b) ->( List.iter push a.args;
+    |LetRec (a, b) ->( push a.name;
+                       List.iter push a.args;
+                       let newname = ((convert !alphaMap (fst a.name)), (snd a.name)) in
                        let newargs = List.map (fun x -> (convert !alphaMap (fst x)), snd x) a.args in
                        let newbody = alpha a.body in
                        List.iter (fun x ->pop ()) a.args;
-                       let newtail = alpha b in 
-                       LetRec ({name=a.name; args=newargs ; body=newbody}, newtail)
+                       LetRec ({name=newname; args=newargs ; body=newbody}, alpha b)
                      )
     |Var a -> Var (convert !alphaMap a)
 
@@ -81,4 +82,5 @@ let rec alpha (k_t:Fknormal.t) : Fknormal.t  =
     |Array (a, b) -> Array (alpha a, alpha b)
     |Get (a, b) -> Get (alpha a, alpha b)
     |Put (a, b, c) -> Put (alpha a, alpha b,  alpha c)
-    |App (a,b) ->  App (alpha a,List.map alpha b)
+    |App (Var(a),b) -> let a' =  Var(convert !alphaMap a) in App (a', List.map alpha b)
+    |App (_, b) -> failwith "Falphaconversion.alpha: wrong App"
