@@ -1,6 +1,6 @@
-(** This file is to generate arm code from Bsyntax.toplevel stutructure*)
+(** This file is to generate arm code from Bsyntax.toplevel stutructure by very basic method of variables registation*)
 
-open Bsyntax;; 
+open Bsyntax;;
 open Printf;;
 
 
@@ -14,8 +14,8 @@ let vartbl_r = Hashtbl.create register_nb
 let register_i = ref 3
 
 (** This function is to load a register for variable x and update the vartbl_r
-@param x: the variable name in type id.t
-@return : unit *)
+@param x the variable name in type id.t
+@return unit *)
 let registVar x =
 	if (not (Hashtbl.mem vartbl_r x)) then
 		register_i := !register_i + 1;
@@ -52,7 +52,8 @@ let rec to_arm_formal_args args =
     match args with
     | [] -> sprintf ""
     | l when (List.length l <= 4) -> movegen l 0
-    | t::q -> sprintf "%s %s" t (to_string_args q) 
+	| _ -> failwith "Not handled yet"
+	(* | t::q -> sprintf "%s %s" t (to_string_args q)  *)
 
 (**/**)
 (* Useless ? *)
@@ -63,7 +64,7 @@ let rec ident_or_imm_expression_to_arm ident_or_imm =
     | _ -> failwith "Not a valid identifiant or immediate"
 (**/**)
 
-(** This function is to convert assignments into arm code 
+(** This function is to convert assignments into arm code
 @param exp expression in the assigment
 @param dest the variable which is assigned in this assignment
 @return unit*)
@@ -72,7 +73,7 @@ let rec exp_to_arm exp dest =
     match exp with
     | Int i -> sprintf "mov %s, #%s\n" (to_register dest) (string_of_int i)
     | Var id -> sprintf "mov %s, %s\n" (to_register dest) (to_register id)
-    | Add (e1, e2) -> (match dest with 
+    | Add (e1, e2) -> (match dest with
                     | "" -> sprintf "add r0, %s, %s\n" (to_register e1) (to_register e2)
                     | _ -> sprintf "add %s, %s, %s\n" (to_register dest) (to_register e1) (to_register e2))
     | Sub (e1, e2) -> (match dest with
@@ -83,6 +84,7 @@ let rec exp_to_arm exp dest =
                     | _ ->let l = (Id.to_string l1) in sprintf "%sBL %s\nmov %s, r0\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1)) (to_register dest))
     | Nop -> sprintf "nop\n"
 	| _ -> failwith "matchfailure in barmgenerator"
+
 (** This function is a recursive function to convert type asmt into assignments
 @param asm program in type asmt
 @return unit*)
@@ -98,8 +100,7 @@ let rec asmt_to_arm asm =
 @return unit*)
 (* OK *)
 let rec fundef_to_arm fundef =
-    match fundef with
-    | Body b -> asmt_to_arm b
+    asmt_to_arm fundef.body
 
 (** This function is a recursive function to conver tpye toplevel into type fundef
 @param toplevel program in type toplevel

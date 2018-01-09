@@ -1,0 +1,1 @@
+../tests/asml_parser/autotest_asml.sh

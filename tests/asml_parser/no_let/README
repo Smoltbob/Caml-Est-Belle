@@ -1,0 +1,5 @@
+These tests correspond to function without "let id = exp in ...".
+So only of the form :
+let _ =
+    exp
+For each possible exp.

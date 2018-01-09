@@ -1,39 +1,21 @@
+(** This module contains functions which outputs a string from a Fclosure.t or outputs a Bsyntax.toplevel used as an input by the backend *)
 open Printf;;
 open Fclosure;;
 
-(* type t =
-  | Int of int
-  | Float of float
-  | Neg of Id.t
-  | Fneg of Id.t
-  | Fsub of Id.t * Id.t
-  | Fadd of Id.t * Id.t
-  | Fmul of Id.t * Id.t
-  | Fdiv of Id.t * Id.t
-  | Add of Id.t * t
-  | Sub of Id.t * t
-  | Var of Id.t
-  | Eq of Id.t * t
-  | Nop
-  (* NOP ? *)
 
-and asmt =
-    | Let of Id.t * t * asmt
-    | Expression of t
-    (* | Additional case for parenthesis ? Don't think so ? *)
-
-and fundef =
-    | Body of asmt
-    (* We will need the name, arguments and return type for functions *)
-
-type toplevel =
-    | Fundefs of (fundef list) *)
-
-(* val gen : Fclosure.t -> asmt *)
-val closure_to_asmlstring : Fclosure.t -> string
-
-val closure_to_asmlstring_main : Fclosure.t -> string
-
+(** This function takes care of the base cases such as sums and variables.
+@param t is a Fclosure.t
+@return a Bsyntax.t *)
 val asml_t_triv : Fclosure.t -> Bsyntax.t
+(** This function this is a recursive function on Let, AppD and (LetRec TBA). It calls asml_t_triv when it encounters a simple case that ends the recursion like a sum.
+@param c is an Fclosure.t
+@return an Bsyntax.asmt*)
 val asml_exp : Fclosure.t -> Bsyntax.asmt
+(** Temporary function to correctly return a Bsyntax.toplevel *)
 val asml_head : Fclosure.t -> Bsyntax.toplevel
+
+(** Temporary function to print the starting let _ = at the beginning of the asml file *)
+val closure_to_asmlstring_main : Fclosure.t -> string
+(** This function is used to output the string to generate the asml file.
+@param exp is an Fclosure.t*)
+val closure_to_asmlstring : Fclosure.t -> string

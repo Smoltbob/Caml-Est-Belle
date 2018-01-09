@@ -1,3 +1,4 @@
+(** This module encapslates the K-normalization step.*)
 open Fsyntax;;
 open Printf;;
 (*open Fparser;;*)
@@ -6,6 +7,7 @@ open Printf;;
 let addtyp x = (x, Ftype.gentyp ())
 let newid () = addtyp (Id.genid ())
 *)
+
 type t =
   | Unit
   | Bool of bool
@@ -36,13 +38,17 @@ type t =
   | Put of t * t * t
 and fundef = { name : Id.t * Ftype.t; args : (Id.t * Ftype.t) list; body : t }
 
-
-let last = ref 97
-let newvar () = let res = ((String.make 1  (char_of_int !last)), Ftype.gentyp ()) in incr last; res
+(** Temporary solution to generate new labels. Revise later.*)
+let last = ref 0
+(*let newvar () = let res = ((String.make 1  (char_of_int !last)), Ftype.gentyp ()) in incr last; res*)
+let newvar () = let res = ("v"^(Printf.sprintf "%d" !last), Ftype.gentyp ()) in incr last; res
+(**Unused.*)
 let newfct args body = let res = {name = newvar (); args = args; body = body } in res
 
 
-
+(** K-normalization. Applied to ast, return a flatter version of it: aside from let and letrec, all constructs will have a bounded depth.
+@param ast Abstract syntax Tree of a general mincaml program
+@return New K-normalized AST*)
 let rec knormal (ast:Fsyntax.t) : t =
     match ast with
     |Unit -> Unit
@@ -112,7 +118,7 @@ let rec knormal (ast:Fsyntax.t) : t =
                         in
                         aux b []
                        )
-                        
+
 
                     |_ -> ( (*When constant propgation is implemnted, only this mechanism should remain*)
                         let (f,t) = newvar () in
@@ -125,7 +131,6 @@ let rec knormal (ast:Fsyntax.t) : t =
                         )
                   )
 
-    (*tmp*)
     |If (a, b, c) ->(match a with
                      | LE(x, y) -> let (x',t) = newvar () in
                                     let (y',t) = newvar () in
@@ -146,18 +151,20 @@ let rec knormal (ast:Fsyntax.t) : t =
                               Let((y',t), Bool(true),
                                IfEq(x', y', knormal b, knormal c)))
                     )
+    |Let (a, b, c) -> Let (a, knormal b, knormal c) (*OK*)
+    |LetRec (a, b) ->  LetRec ({name=("min_caml_"^(fst a.name), snd a.name); args=a.args; body=(knormal a.body)}, knormal b)
+    |_ -> failwith "knormal: NotImplementedYet"
+    (*
     |Tuple a -> Tuple(List.map knormal a)
     |LetTuple (a, b, c) -> LetTuple (a, knormal b, knormal c)
     |Array (a, b) -> Array (knormal a, knormal b)
     |Get (a, b) -> Get (knormal a, knormal b)
     |Put (a, b, c) -> Put (knormal a, knormal b, knormal c)
-    (*/tmp*)
-    |Let (a, b, c) -> Let (a, knormal b, knormal c) (*OK*)
-    (*tmp*)
-    |LetRec (a, b) ->  LetRec ({name=("min_caml_"^(fst a.name), snd a.name); args=a.args; body=(knormal a.body)}, knormal b)
-    (* | _ -> failwith "fknormal matchfailure" *)
-    (*/tmp*)
+    *)
 
+(** Produces a string out of a K-normalized ast
+@param exp t
+@return string*)
 let rec k_to_string (exp:t) : string =
     match exp with
   | Unit -> "()"

@@ -1,0 +1,1 @@
+../tests/typechecking/autotest_typecheck.sh

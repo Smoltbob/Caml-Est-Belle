@@ -1,23 +1,24 @@
+(** This module is for program type checking*)
 open Fsyntax;;
 open Ftype;;
 
 
-(* eq has a type of (Ftype.t* Ftype.t) list *)
+(** list of equations , it has a type of (Ftype.t* Ftype.t) list *)
 let  eq = ref []
 
-(* env has a type of (Fid.t* Ftype.t) list *)
-let  env = ref []
-
-(*let  env = ref [("print_int" ,Fun( [Int] , Unit ))]*)
+(** the environment in which the program is typechecked 
+    it has a type of (Fid.t* Ftype.t) list *)
+let  env = ref [("print_int" ,Fun( [Int] , Unit ));("print_float" ,Fun( [Float] , Unit ))]
+(*let  env = ref [] *)
 (*for later : after defining string type*)
 (*let  env = ref [( "print_string",Fun([string],Unit )); ("print_int" ,Fun( [Int] , Unit ))]*)
 
 
-
-let  printSize lst =  
-  let i= List.length lst in print_int i  
-
-
+(**This is just a helpful function that  get the string of Ftype.t 
+to display the equation or the environment content
+@param t a variable of type Ftype.t
+@return the equivalent string of any type
+*)
 let rec getTypeString t=
   match t with
     | Unit ->  "unit"
@@ -27,81 +28,112 @@ let rec getTypeString t=
     | Fun (a,b)-> "fun"
     | Tuple  a-> "tuple"
     | Array a-> "array"
-    | Var a->  "var"; (match !a with 
-                                            |None ->  " none"
-                                            |Some x -> getTypeString x
-                                  )
-    | _->  "undef"
+    | Var a->   (match !a with 
+                                |None ->  "var none"
+                                |Some x -> getTypeString x)
 
 
-let rec print_Type t=
-  let str=  getTypeString t in 
-    print_string str
+(**This is just a helpful function to print the content of equation list
+  @param equation list
+  @return print_string the equatuon content (type->type)
+*)
+let rec print_Eq lst =
+  match lst with
+    |(t1, t2)::tl -> print_string(getTypeString t1) ;
+                     print_string "->";
+                     print_string(getTypeString t2);
+                     print_string "\n";
+                     print_Eq tl  
+    |_ -> print_string "done\n"          
+                  
 
 
+(*let  printSize lst =  
+  let i= List.length lst in print_int i *) 
+
+(**This fuction is to search for a variable in the environment
+  @param lst the environment list ((Fid.t* Ftype.t) list)
+  @param x the variable we want to find (Fid.t)
+  @return if the variable is found in the environment return its type 
+          else return a failwith message "Unbound value x"
+*)
 let rec findVar lst x =
- (* let i= List.length lst in print_int i;
+(* let i= List.length lst in print_int i;
   print_string "\n";
   print_string "find in environment the variable " ;
   print_string x ;print_string "\n";*)
   match lst with
-    |(id, t)::tl -> (*print_string id ; print_string "\n";print_Type t;print_string "\n";*)
+    |(id, t)::tl ->(* print_string id ; print_string "\n";print_string(getTypeString t);print_string "\n";*)
                     if id =  x then  t
                     else findVar tl  x
     |_ ->   failwith (Printf.sprintf "Unbound value: %s" x)
    (*print x : the name of the variable*)
 
 
-let rec print_Eq lst =
-  match lst with
-    |(t1, t2)::tl -> print_Type t1 ;
-                     print_string "->";
-                     print_Type t2;
-                     print_string "\n";
-                     print_Eq tl  
-    |_ -> print_string "done\n"          
-                  
-
+(**This function is to get the head of equation list and return first type
+  @return first type in equation head pair (Ftype.t)
+*)
 let  getType () =
   match !eq with
   |(t1, t2)::tl -> t1
   |_->failwith " Undefined Type"
 
 
+(** This function is to check if the variable type is equal to Var
+  @param x type to be checked (Ftype.t)
+  @return if the type is Var return true else false
+*)
 let checkForVar x=
   (*print_Type x;print_string "\n";*)
    match x with
    | Var a -> true
    | _ -> false
 
-
+(*
 let updateType t1 t2=
     match t1 with
     | Var a -> t2
     | _ -> t1
+*)
 
-
+(** This function is to check if the new calculated equation pair is valid and add it to the equation list 
+@param x pair of (Ftype.t* Ftype.t)
+@return if it's valid return updated equation list 
+        else failwith message "Expression has type %s but an expression was expected of type %s"
+*)
 let  updateEq x =
   (* eq:=x::!eq;!eq *)
   if (fst x) = (snd x) || checkForVar (snd x)  || checkForVar (fst x)then  
     begin
-          eq:=x::!eq;!eq
+          eq:=x::!eq;
     end
     else   let s1= getTypeString(fst x) in let s2= getTypeString(snd x) in 
       failwith (Printf.sprintf "Expression has type %s but an expression was 
         expected of type  %s" s1 s2)
      
  
-
+(** This is function is to append two lists
+  @param l1 first list
+  @param l2 second list
+  @return list contains l1 then l2 content
+*)
 let rec append l1 l2 =
   match l1 with
   | h :: t -> h :: append t l2
   | [] -> l2
 
 
+
+
 (*TODO enhance the return of eq*)
 (*we could return the well typed AST*)
-let rec genEquations  (expr:Fsyntax.t) tp :(Ftype.t* Ftype.t) list =
+(** This function is to caculate the types for the AST 
+    and generate the the equation list and the environment
+  @param expr the parsed program that we want to check
+  @param tp  the type that the program must have (unit)
+  @return unit if everything is correct or failwith 
+*)
+let rec genEquations  (expr:Fsyntax.t) tp  =
   match expr with
     | Unit ->   updateEq (Unit, tp)
     | Bool b -> updateEq(Bool, tp) 
@@ -122,7 +154,7 @@ let rec genEquations  (expr:Fsyntax.t) tp :(Ftype.t* Ftype.t) list =
                       genEquations e2 Int ;
                       updateEq(Int, tp) 
 
-    | Neg e ->  genEquations e Bool ;
+    | Neg e ->  genEquations e Bool;
                 updateEq(Bool, tp) 
 
     | FNeg e -> genEquations e Bool ;
@@ -145,7 +177,7 @@ let rec genEquations  (expr:Fsyntax.t) tp :(Ftype.t* Ftype.t) list =
                         updateEq(Float, tp)                      
 
    | Let ((id,t), e1, e2) -> genEquations  e1 t ;
-                             (* TODO maybewe should update the AST types t:=getType ();*)
+                             (* TODO maybe we should update the AST types t:=getType ();*)
                           (*   print_Type t;  print_string "\n";*)
                              env:=(id, getType ())::!env;
                              genEquations e2 tp 
@@ -164,16 +196,45 @@ let rec genEquations  (expr:Fsyntax.t) tp :(Ftype.t* Ftype.t) list =
                        (* print_string "eq letrec3 \n";*)
                         genEquations e tp;
                       (*  print_string "eq letrec4 \n";*)
-                        !eq
-  
 
-    |_ ->failwith "Not implemented yet"
+    (*just check print_int and print_float.TODO enhance later*)
+    | App (e1, le2) -> (match e1 with
+                        | Var id -> (
+                            if id="print_int" || id= "print_float" then
+                              begin
+                                if not ((List.length le2)=1) then
+                                      failwith "a function expected one argument\n"
+                                else
+                                 begin  
+                                    let x=findVar !env id in 
+                                   ( match x with
+                                    | Fun (a,b)-> ( 
+                                      genEquations (List.hd le2) (List.hd a) ; 
+                                      updateEq(Unit, tp))
+                                    | _ -> failwith "Fun type was expected\n"
+                                   )
+                                  end
+                              end
+                            else
+                              print_string "calling functions not implemented yet\n"
+                        )
+
+                        | _ -> print_string "calling functions not implemented yet\n")
+
+    | If (e1, e2, e3) ->  genEquations e1 Bool ;
+                          genEquations e2 tp;
+                          genEquations e3 tp
+
+    | Eq (e1, e2) -> genEquations e1 (Var(ref None));
+                     genEquations e2 (getType())
+
+    | LE (e1, e2) -> genEquations e1 (Var(ref None));
+                     genEquations e2 (getType ())
+
+    |_ ->print_string "there is a type not implemented yet\n"
 
 (*   
-  | App (e1, le2) ->
-  | Eq (e1, e2) -> 
-  | LE (e1, e2) -> 
-  | If (e1, e2, e3) ->          
+  | App (e1, le2) ->         
   | LetTuple (l, e1, e2)-> 
   | Get(e1, e2) -> 
   | Put(e1, e2, e3) ->               

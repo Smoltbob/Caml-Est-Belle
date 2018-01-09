@@ -1,0 +1,2 @@
+let _ =
+    call _min_caml_hello_world x 

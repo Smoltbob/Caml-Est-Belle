@@ -1,0 +1,1 @@
+../tests/gen-code/autotest_gencode.sh

@@ -1,18 +1,37 @@
-
-all: 
-	ocamlbuild main.byte 
+all: asmlparser armgen
+	ocamlbuild main.byte
 	mv main.byte mincamlc
 
 asmlparser:
-	ocamlbuild basmlparser.byte 
+	ocamlbuild basmlparser.byte
 	mv basmlparser.byte asmlparse
 
 armgen:
-	ocamlbuild barmgen.byte 
+	ocamlbuild barmgen.byte
 	mv barmgen.byte armgen
 
 doc:
 	ocamlbuild mincamlc.docdir/index.html
+
+test_asml:
+	(cd ../ && ./scripts/autotest_asml.sh -p ./scripts/asmlparse -d tests/asml_parser -t asml)
+
+test_gencode:
+	(cd ../ && ./scripts/autotest_gencode.sh -p ./scripts/mincamlc -d tests/gen-code -t ml -o ARM)
+
+test_typecheck:
+	(cd ../ && ./scripts/autotest_typecheck.sh -p ./scripts/mincamlc -d tests/typechecking -t tc)
+
+test: all
+	@echo "LAUNCHING TESTS"
+	@echo "ASML PARSING ..."
+	$(MAKE) test_asml
+	@echo "TYPE CHECKING ..."
+	$(MAKE) test_typecheck
+	@echo "CODE GENERATION ..."
+	$(MAKE) test_gencode
+	@echo "END OF TESTS"
+	@echo "In case of KO, you can launch the scripts separately with the verbose (-v) option to see the outputs."
 
 clean:
 	rm -rf _build

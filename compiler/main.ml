@@ -1,37 +1,42 @@
+open Ftype;;
+
 let display_version = ref false
 let type_check_only = ref false
 let parse_only = ref false
 let asml_only = ref false
 let version = ref "Version: Fancy Camembert"
 let output_file = ref "a.out"
-(**
-module
-*)
 
-(**
+let catchfailwith funct x = try (funct x) with
+    | Failure err -> (Printf.fprintf stdout "%s" err; exit 1)
+    | _ -> funct x
 
-function
-
-@param list of arguments
-@return hello
-
-*)
 let print_asml l =
-    let s = (Fparser.exp Flexer.token l) in
-    (* print_string (Fasmlgen.closure_to_asmlstring_main (Fclosure.clos (Freduction.reduc (Fknormal.knormal s)))); print_newline () *)
-    let prog = Fasmlgen.closure_to_asmlstring_main (Fclosure.clos_out (Freduction.reduc (Fknormal.knormal s))) in
-    (*Bbasicregist.regist prog vartbl_r;*)
-    (* Barmspillgenerator.toplevel_to_arm prog *)
-    prog
+    let s = Fparser.exp Flexer.token l in
+    let c = (Fclosure.clos_out (Freduction.reduc (Falphaconversion.alpha (Fknormal.knormal s)))) in
+    if !asml_only then
+        Fasmlgen.closure_to_asmlstring_main c
+    else
+        let prog = Fasmlgen.asml_head c in
+        (*Barmgenerator.toplevel_to_arm prog*)
+        Barmspillgenerator.toplevel_to_arm prog
 
 let file fin fout =
     let inchan = open_in fin in
     let outchan = open_out fout in
     try
-        Printf.fprintf outchan "%s" (print_asml (Lexing.from_channel inchan));
-        print_endline (Printf.sprintf "Successfully created file %s" !output_file);
-        close_in inchan;
-        close_out outchan
+       if !type_check_only then
+       begin
+         let s = (Fparser.exp Flexer.token (Lexing.from_channel inchan)) in
+           Typechecking.genEquations s Unit; print_string "well typed\n"
+       end
+     else
+         begin
+            Printf.fprintf outchan "%s" (print_asml (Lexing.from_channel inchan));
+            print_endline (Printf.sprintf "Successfully created file %s" !output_file);
+        end;
+    close_in inchan;
+    close_out outchan
     with e -> (close_in inchan; close_out outchan; raise e)
 
 let () =
