@@ -81,6 +81,84 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
                         | _ -> failwith "matchfailure App")
     | _-> failwith "match not exhaustive in clos_exp fclosure.ml"
 
+(* Ye Olde Buggy Version
+let rec the_savage_phi (fb:Fknormal.t) : (Fknormal.fundef option * Fknormal.t)  =
+    match fb with
+    |Let(a,b,c) -> (
+                    let recbody, newin = the_savage_phi c in
+                    match recbody with
+                    |None -> (None,  Let(a, b, newin))
+                    |Some fbody -> (Some fbody, Let(a,b, newin))
+                    )
+    |LetRec(fbody, recin) -> (Some fbody, recin)
+    |_ -> (None, fb)
+
+and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
+    match ast with
+    |LetRec(fd, een) -> (
+                        let recbody, newin = the_savage_phi fd.body in
+                        match recbody with
+                        |None -> LetRec(fd, een)
+                        |Some fbody -> the_cunning_psi ( LetRec(fbody, the_cunning_psi (LetRec({name=fd.name; args=fd.args; body=newin}, een))))
+                        )
+    |Let(a,b,c) -> Let(a, the_cunning_psi b, the_cunning_psi c)
+    |_ -> ast
+*)
+
+(*Ye new version*)
+let rec the_savage_phi (fb:Fknormal.t) : (Fknormal.fundef option * Fknormal.t)  =
+    match fb with
+    |Let(a,b,c) -> (
+                    let recbody, newletbody = the_savage_phi b in
+                    match recbody with
+                    |None -> (let recbody', newin = the_savage_phi c in
+                              match recbody' with
+                              |None -> (None,  Let(a, b, c))
+                              |Some fbody -> (Some fbody, Let(a,b, newin))
+                             )
+                    |Some fbody -> (Some fbody, Let(a, newletbody, c))
+                   )
+    |LetRec(fbody, recin) -> (Some fbody, recin)
+    |_ -> (None, fb)
+
+and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
+    match ast with
+    |LetRec(fd, een) -> (
+                        let recbody, newin = the_savage_phi fd.body in
+                        match recbody with
+                        |None -> LetRec(fd, the_cunning_psi een)
+                        |Some fbody -> the_cunning_psi ( LetRec(fbody, (LetRec({name=fd.name; args=fd.args; body=newin}, een))))
+                        )
+    |Let(a,b,c) -> ( 
+                    let recbody, newin = the_savage_phi b in
+                    match recbody with
+                        |None -> Let(a, b, the_cunning_psi c)
+                        |Some fbody -> the_cunning_psi ( LetRec(fbody, Let(a, newin, c)))
+                   )
+    |_ -> ast
+
+let rec letrecs_at_top clos = match clos with
+    | LetRec (f, een) -> LetRec (f, letrecs_at_top een)
+    | Let (id, a, een) -> letrecs_at_top (een)
+    | _ -> Unit
+
+let rec lets_at_bot clos = match clos with
+    | Let (id, a, een) -> Let (id, a, lets_at_bot een)
+    | LetRec (f, een) -> lets_at_bot (een)
+    | _ -> clos
+
+let rec merge_letrecs_lets letrecs lets = match letrecs with
+    | LetRec (f, een) -> LetRec (f, merge_letrecs_lets een lets)
+    | Unit -> lets
+    | _ -> failwith "merge_letrecs_lets: error matchfailure"
+
+(*and chi fd = fd*)
+
+let clos_out k =
+    let clos = (clos_exp (the_cunning_psi k)) in
+    merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos) 
+
+
 (** This function is for debugging purpose only, it returns its argument as a string *)
 let rec clos_to_string (c:t) : string =
     match c with

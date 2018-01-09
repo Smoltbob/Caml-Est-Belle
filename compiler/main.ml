@@ -13,7 +13,7 @@ let catchfailwith funct x = try (funct x) with
 
 let print_asml l =
     let s = Fparser.exp Flexer.token l in
-    let c = (Fclosure.clos_exp (Freduction.reduc (Falphaconversion.alpha (Fknormal.knormal s)))) in
+    let c = (Fclosure.clos_out (Freduction.reduc (Falphaconversion.alpha (Fknormal.knormal s)))) in
     if !asml_only then
         Fasmlgen.closure_to_asmlstring_main c
     else
