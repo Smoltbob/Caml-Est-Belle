@@ -171,10 +171,24 @@ and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
     |Let(a,b,c) -> Let(a, the_cunning_psi b, the_cunning_psi c)
     |_ -> ast
 
+let rec letrecs_at_top (clos:t) :t = match clos with
+    | LetRec (f, een) -> LetRec (f, letrecs_at_top een)
+    | Let (id, a, een) -> letrecs_at_top (een)
+    | Expression t -> Nop
+
+let rec lets_at_bot (clos:t) :t = match clos with
+    | Let (id, a, een) -> Let (id, a, let_at_bot een)
+    | LetRec (f, een) -> lets_at_bot (een)
+    | Expression t -> Expression t
+
+let merge_letrecs_lets letrecs lets = match letrecs with
+    | LetRec (f, een) -> LetRec (f, merge_letrecs_lets een)
+    | Nop -> lets
 
 (*and chi fd = fd*)
 
-let clos_out k = clos_exp (the_cunning_psi k)
+let clos_out k = letrecs_at_top (clos_exp (the_cunning_psi k))
+
 (* We now consider that there are no free variable inside our nested letrecs *)
     (* | LetRec (fundef, t) ->
         let (fname, fargs, fbody) = (fundef.name, fundef.args, fundef.body) in

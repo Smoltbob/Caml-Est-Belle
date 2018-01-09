@@ -114,8 +114,20 @@ let rec asml_exp (c:Fclosure.t) :asmt = match c with
     | Let (x, a, asmt) -> Let (fst x, asml_exp a, asml_asmt asmt)
     | Expression exp -> Expression (asml_exp exp) *)
 
-let asml_head c =
-    Fundefs [Body (asml_exp c)]
+let create_main c = {name = "_"; args = []; body = asml_exp c}
+
+let rec asml_list c = match c with
+    | LetRec (f,a) -> ({
+                        name = fst f.name;
+                        args = List.map fst f.args;
+                        body = (asml_exp h)
+                      })
+                      ::(asml_list a)
+    | _ -> create_main c
+
+(* let asml_fundefs c = Fundefs (asml_list c) *)
+
+let asml_head c = Fundefs (asml_list c)
 
 let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
     | Unit -> "nop"
