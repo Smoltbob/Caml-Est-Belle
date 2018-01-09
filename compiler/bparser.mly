@@ -49,7 +49,7 @@ toplevel:
 
 fundefs:
 |   LET UNDERSC EQUAL asmt
-    { Body($4) }
+    { {name = ""; args = []; body = $4} }
 
 asmt:
 |   LPAREN asmt RPAREN

@@ -27,8 +27,11 @@ and asmt =
     | Expression of t
     (* | Additional case for parenthesis ? Don't think so ? *)
 
-and fundef =
-    | Body of asmt (* We will need the name, arguments and return type for functions *)
+and fundef = {
+    name : Id.t;
+    args : Id.t list;
+    body : asmt
+}
 
 type toplevel =
     | Fundefs of (fundef list) (* Once we implement functions we will have a list *)
@@ -82,8 +85,7 @@ and to_string_asm asm =
     @param fund the list of function definitions.
 *)
 let rec to_string_fundef fund =
-    match fund with
- | Body b -> sprintf "(%s)" (to_string_asm b)
+    sprintf "(%s)" (to_string_asm fund.body)
 
 (** Prints the root of the ast of an asml program. This is the function to call to print the whole tree.
     @param top The ast as provided by the parser.
