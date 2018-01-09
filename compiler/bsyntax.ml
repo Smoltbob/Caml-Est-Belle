@@ -83,21 +83,21 @@ let rec to_string_asm asm =
 (** Prints the functions in the list of fundefs/
     @param fund the list of function definitions.
 *)
-let rec to_string_fundef fund =
+(*let rec to_string_fundef fund =
     match fund with
- | Body b -> sprintf "(%s)" (to_string_asm b)
+ | Body b -> sprintf "(%s)" (to_string_asm b) *)
 
 (** Prints the root of the ast of an asml program. This is the function to call to print the whole tree.
     @param top The ast as provided by the parser.
     *)
-let rec to_string_top top =
+(* let rec to_string_top top =
     match top with
   | Fundefs f -> sprintf "(%s)" (to_string_fundef (hd f))
 
 let rec print_list_idx l i =
    match i with
     | i when i = 0 -> sprintf "%s" (Id.to_string (hd l))
-    | _ -> print_list_idx (tl l) (i - 1)
+    | _ -> print_list_idx (tl l) (i - 1) *)
 
 (* Bellow : WIP ARM generation *)
 (* Put this in a new file ? *)

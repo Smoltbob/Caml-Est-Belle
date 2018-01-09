@@ -43,7 +43,7 @@ and fundef = {
 (* type toplevel = fundef list *)
 
 val clos_out : Fknormal.t -> t
-val clos : Fknormal.t -> Fknormal.t
+(* val clos : Fknormal.t -> Fknormal.t *)
 val clos_exp : Fknormal.t -> t
 val clos_to_string : t -> string
 (* val clos_toplevel : Fknormal.t -> toplevel *)

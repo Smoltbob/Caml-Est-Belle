@@ -120,10 +120,10 @@ let rec asml_list c = match c with
     | LetRec (f,a) -> ({
                         name = fst f.name;
                         args = List.map fst f.args;
-                        body = (asml_exp h)
+                        body = (asml_exp f.body)
                       })
                       ::(asml_list a)
-    | _ -> create_main c
+    | _ -> [create_main c]
 
 (* let asml_fundefs c = Fundefs (asml_list c) *)
 

@@ -171,19 +171,20 @@ and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
     |Let(a,b,c) -> Let(a, the_cunning_psi b, the_cunning_psi c)
     |_ -> ast
 
-let rec letrecs_at_top (clos:t) :t = match clos with
+let rec letrecs_at_top clos = match clos with
     | LetRec (f, een) -> LetRec (f, letrecs_at_top een)
     | Let (id, a, een) -> letrecs_at_top (een)
-    | Expression t -> Nop
+    | _ -> Unit
 
-let rec lets_at_bot (clos:t) :t = match clos with
-    | Let (id, a, een) -> Let (id, a, let_at_bot een)
+let rec lets_at_bot clos = match clos with
+    | Let (id, a, een) -> Let (id, a, lets_at_bot een)
     | LetRec (f, een) -> lets_at_bot (een)
-    | Expression t -> Expression t
+    | _ -> clos
 
-let merge_letrecs_lets letrecs lets = match letrecs with
-    | LetRec (f, een) -> LetRec (f, merge_letrecs_lets een)
-    | Nop -> lets
+let rec merge_letrecs_lets letrecs lets = match letrecs with
+    | LetRec (f, een) -> LetRec (f, merge_letrecs_lets een lets)
+    | Unit -> lets
+    | _ -> failwith "merge_letrecs_lets: error matchfailure"
 
 (*and chi fd = fd*)
 
