@@ -80,17 +80,17 @@ let rec to_string_asm asm =
  | Let (id, e1, a) -> sprintf "(Let %s = %s in %s)" (Id.to_string id) (exp_to_string e1) (to_string_asm a)
  | Expression e -> sprintf "(%s)" (exp_to_string e)
 
-(** Prints the functions in the list of fundefs/
+(*(** Prints the functions in the list of fundefs/
     @param fund the list of function definitions.
 *)
-(*let rec to_string_fundef fund =
+let rec to_string_fundef fund =
     match fund with
  | Body b -> sprintf "(%s)" (to_string_asm b) *)
 
-(** Prints the root of the ast of an asml program. This is the function to call to print the whole tree.
+(*(** Prints the root of the ast of an asml program. This is the function to call to print the whole tree.
     @param top The ast as provided by the parser.
     *)
-(* let rec to_string_top top =
+let rec to_string_top top =
     match top with
   | Fundefs f -> sprintf "(%s)" (to_string_fundef (hd f))
 
