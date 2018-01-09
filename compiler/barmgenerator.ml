@@ -103,7 +103,7 @@ let rec fundef_to_arm fundef =
     match fundef with
     | Body b -> asmt_to_arm b
 
-(** This function is a recursive function to conver tpye toplevel into type fundef
+(** This function is a recursive function to convert tpye toplevel into type fundef
 @param toplevel program in type toplevel
 @return unit*)
 (* OK *)
