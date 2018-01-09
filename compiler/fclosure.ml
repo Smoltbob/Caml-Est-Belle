@@ -81,16 +81,17 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
                         | _ -> failwith "matchfailure App")
     | _-> failwith "match not exhaustive in clos_exp fclosure.ml"
 
+(* Ye Olde Buggy Version
 let rec the_savage_phi (fb:Fknormal.t) : (Fknormal.fundef option * Fknormal.t)  =
-        match fb with
-        |Let(a,b,c) -> (
-                        let recbody, newin = the_savage_phi c in
-                        match recbody with
-                        |None -> (None,  Let(a, b, newin))
-                        |Some fbody -> (Some fbody, Let(a,b, newin))
-                        )
-        |LetRec(fbody, recin) -> (Some fbody, recin)
-        |_ -> (None, fb)
+    match fb with
+    |Let(a,b,c) -> (
+                    let recbody, newin = the_savage_phi c in
+                    match recbody with
+                    |None -> (None,  Let(a, b, newin))
+                    |Some fbody -> (Some fbody, Let(a,b, newin))
+                    )
+    |LetRec(fbody, recin) -> (Some fbody, recin)
+    |_ -> (None, fb)
 
 and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
     match ast with
@@ -101,6 +102,39 @@ and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
                         |Some fbody -> the_cunning_psi ( LetRec(fbody, the_cunning_psi (LetRec({name=fd.name; args=fd.args; body=newin}, een))))
                         )
     |Let(a,b,c) -> Let(a, the_cunning_psi b, the_cunning_psi c)
+    |_ -> ast
+*)
+
+(*Ye new version*)
+let rec the_savage_phi (fb:Fknormal.t) : (Fknormal.fundef option * Fknormal.t)  =
+    match fb with
+    |Let(a,b,c) -> (
+                    let recbody, newletbody = the_savage_phi b in
+                    match recbody with
+                    |None -> (let recbody', newin = the_savage_phi c in
+                              match recbody' with
+                              |None -> (None,  Let(a, b, c))
+                              |Some fbody -> (Some fbody, Let(a,b, newin))
+                             )
+                    |Some fbody -> (Some fbody, Let(a, newletbody, c))
+                   )
+    |LetRec(fbody, recin) -> (Some fbody, recin)
+    |_ -> (None, fb)
+
+and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
+    match ast with
+    |LetRec(fd, een) -> (
+                        let recbody, newin = the_savage_phi fd.body in
+                        match recbody with
+                        |None -> LetRec(fd, the_cunning_psi een)
+                        |Some fbody -> the_cunning_psi ( LetRec(fbody, (LetRec({name=fd.name; args=fd.args; body=newin}, een))))
+                        )
+    |Let(a,b,c) -> ( 
+                    let recbody, newin = the_savage_phi b in
+                    match recbody with
+                        |None -> Let(a, b, the_cunning_psi c)
+                        |Some fbody -> the_cunning_psi ( LetRec(fbody, Let(a, newin, c)))
+                   )
     |_ -> ast
 
 let rec letrecs_at_top clos = match clos with
@@ -122,7 +156,7 @@ let rec merge_letrecs_lets letrecs lets = match letrecs with
 
 let clos_out k =
     let clos = (clos_exp (the_cunning_psi k)) in
-    merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos)
+    merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos) 
 
 
 (** This function is for debugging purpose only, it returns its argument as a string *)
