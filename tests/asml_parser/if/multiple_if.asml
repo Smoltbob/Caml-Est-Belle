@@ -1,0 +1,7 @@
+let _ =
+    let a = 0 in
+    let b = 0 in
+    let c = 1 in
+    if a = b then 
+        if a = c then nop else call _min_caml_print_int a
+     else nop

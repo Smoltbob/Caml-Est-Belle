@@ -62,11 +62,12 @@ let rec exp_to_arm exp dest =
     | Var id -> sprintf "\tldr r4, [fp, #%i]\n\tmov r5, r4\n\tstr r5, [fp, #%i]\n" (frame_position id) (frame_position dest)
     | Add (e1, e2)  -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tadd r6, r4, r5\n\tstr r6, [fp, #%i]\n\n" (frame_position e1) (frame_position e2) (frame_position dest)
     | Sub (e1, e2) -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tsub r6, r4, r5\n\tstr r6, [fp, #%i]\n\n" (frame_position e1) (frame_position e2) (frame_position dest)
-    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))
-    | If (id1, e1, asmt1, asmt2) -> let counter = genif() in 
-            sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\t cmp r4, r5\n beq if%s\n %s\n b end%s\n if%s:\n%s\nend%s:\n" (frame_position id1) (frame_position e1) counter (asmt_to_arm asmt2) counter counter (asmt_to_arm asmt1) counter
-    | If (id1, e1, asmt1, asmt2) -> let counter = genif() in 
-            sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\t cmp r4, r5\n beq if%s\n %s\n b end%s\n if%s:\n%s\nend%s:\n" (frame_position id1) (frame_position e1) counter (asmt_to_arm asmt2) counter counter (asmt_to_arm asmt1) counter
+    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))
+    | If (id1, e1, asmt1, asmt2) ->
+            let counter = genif() in 
+                let set_registers = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (frame_position id1) (frame_position e1) in 
+                let code = sprintf "\tcmp r4, r5\n\tbeq if%s\n %s\tb end%s\n\nif%s:\n%s\nend%s:\n" counter (asmt_to_arm asmt2) counter counter (asmt_to_arm asmt1) counter in
+                sprintf "%s%s" set_registers code
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
