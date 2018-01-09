@@ -28,16 +28,17 @@ and asmt =
     (* | Additional case for parenthesis ? Don't think so ? *)
 
 and fundef = {
-    name : Id.t;
-    args : Id.t list;
-    body : asmt
-}
+                name : Id.t;
+                args : Id.t list;
+                body : asmt (* We will need the name, arguments and return type for functions *)
+                (* ret : Type.t *)
+             }
 
 type toplevel =
     | Fundefs of (fundef list) (* Once we implement functions we will have a list *)
 
 
-(** Prints the functions arguments. They are stored in a list. 
+(** Prints the functions arguments. They are stored in a list.
    @param argu the list of arguments
 *)
 let rec to_string_args argu =
@@ -81,13 +82,14 @@ and to_string_asm asm =
  | Let (id, e1, a) -> sprintf "(Let %s = %s in %s)" (Id.to_string id) (exp_to_string e1) (to_string_asm a)
  | Expression e -> sprintf "(%s)" (exp_to_string e)
 
-(** Prints the functions in the list of fundefs/
+(*(** Prints the functions in the list of fundefs/
     @param fund the list of function definitions.
 *)
 let rec to_string_fundef fund =
-    sprintf "(%s)" (to_string_asm fund.body)
+    match fund with
+ | Body b -> sprintf "(%s)" (to_string_asm b) *)
 
-(** Prints the root of the ast of an asml program. This is the function to call to print the whole tree.
+(*(** Prints the root of the ast of an asml program. This is the function to call to print the whole tree.
     @param top The ast as provided by the parser.
     *)
 let rec to_string_top top =
@@ -97,5 +99,4 @@ let rec to_string_top top =
 let rec print_list_idx l i =
    match i with
     | i when i = 0 -> sprintf "%s" (Id.to_string (hd l))
-    | _ -> print_list_idx (tl l) (i - 1) 
-
+    | _ -> print_list_idx (tl l) (i - 1) *)

@@ -44,7 +44,8 @@ and fundef = {
 
 (* type toplevel = fundef list *)
 
-(** This function transform unnested expressions into a Fclosure.t *)
+val clos_out : Fknormal.t -> t
+(* val clos : Fknormal.t -> Fknormal.t *)
 val clos_exp : Fknormal.t -> t
 (** This function is for debugging purpose only, it returns its argument as a string *)
 val clos_to_string : t -> string
