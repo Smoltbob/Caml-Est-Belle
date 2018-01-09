@@ -74,7 +74,7 @@ let rec get_args args =
 (* OK *)
 let rec fundef_to_arm fundef =
     (* Write down the label *)
-    sprintf ".global _%s\n_%s:\n\tmov fp, sp\n%s\tpush {lr}\n%s\tpop {lr}\n\n" fundef.name fundef.name (get_args fundef.args) (asmt_to_arm fundef.body)
+    sprintf ".global _%s\n_%s:\n\tmov fp, sp\n\tstmfd sp!, {lr}\n%s%s\tldmfd sp!, {lr}\n\tbx lr\n\n" fundef.name fundef.name (get_args fundef.args) (asmt_to_arm fundef.body)
     (* Prepare the arguments. If <= 4 arguments, put them in r0 -> r3.
      * Else put them in the stack *)
     (* TODO *)
