@@ -42,6 +42,12 @@ rule token = parse
     { ADD }
 | "sub" 
     { SUB }
+| "if"
+    { IF }
+| "then"
+    { THEN }
+| "else"
+    { ELSE }
 | "call"
     { CALL }
 | "nop" 

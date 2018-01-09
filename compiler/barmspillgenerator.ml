@@ -2,6 +2,7 @@
 
 open Bsyntax;;
 open Printf;;
+open List;;
 
 (** the number of free registers *)
 let register_nb = 12
@@ -25,13 +26,13 @@ let frame_position variable_name =
     Hashtbl.find vartbl_s variable_name
 
 (** This function is to return the address for arguments in function call when the arguments are less than 4;
-@param l the list of args, in type string;
+@parustaam l the list of args, in type string;
 @param i the conuter of arguments, int;
 @return string "ldr ri, [fp,i]" *)
-let rec movegen l i =
+let rec ldrgen l i =
     match l with
         | [] -> sprintf ""
-        | t::q -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (frame_position t) (movegen q (i + 1))
+        | t::q -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (frame_position t) (ldrgen q (i + 1))
         
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
 @param args the list of arguments, in type string
@@ -42,7 +43,7 @@ let rec to_arm_formal_args args =
             * print mov rito_string(args[i])*)
     match args with
     | [] -> sprintf ""
-    | l when (List.length l <= 4) -> movegen l 0
+    | l when (List.length l <= 4) -> ldrgen l 0
     | _ -> failwith "Not handled yet"
     (*| t::q -> sprintf "%s %s" (Id.to_string t) (to_arm_formal_args q *) 
 
@@ -71,13 +72,34 @@ let rec asmt_to_arm asm =
     | Let (id, e, a) -> sprintf "%s %s" (exp_to_arm e id) (asmt_to_arm a)
     | Expression e -> sprintf "%s" (exp_to_arm e "")
 
+(* Helper functions for fundef *)
+let rec movegen l i =
+    match l with
+        | [] -> sprintf ""
+        | t::q -> sprintf "\tstr r%i, [fp, #%i]\n%s" i (frame_position t) (movegen q (i + 1))
+        
+let rec prepare_arg args =
+    match args with
+    | [] -> sprintf ""
+    | l when (List.length l <= 4) -> movegen l 0
+    | _ -> failwith "Not handled yet"
+
 (** This function is a recursive function to conver tpye fundef into type asmt
 @param fundef program in type fundef
 @return unit*)
 (* OK *)
 let rec fundef_to_arm fundef =
-    match fundef with
-    | Body b -> asmt_to_arm b
+    (* Write down the label *)
+    sprintf ".global _%s\n_%s:\n\tSTMFD sp!, {lr}\n%s%sLDMFD sp!, {lr}\n\tBX lr\n" fundef.name fundef.name (prepare_arg fundef.args) (asmt_to_arm fundef.body)
+    (* Prepare the arguments. If <= 4 arguments, put them in r0 -> r3.
+     * Else put them in the stack *)
+    (* TODO *)
+
+
+let fundefs_to_arm fundefs =
+    match fundefs with
+    | [] -> sprintf ""
+    | h::l -> sprintf "%s%s" (fundef_to_arm h) (fundefs_to_arm l)
 
 (** This function is a recursive function to conver tpye toplevel into type fundef
 @param toplevel program in type toplevel
@@ -85,4 +107,4 @@ let rec fundef_to_arm fundef =
 (* OK *)
 let rec toplevel_to_arm toplevel =
     match toplevel with
-    | Fundefs f -> sprintf ".text\n.global _start\n_start:\n\tmov fp, sp\n%s\tbl min_caml_exit\n" (fundef_to_arm (List.hd f))
+    | Fundefs f -> sprintf "%s.text\n.global _start\n_start:\n\tmov fp, sp\n%s\tbl min_caml_exit\n" (fundefs_to_arm (List.tl f)) (fundef_to_arm (List.hd f))

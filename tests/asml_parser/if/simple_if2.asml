@@ -1,0 +1,3 @@
+let _ =
+    let a = 2 in
+        if a = b then call _print_int a else call _print_int b
