@@ -34,6 +34,12 @@ type toplevel =
     | Fundefs of (fundef list) (* Once we implement functions we will have a list *)
 
 
+let genif =
+  let counter = ref (-1) in
+  fun () ->
+    incr counter;
+    sprintf "?v%d" !counter
+
 (** Prints the functions arguments. They are stored in a list. 
    @param argu the list of arguments
 *)

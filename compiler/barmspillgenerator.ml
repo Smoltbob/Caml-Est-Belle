@@ -25,6 +25,12 @@ let frame_position variable_name =
         end;
     Hashtbl.find vartbl_s variable_name
 
+let genif =
+  let counter = ref (-1) in
+  fun () ->
+    incr counter;
+    sprintf "%d" !counter
+
 (** This function is to return the address for arguments in function call when the arguments are less than 4;
 @parustaam l the list of args, in type string;
 @param i the conuter of arguments, int;
@@ -44,14 +50,12 @@ let rec to_arm_formal_args args =
     match args with
     | [] -> sprintf ""
     | l when (List.length l <= 4) -> ldrgen l 0
-    | _ -> failwith "Not handled yet"
     (*| t::q -> sprintf "%s %s" (Id.to_string t) (to_arm_formal_args q *) 
 
 (** This function is to convert assignments into arm code 
 @param exp expression in the assigment
 @param dest the variable which is assigned in this assignment
 @return unit*)
-(* OK *)
 let rec exp_to_arm exp dest =
     match exp with
     | Int i -> sprintf "\tmov r4, #%s\n\tstr r4, [fp, #%i]\n" (string_of_int i) (frame_position dest)
@@ -59,6 +63,10 @@ let rec exp_to_arm exp dest =
     | Add (e1, e2)  -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tadd r6, r4, r5\n\tstr r6, [fp, #%i]\n\n" (frame_position e1) (frame_position e2) (frame_position dest)
     | Sub (e1, e2) -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tsub r6, r4, r5\n\tstr r6, [fp, #%i]\n\n" (frame_position e1) (frame_position e2) (frame_position dest)
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))
+    | If (id1, e1, asmt1, asmt2) -> let counter = genif() in 
+            sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\t cmp r4, r5\n beq if%s\n %s\n b end%s\n if%s:\n%s\nend%s:\n" (frame_position id1) (frame_position e1) counter (asmt_to_arm asmt2) counter counter (asmt_to_arm asmt1) counter
+    | If (id1, e1, asmt1, asmt2) -> let counter = genif() in 
+            sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\t cmp r4, r5\n beq if%s\n %s\n b end%s\n if%s:\n%s\nend%s:\n" (frame_position id1) (frame_position e1) counter (asmt_to_arm asmt2) counter counter (asmt_to_arm asmt1) counter
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
@@ -66,7 +74,7 @@ let rec exp_to_arm exp dest =
 @param asm program in type asmt
 @return unit*)
 (* OK *)
-let rec asmt_to_arm asm =
+and asmt_to_arm asm =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP ...Imm" *)
     | Let (id, e, a) -> sprintf "%s %s" (exp_to_arm e id) (asmt_to_arm a)
@@ -77,6 +85,8 @@ let rec movegen l i =
     match l with
         | [] -> sprintf ""
         | t::q -> sprintf "\tstr r%i, [fp, #%i]\n%s" i (frame_position t) (movegen q (i + 1))
+        | _ -> failwith "Not handled movegen"
+
         
 let rec prepare_arg args =
     match args with
@@ -89,17 +99,9 @@ let rec prepare_arg args =
 @return unit*)
 (* OK *)
 let rec fundef_to_arm fundef =
-    (* Write down the label *)
-    sprintf ".global _%s\n_%s:\n\tSTMFD sp!, {lr}\n%s%sLDMFD sp!, {lr}\n\tBX lr\n" fundef.name fundef.name (prepare_arg fundef.args) (asmt_to_arm fundef.body)
-    (* Prepare the arguments. If <= 4 arguments, put them in r0 -> r3.
-     * Else put them in the stack *)
-    (* TODO *)
-
-
-let fundefs_to_arm fundefs =
-    match fundefs with
-    | [] -> sprintf ""
-    | h::l -> sprintf "%s%s" (fundef_to_arm h) (fundefs_to_arm l)
+    match fundef with
+    | Body b -> asmt_to_arm b
+    | _ -> failwith "Matching error in fundef"
 
 (** This function is a recursive function to conver tpye toplevel into type fundef
 @param toplevel program in type toplevel
@@ -107,4 +109,5 @@ let fundefs_to_arm fundefs =
 (* OK *)
 let rec toplevel_to_arm toplevel =
     match toplevel with
-    | Fundefs f -> sprintf "%s.text\n.global _start\n_start:\n\tmov fp, sp\n%s\tbl min_caml_exit\n" (fundefs_to_arm (List.tl f)) (fundef_to_arm (List.hd f))
+    | Fundefs f -> sprintf ".text\n.global _start\n_start:\n\tmov fp, sp\n%s\tbl min_caml_exit\n" (fundef_to_arm (List.hd f))
+    | _ -> failwith "Matching error in toplevel"
