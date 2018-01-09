@@ -16,7 +16,8 @@ type t =
   | Sub of Id.t * Id.t
   | Var of Id.t
   | Eq of Id.t * t
-  | If of Id.t * Id.t * asmt * asmt
+  | Ifeq of Id.t * Id.t * asmt * asmt
+  | Ifle of Id.t * Id.t * asmt * asmt
   | Call of Id.t * formal_args
   | Nop
 
@@ -67,7 +68,9 @@ let rec exp_to_string exp =
   | Sub (e1, e2) -> sprintf "(sub %s %s)" (Id.to_string e1) (Id.to_string e2)
   | Var id -> Id.to_string id
   | Eq (e1, e2) -> sprintf "(%s = %s)" (Id.to_string e1) (exp_to_string e2)
-  | If (id1, e1, asmt1, asmt2) -> sprintf "(if %s = %s then %s else %s)" (Id.to_string id1) (Id.to_string e1) (to_string_asm asmt1) (to_string_asm asmt2)
+  | Ifeq (id1, e1, asmt1, asmt2) -> sprintf "(if %s = %s then %s else %s)" (Id.to_string id1) (Id.to_string e1) (to_string_asm asmt1) (to_string_asm asmt2)
+  | Ifle (id1, e1, asmt1, asmt2) -> sprintf "(if %s <= %s then %s else %s)" (Id.to_string id1) (Id.to_string e1) (to_string_asm asmt1) (to_string_asm asmt2)
+  | Ifge (id1, e1, asmt1, asmt2) -> sprintf "(if %s >= %s then %s else %s)" (Id.to_string id1) (Id.to_string e1) (to_string_asm asmt1) (to_string_asm asmt2)
   | Call (l1, a1) -> sprintf "(call %s %s)" (Id.to_string l1) (to_string_args a1)
   | Nop -> sprintf "nop"
 
