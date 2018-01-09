@@ -46,11 +46,16 @@ let newvar () = let res = ("v"^(Printf.sprintf "%d" !last), Ftype.gentyp ()) in 
 let newfct args body = let res = {name = newvar (); args = args; body = body } in res
 
 let is_ident_or_const (ast:Fsyntax.t)  =
+    (*  (*uncomment when immediates in arithmetic operations are working in asmlgen*)
     match ast with
     |Unit -> true
     |Bool _ -> true
     |Int _ -> true
     |Float _ -> true
+    |Var _ -> true
+    |_ -> false
+    *)
+    match ast with
     |Var _ -> true
     |_ -> false
 
