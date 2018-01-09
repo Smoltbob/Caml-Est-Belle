@@ -75,8 +75,24 @@ let rec alpha (k_t:Fknormal.t) : Fknormal.t  =
     |FDiv (a, b) -> FDiv (alpha a, alpha b)
     |Eq (a, b) -> Eq (alpha a, alpha b)
     |LE (a, b) -> LE (alpha a, alpha b)
-    |IfEq (x, y, b, c) -> IfEq (convert !alphaMap x, convert !alphaMap y, alpha b,  alpha c )
-    |IfLE (x, y, b, c) -> IfLE (convert !alphaMap x, convert !alphaMap y, alpha b,  alpha c )
+    |IfEq (x, y, b, c) -> (let n = List.length !alphaMap in
+                            let x' = convert !alphaMap x in
+                            let y' = convert !alphaMap y in
+                            let b' = alpha b in
+                            for i = n+1 to List.length !alphaMap do pop () done;
+                            let c' = alpha c in
+                            for i = n+1 to List.length !alphaMap do pop () done;
+                            IfEq(x', y', b', c') 
+                          )
+    |IfLE (x, y, b, c) -> (let n = List.length !alphaMap in
+                            let x' = convert !alphaMap x in
+                            let y' = convert !alphaMap y in
+                            let b' = alpha b in
+                            for i = n+1 to List.length !alphaMap do pop () done;
+                            let c' = alpha c in
+                            for i = n+1 to List.length !alphaMap do pop () done;
+                            IfLE(x', y', b', c') 
+                          )
     |Tuple a -> Tuple(List.map alpha a)
     |LetTuple (a, b, c) -> LetTuple ( a, alpha b,  alpha c )
     |Array (a, b) -> Array (alpha a, alpha b)
