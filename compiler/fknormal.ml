@@ -113,7 +113,7 @@ let rec knormal (ast:Fsyntax.t) : t =
                     |Var(fct) -> (  (*a temporary solution to prevent functions from being renamed*)
                         let rec aux vars_rem k_vars =
                             match vars_rem with
-                            |[] -> App(Var("min_caml_"^fct), List.rev k_vars)
+                            |[] -> App(Var(fct), List.rev k_vars)
                             |h::q -> let (x,t) = newvar () in Let((x,t), knormal h, aux q ((Var x)::k_vars))
                         in
                         aux b []
@@ -152,7 +152,7 @@ let rec knormal (ast:Fsyntax.t) : t =
                                IfEq(x', y', knormal b, knormal c)))
                     )
     |Let (a, b, c) -> Let (a, knormal b, knormal c) (*OK*)
-    |LetRec (a, b) ->  LetRec ({name=("min_caml_"^(fst a.name), snd a.name); args=a.args; body=(knormal a.body)}, knormal b)
+    |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b)
     |_ -> failwith "knormal: NotImplementedYet"
     (*
     |Tuple a -> Tuple(List.map knormal a)
