@@ -59,24 +59,31 @@ let rec to_arm_formal_args args =
 let rec exp_to_arm exp dest =
     match exp with
     | Int i -> sprintf "\tmov r4, #%s\n\tstr r4, [fp, #%i]\n" (string_of_int i) (frame_position dest)
+
     | Var id -> sprintf "\tldr r4, [fp, #%i]\n\tmov r5, r4\n\tstr r5, [fp, #%i]\n" (frame_position id) (frame_position dest)
+
     | Add (e1, e2)  -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tadd r6, r4, r5\n\tstr r6, [fp, #%i]\n\n" (frame_position e1) (frame_position e2) (frame_position dest)
+
     | Sub (e1, e2) -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tsub r6, r4, r5\n\tstr r6, [fp, #%i]\n\n" (frame_position e1) (frame_position e2) (frame_position dest)
+
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))
+
     | Ifeq (id1, e1, asmt1, asmt2) ->
             let counter = genif() in 
                 let set_registers = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (frame_position id1) (frame_position e1) in 
-                let code = sprintf "\tcmp r4, r5\n\tbeq if%s\n %s\tb end%s\n\nif%s:\n%s\nend%s:\n" counter (asmt_to_arm asmt2) counter counter (asmt_to_arm asmt1) counter in
+                let code = sprintf "\tcmp r4, r5\n\tbeq if%s\n %s\tb end%s\n\nif%s:\n%s\nend%s:\n" counter (asmt_to_arm asmt2 dest) counter counter (asmt_to_arm asmt1 dest) counter in
                 sprintf "%s%s" set_registers code
+
     | Ifle (id1, e1, asmt1, asmt2) ->
             let counter = genif() in 
                 let set_registers = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (frame_position id1) (frame_position e1) in 
-                let code = sprintf "\tcmp r4, r5\n\tble if%s\n %s\tb end%s\n\nif%s:\n%s\nend%s:\n" counter (asmt_to_arm asmt2) counter counter (asmt_to_arm asmt1) counter in
+                let code = sprintf "\tcmp r4, r5\n\tble if%s\n %s\tb end%s\n\nif%s:\n%s\nend%s:\n" counter (asmt_to_arm asmt2 dest) counter counter (asmt_to_arm asmt1 dest) counter in
                 sprintf "%s%s" set_registers code
+
     | Ifge (id1, e1, asmt1, asmt2) ->
             let counter = genif() in 
                 let set_registers = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (frame_position id1) (frame_position e1) in 
-                let code = sprintf "\tcmp r4, r5\n\tbge if%s\n %s\tb end%s\n\nif%s:\n%s\nend%s:\n" counter (asmt_to_arm asmt2) counter counter (asmt_to_arm asmt1) counter in
+                let code = sprintf "\tcmp r4, r5\n\tbge if%s\n %s\tb end%s\n\nif%s:\n%s\nend%s:\n" counter (asmt_to_arm asmt2 dest) counter counter (asmt_to_arm asmt1 dest) counter in
                 sprintf "%s%s" set_registers code
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
@@ -85,11 +92,11 @@ let rec exp_to_arm exp dest =
 @param asm program in type asmt
 @return unit*)
 (* OK *)
-and asmt_to_arm asm =
+and asmt_to_arm asm dest =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP ...Imm" *)
-    | Let (id, e, a) -> sprintf "%s %s" (exp_to_arm e id) (asmt_to_arm a)
-    | Expression e -> sprintf "%s" (exp_to_arm e "")
+    | Let (id, e, a) -> sprintf "%s %s" (exp_to_arm e id) (asmt_to_arm a "")
+    | Expression e -> sprintf "%s" (exp_to_arm e dest)
 
 (* Helper functions for fundef *)
 let rec movegen l i =
@@ -111,7 +118,7 @@ let rec prepare_arg args =
 (* OK *)
 let rec fundef_to_arm fundef =
     match fundef with
-    | Body b -> asmt_to_arm b
+    | Body b -> asmt_to_arm b ""
     | _ -> failwith "Matching error in fundef"
 
 (** This function is a recursive function to conver tpye toplevel into type fundef

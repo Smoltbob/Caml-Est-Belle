@@ -48,9 +48,8 @@ for folder in "$dir"/*/; do
         # Printing the expected output
         EXP=$(cat "$folder"expected_$typ/"$filename".exp)
         if [[ $verb = 1 ]] || [[ "$RESULT" != "$EXP" ]]; then
-            echo -e "\e[33mOutput  : $RESULT\e[0m"
-            echo -e "\e[35mExpected :$EXP\e[0m"
-            echo ""
+            echo -e "\e[33mOutput   : $RESULT\e[0m"
+            echo -e "\e[35mExpected : $EXP\e[0m"
         fi
         # Comparison between the two
         if [[ $RESULT == "$EXP" ]]; then

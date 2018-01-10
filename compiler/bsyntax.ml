@@ -18,6 +18,7 @@ type t =
   | Eq of Id.t * t
   | Ifeq of Id.t * Id.t * asmt * asmt
   | Ifle of Id.t * Id.t * asmt * asmt
+  | Ifge of Id.t * Id.t * asmt * asmt
   | Call of Id.t * formal_args
   | Nop
 
