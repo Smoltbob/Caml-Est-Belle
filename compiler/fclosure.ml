@@ -47,6 +47,20 @@ and fundef = {
 
 (* type toplevel = fundef list *)
 
+let hash_fundef = Hashtbl.create 10
+
+let rec add_und (fund:fundef) = let (id,typ) = fund.name in
+    {name = ("_"^id,typ); args = fund.args; formal_fv = []; body = scan_fundef fund.body}
+and scan_fundef clos :t = match clos with
+    | LetRec (fund, een) -> Hashtbl.add hash_fundef (fst fund.name) ();
+                                 LetRec (add_und fund, scan_fundef een)
+    | Let (x, valu, een) -> Let (x, valu, scan_fundef een)
+    | AppD (id, l) ->   if Hashtbl.mem hash_fundef id then
+                            AppD ("_"^id, l)
+                        else
+                            AppD ("_min_caml_"^id, l)
+    | _ -> clos
+
 (** This function transform unnested expressions into a Fclosure.t *)
 let rec clos_exp (k:Fknormal.t) :t = match k with
     | Unit -> Unit
@@ -148,7 +162,7 @@ and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
                         |None -> LetRec(fd, the_cunning_psi een)
                         |Some fbody -> the_cunning_psi ( LetRec(fbody, (LetRec({name=fd.name; args=fd.args; body=newin}, een))))
                         )
-    |Let(a,b,c) -> ( 
+    |Let(a,b,c) -> (
                     let recbody, newin = the_savage_phi b in
                     match recbody with
                         |None -> Let(a, b, the_cunning_psi c)
@@ -157,14 +171,14 @@ and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
     |_ -> ast
 *)
 
-let rec subphi cat (y:Fknormal.t) (z:Fknormal.t) lr : Fknormal.t = 
+let rec subphi cat (y:Fknormal.t) (z:Fknormal.t) lr : Fknormal.t =
     match (phi y) with
     |LetRec(a, b) -> phi (LetRec(a, cat b z))
     |_ -> (match (phi z) with
             |LetRec(a, b) when lr -> cat y (phi (LetRec(a, b)))
             |LetRec(a, b) -> phi (LetRec(a, cat y b))
             |_ -> cat y z)
-and phi (ast:Fknormal.t) : Fknormal.t = 
+and phi (ast:Fknormal.t) : Fknormal.t =
     match ast with
     |Let(x,y,z) -> subphi (fun a->fun b->Let(x, a, b)) y z false
     |LetRec(y,z) -> subphi (fun a->fun b->LetRec({name=y.name; args=y.args; body=a}, b)) y.body z true
@@ -193,7 +207,7 @@ let rec merge_letrecs_lets letrecs lets = match letrecs with
 let clos_out k =
     (*let clos = (clos_exp (the_cunning_psi k)) in*)
     let clos = (clos_exp (phi k)) in
-    merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos) 
+     scan_fundef (merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos))
 
 
 (** This function is for debugging purpose only, it returns its argument as a string *)

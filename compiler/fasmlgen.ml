@@ -50,9 +50,9 @@ let rec asml_t_triv t = match t with
 @param c is an Fclosure.t
 @return an Bsyntax.asmt*)
 let rec asml_exp (c:Fclosure.t) :asmt = match c with
-    | Let (x, a, b) -> Printf.fprintf stdout "exp: Let\n"; Let (fst x, asml_t_triv a, asml_exp b)
+    | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
     (* | LetRec (fundef, a) -> LetRec ({name = }) *)
-    | _ -> Printf.fprintf stdout "exp: _\n";Expression (asml_t_triv c)
+    | _ -> Expression (asml_t_triv c)
 
     (* | _ -> failwith "asml_exp matchfailure" *)
 
@@ -60,13 +60,13 @@ let rec asml_exp (c:Fclosure.t) :asmt = match c with
 let create_main c = {name = "_"; args = []; body = asml_exp c}
 
 let rec asml_list c = match c with
-    | LetRec (f,a) -> Printf.fprintf stdout "list: LetRec\n";({
+    | LetRec (f,a) -> ({
                         name = fst f.name;
                         args = List.map fst f.args;
                         body = (asml_exp f.body)
                       })
                       ::(asml_list a)
-    | _ -> Printf.fprintf stdout "list: _\n";[create_main c]
+    | _ -> [create_main c]
 
 (* let asml_fundefs c = Fundefs (asml_list c) *)
 
@@ -127,3 +127,5 @@ let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
 (** Temporary function to print the starting let _ = at the beginning of the asml file *)
 let closure_to_asmlstring_main (exp:Fclosure.t) : string =
    sprintf "let _ = \n %s" (closure_to_asmlstring exp)
+
+(* let asml_to_string asml = () *)

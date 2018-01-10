@@ -19,3 +19,5 @@ val closure_to_asmlstring_main : Fclosure.t -> string
 (** This function is used to output the string to generate the asml file.
 @param exp is an Fclosure.t*)
 val closure_to_asmlstring : Fclosure.t -> string
+
+(* val asml_to_string : Bsyntax.t -> string *)
