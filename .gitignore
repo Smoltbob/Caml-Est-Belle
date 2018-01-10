@@ -16,3 +16,4 @@ armgen
 *.swo
 *.docdir
 *.core
+*.asml
