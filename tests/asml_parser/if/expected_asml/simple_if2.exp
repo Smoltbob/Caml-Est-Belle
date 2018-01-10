@@ -1,1 +1,1 @@
-(((Let a = 2 in ((if a = b then ((call _print_int a)) else ((call _print_int b)))))))
+(((Let a = 2 in ((if a = b then ((call _min_caml_print_int a)) else ((call _min_caml_print_int b)))))))

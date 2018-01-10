@@ -51,7 +51,7 @@ for folder in "$dir"/*/; do
             echo -e "File: \e[34m$file\e[0m"
             # Generating arm
             "$prog" "$file" > "$outarm/$filename.s"
-            (cd "$outarm" && make "$filename".arm)
+            (cd "$outarm" && make "$filename".arm ) > /dev/null
             RESULT=$(cd "$outarm" && qemu-arm ./"$filename".arm)
             # Printing output from parsing + ARM generation
             # Printing the expected output

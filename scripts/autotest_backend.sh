@@ -1,0 +1,1 @@
+../tests/backend/autotest_backend.sh
