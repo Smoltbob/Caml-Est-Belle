@@ -17,8 +17,8 @@ type t =
   | Var of Id.t
   | Eq of Id.t * t
   | Ifeq of Id.t * Id.t * asmt * asmt
-  | Ifle of Id.t * Id.t * asmt * asmt
   | Ifge of Id.t * Id.t * asmt * asmt
+  | Ifle of Id.t * Id.t * asmt * asmt
   | Call of Id.t * formal_args
   | Nop
 
@@ -29,15 +29,18 @@ and asmt =
     | Expression of t
     (* | Additional case for parenthesis ? Don't think so ? *)
 
-and fundef =
-    | Body of asmt (* We will need the name, arguments and return type for functions *)
+and fundef = {
+                name : Id.t;
+                args : Id.t list;
+                body : asmt (* We will need the name, arguments and return type for functions *)
+                (* ret : Type.t *)
+             }
 
 type toplevel =
     | Fundefs of (fundef list) (* Once we implement functions we will have a list *)
 
 
-
-(** Prints the functions arguments. They are stored in a list. 
+(** Prints the functions arguments. They are stored in a list.
    @param argu the list of arguments
 *)
 let rec to_string_args argu =
@@ -87,8 +90,7 @@ and to_string_asm asm =
     @param fund the list of function definitions.
 *)
 let rec to_string_fundef fund =
-    match fund with
- | Body b -> sprintf "(%s)" (to_string_asm b)
+     sprintf "(%s)" (to_string_asm fund.body)
 
 (** Prints the root of the ast of an asml program. This is the function to call to print the whole tree.
     @param top The ast as provided by the parser.
@@ -101,4 +103,3 @@ let rec print_list_idx l i =
    match i with
     | i when i = 0 -> sprintf "%s" (Id.to_string (hd l))
     | _ -> print_list_idx (tl l) (i - 1) 
-

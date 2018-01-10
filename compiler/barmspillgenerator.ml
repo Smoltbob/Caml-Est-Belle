@@ -14,13 +14,13 @@ let vartbl_s = Hashtbl.create register_nb
 let frame_index = ref 0
 
 (* WIP ARM generation *)
-(** This function is to allocate 4 bits for variable x and update the vartbl_s, and return the address
+(** This function is to allocate 4 bytes for variable x and update the vartbl_s, and return the address
 @param variable_name the variable name in type id.t
 @return the relative address of x in type int *)
 let frame_position variable_name =
 	if (not (Hashtbl.mem vartbl_s variable_name)) then
         begin
-		    frame_index := !frame_index + 4;
+		    frame_index := !frame_index - 4;
             Hashtbl.add vartbl_s variable_name !frame_index
         end;
     Hashtbl.find vartbl_s variable_name
@@ -43,14 +43,11 @@ let rec ldrgen l i =
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
 @param args the list of arguments, in type string
 @return unit *)
-let rec to_arm_formal_args args =
-    (* if len(args) <= 4:
-        * for i in range(len(args)):
-            * print mov rito_string(args[i])*)
+let rec to_arm_formal_args args i =
     match args with
     | [] -> sprintf ""
-    | l when (List.length l <= 4) -> ldrgen l 0
-    (*| t::q -> sprintf "%s %s" (Id.to_string t) (to_arm_formal_args q *) 
+    | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (frame_position (List.hd l)) (to_arm_formal_args (List.tl l) (i-1))
+    | _ -> failwith "Not handled yet"
 
 (** This function is to convert assignments into arm code 
 @param exp expression in the assigment
@@ -66,7 +63,7 @@ let rec exp_to_arm exp dest =
 
     | Sub (e1, e2) -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tsub r6, r4, r5\n\tstr r6, [fp, #%i]\n\n" (frame_position e1) (frame_position e2) (frame_position dest)
 
-    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1) (String.sub l 1 ((String.length l) - 1))
+    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1 0) (String.sub l 1 ((String.length l) - 1))
 
     | Ifeq (id1, e1, asmt1, asmt2) ->
             let counter = genif() in 
@@ -106,20 +103,34 @@ let rec movegen l i =
         | _ -> failwith "Not handled movegen"
 
         
-let rec prepare_arg args =
+let rec get_args args =
     match args with
     | [] -> sprintf ""
-    | l when (List.length l <= 4) -> movegen l 0
+    | l when (List.length l = 1) -> sprintf "\tstmfd sp!, {r0}\n\n"
+    | l when (List.length l <= 4) -> sprintf "\tstmfd sp!, {r0-r%i}\n\n" ((List.length l)-1)
     | _ -> failwith "Not handled yet"
+
+let rec epilogue_to_arm args =
+    match args with
+    | [] -> ""
+    | l -> sprintf "\tadd sp, sp, #%i\n" (4*(List.length l))
 
 (** This function is a recursive function to conver tpye fundef into type asmt
 @param fundef program in type fundef
 @return unit*)
 (* OK *)
 let rec fundef_to_arm fundef =
-    match fundef with
-    | Body b -> asmt_to_arm b ""
-    | _ -> failwith "Matching error in fundef"
+    (* Write down the label *)
+    sprintf "\t.globl %s\n%s:\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n%s%s\n%s\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name (get_args fundef.args) (asmt_to_arm fundef.body "") (epilogue_to_arm fundef.args)
+    (* Prepare the arguments. If <= 4 arguments, put them in r0 -> r3.
+     * Else put them in the stack *)
+    (* TODO *)
+
+let rec fundefs_to_arm fundefs =
+    match fundefs with
+    | [start] -> sprintf "\t.globl _start\n_start:\n\tmov fp, sp\n\n%s\n\tbl min_caml_exit\n" (asmt_to_arm start.body "") 
+    | h::l -> sprintf "%s%s" (fundef_to_arm h) (fundefs_to_arm l)
+    | _ -> failwith "No main function found"
 
 (** This function is a recursive function to conver tpye toplevel into type fundef
 @param toplevel program in type toplevel
@@ -127,5 +138,4 @@ let rec fundef_to_arm fundef =
 (* OK *)
 let rec toplevel_to_arm toplevel =
     match toplevel with
-    | Fundefs f -> sprintf ".text\n.global _start\n_start:\n\tmov fp, sp\n%s\tbl min_caml_exit\n" (fundef_to_arm (List.hd f))
-    | _ -> failwith "Matching error in toplevel"
+    | Fundefs functions_list -> sprintf "\t.text\n%s" (fundefs_to_arm functions_list)

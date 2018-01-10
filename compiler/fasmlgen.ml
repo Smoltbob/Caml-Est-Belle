@@ -50,22 +50,27 @@ let rec asml_t_triv t = match t with
 @param c is an Fclosure.t
 @return an Bsyntax.asmt*)
 let rec asml_exp (c:Fclosure.t) :asmt = match c with
-    | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
+    | Let (x, a, b) -> Printf.fprintf stdout "exp: Let\n"; Let (fst x, asml_t_triv a, asml_exp b)
     (* | LetRec (fundef, a) -> LetRec ({name = }) *)
-    | AppD (f, l) ->
-        (let rec trans (l:Fclosure.t list) :Bsyntax.formal_args = match l with
-            | [] -> []
-            | (Var x)::q -> (x:Id.t)::(trans q)
-            | _ -> failwith "not a list of variables. Maybe the argument is of type unit ?"
-        in
-        Expression (Call (f, trans l)))
-    | _ -> Expression (asml_t_triv c)
+    | _ -> Printf.fprintf stdout "exp: _\n";Expression (asml_t_triv c)
 
     (* | _ -> failwith "asml_exp matchfailure" *)
 
-(** Temporary function to correctly return a Bsyntax.toplevel *)
-let asml_head c =
-    Fundefs [Body (asml_exp c)]
+
+let create_main c = {name = "_"; args = []; body = asml_exp c}
+
+let rec asml_list c = match c with
+    | LetRec (f,a) -> Printf.fprintf stdout "list: LetRec\n";({
+                        name = fst f.name;
+                        args = List.map fst f.args;
+                        body = (asml_exp f.body)
+                      })
+                      ::(asml_list a)
+    | _ -> Printf.fprintf stdout "list: _\n";[create_main c]
+
+(* let asml_fundefs c = Fundefs (asml_list c) *)
+
+let asml_head c = Fundefs (asml_list c)
 
 (** This function is used to output the string to generate the asml file.
 @param exp is an Fclosure.t*)
