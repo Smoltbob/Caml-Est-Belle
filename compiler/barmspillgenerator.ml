@@ -19,11 +19,11 @@ let frame_index = ref 0
 @return the relative address of x in type int *)
 let frame_position variable_name =
 	if (not (Hashtbl.mem vartbl_s variable_name)) then
-        begin
-		    frame_index := !frame_index - 4;
-            Hashtbl.add vartbl_s variable_name !frame_index
-        end;
-    Hashtbl.find vartbl_s variable_name
+		    (frame_index := !frame_index - 4;
+            Hashtbl.add vartbl_s variable_name !frame_index;
+            (!frame_index, true))
+    else
+    (Hashtbl.find vartbl_s variable_name, false)
         
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
 @param args the list of arguments, in type string
@@ -31,7 +31,7 @@ let frame_position variable_name =
 let rec to_arm_formal_args args i =
     match args with
     | [] -> sprintf ""
-    | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (frame_position (List.hd l)) (to_arm_formal_args (List.tl l) (i-1))
+    | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (fst (frame_position (List.hd l))) (to_arm_formal_args (List.tl l) (i-1))
     | _ -> failwith "Not handled yet"
 
 (** This function is to convert assignments into arm code 
@@ -41,10 +41,10 @@ let rec to_arm_formal_args args i =
 (* OK *)
 let rec exp_to_arm exp dest =
     match exp with
-    | Int i -> sprintf "\tmov r4, #%s\n\tstr r4, [fp, #%i]\n" (string_of_int i) (frame_position dest)
-    | Var id -> sprintf "\tldr r4, [fp, #%i]\n\tmov r5, r4\n\tstr r5, [fp, #%i]\n" (frame_position id) (frame_position dest)
-    | Add (e1, e2)  -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tadd r6, r4, r5\n\tstr r6, [fp, #%i]\n" (frame_position e1) (frame_position e2) (frame_position dest)
-    | Sub (e1, e2) -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tsub r6, r4, r5\n\tstr r6, [fp, #%i]\n" (frame_position e1) (frame_position e2) (frame_position dest)
+    | Int i -> sprintf "\tmov r4, #%s\n\tstr r4, [fp, #%i]\n" (string_of_int i) (fst (frame_position dest))
+    | Var id -> sprintf "\tldr r4, [fp, #%i]\n\tmov r5, r4\n\tstr r5, [fp, #%i]\n" (fst (frame_position id)) (fst (frame_position dest))
+    | Add (e1, e2)  -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tadd r6, r4, r5\n\tstr r6, [fp, #%i]\n" (fst (frame_position e1)) (fst (frame_position e2)) (fst (frame_position dest))
+    | Sub (e1, e2) -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tsub r6, r4, r5\n\tstr r6, [fp, #%i]\n" (fst (frame_position e1)) (fst (frame_position e2)) (fst (frame_position dest))
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1 0) (String.sub l 1 ((String.length l) - 1))
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
