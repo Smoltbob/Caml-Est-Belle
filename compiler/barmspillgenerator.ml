@@ -31,15 +31,6 @@ let genif =
     incr counter;
     sprintf "%d" !counter
 
-(** This function is to return the address for arguments in function call when the arguments are less than 4;
-@parustaam l the list of args, in type string;
-@param i the conuter of arguments, int;
-@return string "ldr ri, [fp,i]" *)
-let rec ldrgen l i =
-    match l with
-        | [] -> sprintf ""
-        | t::q -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (fst (frame_position t)) (ldrgen q (i + 1))
-        
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
 @param args the list of arguments, in type string
 @return unit *)
@@ -49,16 +40,24 @@ let rec to_arm_formal_args args i =
     | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (fst (frame_position (List.hd l))) (to_arm_formal_args (List.tl l) (i-1))
     | _ -> failwith "Not handled yet"
 
+(* Helpers for 3-addresses operation (like add or sub) *)
+let rec store_in_stack register_id (frame_offset, need_push) =
+    let push_stack = if need_push then "\tadd sp, sp, -4\n" else "" in
+    sprintf "%s\tstr r%i, [fp, #%i]\n" push_stack register_id frame_offset
+
+let rec operation_to_arm op e1 e2 dest =
+    sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\t%s r6, r4, r5\n%s" (fst (frame_position e1)) (fst (frame_position e2)) op (store_in_stack 6 (frame_position dest))
+
 (** This function is to convert assignments into arm code 
 @param exp expression in the assigment
 @param dest the variable which is assigned in this assignment
 @return unit*)
 let rec exp_to_arm exp dest =
     match exp with
-    | Int i -> sprintf "\tmov r4, #%s\n\tstr r4, [fp, #%i]\n" (string_of_int i) (fst (frame_position dest))
-    | Var id -> sprintf "\tldr r4, [fp, #%i]\n\tmov r5, r4\n\tstr r5, [fp, #%i]\n" (fst (frame_position id)) (fst (frame_position dest))
-    | Add (e1, e2)  -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tadd r6, r4, r5\n\tstr r6, [fp, #%i]\n" (fst (frame_position e1)) (fst (frame_position e2)) (fst (frame_position dest))
-    | Sub (e1, e2) -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tsub r6, r4, r5\n\tstr r6, [fp, #%i]\n" (fst (frame_position e1)) (fst (frame_position e2)) (fst (frame_position dest))
+    | Int i -> sprintf "\tmov r4, #%s\n%s" (string_of_int i) (store_in_stack 4 (frame_position dest))
+    | Var id -> sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) (store_in_stack 4 (frame_position dest))
+    | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
+    | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1 0) (String.sub l 1 ((String.length l) - 1))
 
     | If (id1, e1, asmt1, asmt2, comp) ->
