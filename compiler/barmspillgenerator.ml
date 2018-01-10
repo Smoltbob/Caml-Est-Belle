@@ -4,11 +4,8 @@ open Bsyntax;;
 open Printf;;
 open List;;
 
-(** the number of free registers *)
-let register_nb = 12
-
 (** A hashtable: the keys are the name of variables and the contant of each key is a tuple (bool, int), if bool is equal to "true", then the variable is in the register and the int is the index of register, else the variable is in the memory, the int is the address . *)
-let vartbl_s = Hashtbl.create register_nb
+let vartbl_s = Hashtbl.create 10
 
 (** address in virtual memory stack refer to current fp*)
 let frame_index = ref 0
@@ -17,13 +14,17 @@ let frame_index = ref 0
 (** This function is to allocate 4 bytes for variable x and update the vartbl_s, and return the address
 @param variable_name the variable name in type id.t
 @return the relative address of x in type int *)
-let frame_position variable_name =
+let rec frame_position variable_name =
 	if (not (Hashtbl.mem vartbl_s variable_name)) then
 		    (frame_index := !frame_index - 4;
             Hashtbl.add vartbl_s variable_name !frame_index;
             (!frame_index, true))
     else
     (Hashtbl.find vartbl_s variable_name, false)
+
+let rec reset_frame_table () =
+    Hashtbl.reset vartbl_s;
+    frame_index := 0
 
 let genif =
   let counter = ref (-1) in
@@ -42,7 +43,7 @@ let rec to_arm_formal_args args i =
 
 (* Helpers for 3-addresses operation (like add or sub) *)
 let rec store_in_stack register_id (frame_offset, need_push) =
-    let push_stack = if need_push then "\tadd sp, sp, -4\n" else "" in
+    let push_stack = if need_push then "\tadd sp, sp, #-4\n" else "" in
     sprintf "%s\tstr r%i, [fp, #%i]\n" push_stack register_id frame_offset
 
 let rec operation_to_arm op e1 e2 dest =
@@ -97,14 +98,12 @@ let rec epilogue_to_arm args =
 (* OK *)
 let rec fundef_to_arm fundef =
     (* Write down the label *)
-    sprintf "\t.globl %s\n%s:\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n%s%s\n%s\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name (get_args fundef.args) (asmt_to_arm fundef.body "") (epilogue_to_arm fundef.args)
-    (* Prepare the arguments. If <= 4 arguments, put them in r0 -> r3.
-     * Else put them in the stack *)
-    (* TODO *)
+    reset_frame_table ();
+    sprintf "\t.globl %s\n%s:\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n%s%s\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name (get_args fundef.args) (asmt_to_arm fundef.body "")
 
 let rec fundefs_to_arm fundefs =
     match fundefs with
-    | [start] -> sprintf "\t.globl _start\n_start:\n\tmov fp, sp\n\n%s\n\tbl min_caml_exit\n" (asmt_to_arm start.body "") 
+    | [start] -> reset_frame_table (); sprintf "\t.globl _start\n_start:\n\tmov fp, sp\n\n%s\n\tbl min_caml_exit\n" (asmt_to_arm start.body "") 
     | h::l -> sprintf "%s%s" (fundef_to_arm h) (fundefs_to_arm l)
     | _ -> failwith "No main function found"
 
