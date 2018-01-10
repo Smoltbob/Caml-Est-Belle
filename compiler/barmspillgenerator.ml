@@ -22,6 +22,14 @@ let rec frame_position variable_name =
     else
     (Hashtbl.find vartbl_s variable_name, false)
 
+let rec register_args args =
+    match args with
+    | [] -> ()
+    | arg::arg_list -> if (not (Hashtbl.mem vartbl_s arg)) then
+		                    (frame_index := !frame_index - 4;
+                            Hashtbl.add vartbl_s arg !frame_index);
+                       register_args arg_list
+
 let rec reset_frame_table () =
     Hashtbl.reset vartbl_s;
     frame_index := 0
@@ -81,6 +89,7 @@ and asmt_to_arm asm dest =
 
 (* Helper functions for fundef *)
 let rec get_args args =
+    register_args args;
     match args with
     | [] -> sprintf ""
     | l when (List.length l = 1) -> sprintf "\tstmfd sp!, {r0}\n\n"
