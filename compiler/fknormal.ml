@@ -45,6 +45,8 @@ let newvar () = let res = ("v"^(Printf.sprintf "%d" !last), Ftype.gentyp ()) in 
 (**Unused.*)
 let newfct args body = let res = {name = newvar (); args = args; body = body } in res
 
+
+
 let is_ident_or_const (ast:Fsyntax.t)  =
     (*  (*uncomment when immediates in arithmetic operations are working in asmlgen*)
     match ast with
@@ -104,27 +106,17 @@ let rec knormal (ast:Fsyntax.t) : t =
                    )
     *)
 
-    |App (a,b) ->  ( match a with
-                    
-                    |Var(fct) -> (  
-                        let rec aux vars_rem k_vars =
-                            match vars_rem with
-                            |[] -> App(Var(fct), List.rev k_vars) (*a temporary solution to name external functions*)
-                            |h::q -> let (x,t) = newvar () in Let((x,t), knormal h, aux q ((Var x)::k_vars))
-                        in
-                        aux b []
-                       )
-                    
-
-                    |_ -> ( 
-                        let (f,t) = newvar () in
-                        let rec aux vars_rem k_vars =
-                            match vars_rem with
-                            |[] -> App(Var(f), List.rev k_vars)
-                            |h::q -> let (x,t) = newvar () in Let((x,t), knormal h, aux q ((Var x)::k_vars))
-                        in
-                        Let((f, t), knormal a, aux b [])
-                        )
+    |App (a,b) ->  (let rec aux (fname:Id.t) (vars_rem:Fsyntax.t list) (k_vars:t list) : t =
+                    match vars_rem with
+                        |[] -> App(Var(fname), List.rev k_vars) (*a temporary solution to name external functions*)
+                        |h::q -> (match h with
+                                 |Var(_) -> aux fname q ((knormal h)::k_vars) 
+                                 |_ -> let (x,t) = newvar () in Let((x,t), knormal h, aux fname q ((Var x)::k_vars))
+                                 )
+                    in
+                    match a with
+                        |Var(fct) -> aux fct b []
+                        |_ -> let (f,t) = newvar () in Let((f, t), knormal a, aux f b [])
                   )
     |If (a, b, c) ->(match a with  (*TODO: improve as the rest except for the 'true' in the default case*)
                      | LE(x, y) -> let (x',t) = newvar () in
@@ -150,10 +142,19 @@ let rec knormal (ast:Fsyntax.t) : t =
     |Let (a, b, c) -> if is_ident_or_const b then Let(a, ident_or_const_to_k b, knormal c)
                         else Let(a, knormal b, knormal c)
     |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b) (*later on, adding min_caml_ to external funtcions should be moved to fclosure.ml*)
+    |Tuple a -> (let rec tuple_aux (els:Fsyntax.t list) (vars:t list) =
+                  match els with
+                  |[] -> Tuple(List.rev vars) 
+                  |h::q -> (match h with
+                            |Var(_) -> tuple_aux q ((knormal h)::vars)
+                            |_ -> let (x,t) = newvar () in Let((x,t), knormal h, tuple_aux q ((Var x)::vars))
+                           )
+                in tuple_aux a []
+                )
     |_ -> failwith "knormal: NotImplementedYet"
     (*
-    |Tuple a -> Tuple(List.map knormal a)
     |LetTuple (a, b, c) -> LetTuple (a, knormal b, knormal c)
+
     |Array (a, b) -> Array (knormal a, knormal b)
     |Get (a, b) -> Get (knormal a, knormal b)
     |Put (a, b, c) -> Put (knormal a, knormal b, knormal c)
