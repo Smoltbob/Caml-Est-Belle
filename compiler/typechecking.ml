@@ -201,19 +201,21 @@ let rec genEquations  (expr:Fsyntax.t) tp  =
     | App (e1, le2) -> (match e1 with
                         | Var id -> (
                             if id="print_int" || id= "print_float" then
-                              begin
-                                if not ((List.length le2)=1) then
-                                      failwith "a function expected one argument\n"
-                                else
                                  begin  
-                                    let x=findVar !env id in 
+                                    let x=findVar !env id in  (* Fun of t list * t *)
                                    ( match x with
                                     | Fun (a,b)-> ( 
-                                      genEquations (List.hd le2) (List.hd a) ; 
-                                      updateEq(Unit, tp))
+                                      if not ((List.length le2)=(List.length a)) then
+                                          failwith "number of function arguments is incorrect\n" (*for later enhance this error msg*)
+                                     else
+                                       begin
+                                         genEquations (List.hd le2) (List.hd a) ; 
+                                        updateEq(Unit, tp)
+                                       end
+                                      )
                                     | _ -> failwith "Fun type was expected\n"
                                    )
-                                  end
+                                  
                               end
                             else
                               print_string "calling functions not implemented yet\n"
