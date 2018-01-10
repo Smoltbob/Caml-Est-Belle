@@ -17,7 +17,6 @@ all: ${PRG}
 .PHONY: clean test echo
 clean:
 	rm *.arm
-	rm *.o
 
 echo:
 	echo ${ASM}
