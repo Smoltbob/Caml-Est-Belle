@@ -24,6 +24,21 @@ let frame_position variable_name =
             (!frame_index, true))
     else
     (Hashtbl.find vartbl_s variable_name, false)
+
+let genif =
+  let counter = ref (-1) in
+  fun () ->
+    incr counter;
+    sprintf "%d" !counter
+
+(** This function is to return the address for arguments in function call when the arguments are less than 4;
+@parustaam l the list of args, in type string;
+@param i the conuter of arguments, int;
+@return string "ldr ri, [fp,i]" *)
+let rec ldrgen l i =
+    match l with
+        | [] -> sprintf ""
+        | t::q -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (fst (frame_position t)) (ldrgen q (i + 1))
         
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
 @param args the list of arguments, in type string
@@ -38,7 +53,6 @@ let rec to_arm_formal_args args i =
 @param exp expression in the assigment
 @param dest the variable which is assigned in this assignment
 @return unit*)
-(* OK *)
 let rec exp_to_arm exp dest =
     match exp with
     | Int i -> sprintf "\tmov r4, #%s\n\tstr r4, [fp, #%i]\n" (string_of_int i) (fst (frame_position dest))
@@ -46,6 +60,12 @@ let rec exp_to_arm exp dest =
     | Add (e1, e2)  -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tadd r6, r4, r5\n\tstr r6, [fp, #%i]\n" (fst (frame_position e1)) (fst (frame_position e2)) (fst (frame_position dest))
     | Sub (e1, e2) -> sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\tsub r6, r4, r5\n\tstr r6, [fp, #%i]\n" (fst (frame_position e1)) (fst (frame_position e2)) (fst (frame_position dest))
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1 0) (String.sub l 1 ((String.length l) - 1))
+
+    | If (id1, e1, asmt1, asmt2, comp) ->
+            let counter = genif() in 
+                let set_registers = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (fst (frame_position id1)) (fst (frame_position e1)) in 
+                let code = sprintf "\tcmp r4, r5\n\t%s if%s\n %s\tb end%s\n\nif%s:\n%s\nend%s:\n" comp counter (asmt_to_arm asmt2 dest) counter counter (asmt_to_arm asmt1 dest) counter in
+                sprintf "%s%s" set_registers code
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
@@ -53,11 +73,11 @@ let rec exp_to_arm exp dest =
 @param asm program in type asmt
 @return unit*)
 (* OK *)
-let rec asmt_to_arm asm =
+and asmt_to_arm asm dest =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP ...Imm" *)
-    | Let (id, e, a) -> sprintf "%s %s" (exp_to_arm e id) (asmt_to_arm a)
-    | Expression e -> sprintf "%s" (exp_to_arm e "")
+    | Let (id, e, a) -> sprintf "%s %s" (exp_to_arm e id) (asmt_to_arm a "")
+    | Expression e -> sprintf "%s" (exp_to_arm e dest)
 
 (* Helper functions for fundef *)
 let rec get_args args =
@@ -78,14 +98,14 @@ let rec epilogue_to_arm args =
 (* OK *)
 let rec fundef_to_arm fundef =
     (* Write down the label *)
-    sprintf "\t.globl %s\n%s:\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n%s%s\n%s\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name (get_args fundef.args) (asmt_to_arm fundef.body) (epilogue_to_arm fundef.args)
+    sprintf "\t.globl %s\n%s:\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n%s%s\n%s\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name (get_args fundef.args) (asmt_to_arm fundef.body "") (epilogue_to_arm fundef.args)
     (* Prepare the arguments. If <= 4 arguments, put them in r0 -> r3.
      * Else put them in the stack *)
     (* TODO *)
 
 let rec fundefs_to_arm fundefs =
     match fundefs with
-    | [start] -> sprintf "\t.globl _start\n_start:\n\tmov fp, sp\n\n%s\n\tbl min_caml_exit\n" (asmt_to_arm start.body)
+    | [start] -> sprintf "\t.globl _start\n_start:\n\tmov fp, sp\n\n%s\n\tbl min_caml_exit\n" (asmt_to_arm start.body "") 
     | h::l -> sprintf "%s%s" (fundef_to_arm h) (fundefs_to_arm l)
     | _ -> failwith "No main function found"
 

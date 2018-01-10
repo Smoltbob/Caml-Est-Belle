@@ -16,7 +16,7 @@ type t =
   | Sub of Id.t * Id.t
   | Var of Id.t
   | Eq of Id.t * t
-  | If of Id.t * Id.t * asmt * asmt
+  | If of Id.t * Id.t * asmt * asmt * string
   | Call of Id.t * formal_args
   | Nop
 
@@ -70,7 +70,7 @@ let rec exp_to_string exp =
   | Sub (e1, e2) -> sprintf "(sub %s %s)" (Id.to_string e1) (Id.to_string e2)
   | Var id -> Id.to_string id
   | Eq (e1, e2) -> sprintf "(%s = %s)" (Id.to_string e1) (exp_to_string e2)
-  | If (id1, e1, asmt1, asmt2) -> sprintf "(if %s = %s then %s else %s)" (Id.to_string id1) (Id.to_string e1) (to_string_asm asmt1) (to_string_asm asmt2)
+  | If (id1, e1, asmt1, asmt2, comp) -> sprintf "(if %s %s %s then %s else %s)" (Id.to_string id1) comp (Id.to_string e1) (to_string_asm asmt1) (to_string_asm asmt2)
   | Call (l1, a1) -> sprintf "(call %s %s)" (Id.to_string l1) (to_string_args a1)
   | Nop -> sprintf "nop"
 
@@ -82,14 +82,13 @@ and to_string_asm asm =
  | Let (id, e1, a) -> sprintf "(Let %s = %s in %s)" (Id.to_string id) (exp_to_string e1) (to_string_asm a)
  | Expression e -> sprintf "(%s)" (exp_to_string e)
 
-(*(** Prints the functions in the list of fundefs/
+(** Prints the functions in the list of fundefs/
     @param fund the list of function definitions.
 *)
 let rec to_string_fundef fund =
-    match fund with
- | Body b -> sprintf "(%s)" (to_string_asm b) *)
+     sprintf "(%s)" (to_string_asm fund.body)
 
-(*(** Prints the root of the ast of an asml program. This is the function to call to print the whole tree.
+(** Prints the root of the ast of an asml program. This is the function to call to print the whole tree.
     @param top The ast as provided by the parser.
     *)
 let rec to_string_top top =
@@ -99,4 +98,4 @@ let rec to_string_top top =
 let rec print_list_idx l i =
    match i with
     | i when i = 0 -> sprintf "%s" (Id.to_string (hd l))
-    | _ -> print_list_idx (tl l) (i - 1) *)
+    | _ -> print_list_idx (tl l) (i - 1) 

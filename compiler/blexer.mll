@@ -24,6 +24,10 @@ rule token = parse
     { NEG }
 | "fneg"
     { FNEG }
+| "<="
+    { LE }
+| ">="
+    { GE }
 | '='
     { EQUAL }
 | "let"

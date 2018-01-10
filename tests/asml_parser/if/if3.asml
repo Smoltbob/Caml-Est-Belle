@@ -1,0 +1,6 @@
+let _ =
+    let a = 0 in
+    let b = 1 in
+    let c = 2 in
+    let d = if a = b then 2 else 3 in
+    call _min_caml_print_int d
