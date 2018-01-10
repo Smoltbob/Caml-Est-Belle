@@ -54,6 +54,13 @@ let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : stri
     | [x] -> to_s x
     | hd :: tl -> (to_s hd) ^ op ^ (infix_to_string to_s tl op)
 
+(** Transforms comparison instructions into strings. Ex : "beq" into "=" *)
+let rec comp_to_string comp =
+    match comp with
+    | "beq" -> sprintf "="
+    | "ble" -> sprintf "<="
+    | "bge" -> sprintf ">="
+    | _ -> failwith "Empty comparator"
 (** Prints expressions occuring in the program.
     @param exp The expression to print. *)
 let rec exp_to_string exp =
@@ -70,7 +77,7 @@ let rec exp_to_string exp =
   | Sub (e1, e2) -> sprintf "(sub %s %s)" (Id.to_string e1) (Id.to_string e2)
   | Var id -> Id.to_string id
   | Eq (e1, e2) -> sprintf "(%s = %s)" (Id.to_string e1) (exp_to_string e2)
-  | If (id1, e1, asmt1, asmt2, comp) -> sprintf "(if %s %s %s then %s else %s)" (Id.to_string id1) comp (Id.to_string e1) (to_string_asm asmt1) (to_string_asm asmt2)
+  | If (id1, e1, asmt1, asmt2, comp) -> sprintf "(if %s %s %s then %s else %s)" (Id.to_string id1) (comp_to_string comp) (Id.to_string e1) (to_string_asm asmt1) (to_string_asm asmt2)
   | Call (l1, a1) -> sprintf "(call %s %s)" (Id.to_string l1) (to_string_args a1)
   | Nop -> sprintf "nop"
 
