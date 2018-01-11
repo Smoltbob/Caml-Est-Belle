@@ -42,6 +42,11 @@ let genif =
     incr counter;
     sprintf "%d" !counter
 
+let rec stack_remaining_arguments args =
+    match args with
+    | [] -> ""
+    | arg::arg_list -> sprintf "\tldr r4, [fp, #%i]\n\tstmfd sp!, {r4}\n%s" (fst (frame_position arg)) (stack_remaining_arguments arg_list)
+
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
 @param args the list of arguments, in type string
 @return unit *)
@@ -49,7 +54,8 @@ let rec to_arm_formal_args args i =
     match args with
     | [] -> sprintf ""
     | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (fst (frame_position (List.hd l))) (to_arm_formal_args (List.tl l) (i-1))
-    | _ -> failwith "Not handled yet"
+    | a1::a2::a3::a4::l -> sprintf "%s%s" (to_arm_formal_args (a1::a2::a3::a4::[]:string list)  0) (stack_remaining_arguments l)
+    | _ -> failwith "Error while parsing arguments"
 
 (* Helpers for 3-addresses operation (like add or sub) *)
 let rec store_in_stack register_id dest =
