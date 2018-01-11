@@ -73,7 +73,11 @@ exp:
 | SUB IDENT IDENT
     { Sub($2, $3) }
 | IF IDENT EQUAL IDENT THEN asmt ELSE asmt /* should be ADD IDENT equal ident_or_imm THEN asmt ELSE asmt */
-    { If($2, $4, $6, $8) }
+    { If($2, $4, $6, $8, "beq") }
+| IF IDENT LE IDENT THEN asmt ELSE asmt /* should be ADD IDENT equal ident_or_imm THEN asmt ELSE asmt */
+    { If($2, $4, $6, $8, "ble") }
+| IF IDENT GE IDENT THEN asmt ELSE asmt /* should be ADD IDENT equal ident_or_imm THEN asmt ELSE asmt */
+    { If($2, $4, $6, $8, "bge") }
 | CALL LABEL formal_args
     { Call($2, $3) }
 | NOP

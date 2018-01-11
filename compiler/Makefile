@@ -22,6 +22,9 @@ test_gencode:
 test_typecheck:
 	(cd ../ && ./scripts/autotest_typecheck.sh -p ./scripts/mincamlc -d tests/typechecking -t tc)
 
+test_backend:
+	(cd ../ && ./scripts/autotest_backend.sh -p ./scripts/armgen -d tests/backend -t res -o ARM)
+
 test: all
 	@echo "LAUNCHING TESTS"
 	@echo "ASML PARSING ..."
@@ -30,13 +33,14 @@ test: all
 	$(MAKE) test_typecheck
 	@echo "CODE GENERATION ..."
 	$(MAKE) test_gencode
+	$(MAKE) test_backend
 	@echo "END OF TESTS"
 	@echo "In case of KO, you can launch the scripts separately with the verbose (-v) option to see the outputs."
 
 clean:
 	rm -rf _build
 
-cleanest: clean
+mrproper: clean
 	rm -f mincamlc
 	rm -f armgen
 	rm -f asmlparse
