@@ -89,9 +89,9 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     | Put (a, b, c) -> Put (clos_exp a, clos_exp b, clos_exp c)
     (* TODO remove let later *)(*TODO: Don't remove let*)
     | Let (x, a, b) -> Let (x, clos_exp a, clos_exp b)
-    | LetRec (fundef, a) -> LetRec ({name = fundef.name; args = fundef.args; formal_fv = []; body = (clos_exp fundef.body)}, (clos_exp a))
+    | LetRec (fundef, a) -> LetRec ({name = ("_min_caml_"^(fst fundef.name), snd fundef.name); args = fundef.args; formal_fv = []; body = (clos_exp fundef.body)}, (clos_exp a))
     | App (f, l) -> (match f with
-                        | (Var id) -> AppD ("_"^id, List.map clos_exp l)
+                        | (Var id) -> AppD ("_min_caml_"^id, List.map clos_exp l)
                         | _ -> failwith "matchfailure App")
     | _-> failwith "match not exhaustive in clos_exp fclosure.ml"
 
@@ -192,7 +192,7 @@ and phi (ast:Fknormal.t) : Fknormal.t =
 
 
 (*------THE-VERSION-AFTER-TRUE-CLOSURE--------------------------------------*)
-let closures = Hashtbl.create 100
+let closures = Hashtbl.create 100  (*not used actually*)
 let known = ref ["_min_caml_print_int"] (*TODO: add the others*) 
 (* (a try at using sets, but couldn't be bothered to check if comparison works properly. Maybe come back later)
 module SS = Set.Make(struct
@@ -374,7 +374,7 @@ let clos_out k =
     let clos = (clos_exp (phi k)) in
     merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos) 
     *)
-    phi (clos_exp k)
+    (*phi*) (clos_exp k)
 
 
 (** This function is for debugging purpose only, it returns its argument as a string *)
