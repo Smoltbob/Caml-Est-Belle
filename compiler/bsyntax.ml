@@ -47,7 +47,6 @@ let rec to_string_args argu =
     | [x] -> Id.to_string x
     | t::q -> sprintf "%s %s" t (to_string_args q)
 
-(* Useless? *)
 let rec infix_to_string (to_s : 'a -> string) (l : 'a list) (op : string) : string =
     match l with
     | [] -> ""
@@ -105,4 +104,4 @@ let rec to_string_top top =
 let rec print_list_idx l i =
    match i with
     | i when i = 0 -> sprintf "%s" (Id.to_string (hd l))
-    | _ -> print_list_idx (tl l) (i - 1) 
+    | _ -> print_list_idx (tl l) (i - 1)

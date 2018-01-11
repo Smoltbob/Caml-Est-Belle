@@ -3,10 +3,10 @@ The function returning a string is just a dbeugging function for now *)
 open Fknormal;;
 
 type t =
-(* uncomment those lines when ready to create closures *)
-    (*| LetFclosure of (Id.t * Ftype.t) * (Id.l * Ftype.t) * t list*)
-    (*| AppC of (Id.l * t list)*)
-    | AppD of (Id.t * t list)
+    | LetCls of Id.t * Id.l * (Id.t list) * t
+                 (*name of clsr * lbl of fct * free vars of fct * in*)
+    | AppC of (Id.t * t list)
+    | AppD of (Id.l * t list)
     | Unit
     | Bool of bool
     | Int of int

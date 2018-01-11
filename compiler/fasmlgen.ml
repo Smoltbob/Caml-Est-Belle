@@ -124,6 +124,36 @@ let rec closure_to_asmlstring (exp:Fclosure.t) : string = match exp with
   | Array(e1,e2) -> sprintf "(Array.create %s %s)"
        (closure_to_asmlstring e1) (closure_to_asmlstring e2) *)
 
-(** Temporary function to print the starting let _ = at the beginning of the asml file *)
+(** Temporary function to print the starting let _ = at the beginning of the main of the asml file *)
 let closure_to_asmlstring_main (exp:Fclosure.t) : string =
    sprintf "let _ = \n %s" (closure_to_asmlstring exp)
+
+let rec expression_to_string exp = match exp with
+    | Nop -> "nop"
+    | Int i -> string_of_int i
+    | Float f -> string_of_float f
+    | Var id -> Id.to_string id
+    | Add (e1, e2) -> sprintf "add %s %s" e1 e2
+    | Sub (e1, e2) -> sprintf "sub %s %s" e1 e2
+    | Call (f, args) -> sprintf "call %s %s" f (infix_to_string (fun x->x) args " ")
+    | _ -> "\n[[ match not found in asml gen ]]\n"
+
+let rec asmt_to_string (body:Bsyntax.asmt) = match body with
+    | Let (id, e1, e2) -> sprintf "let %s = %s in\n\t%s"
+        (Id.to_string id)
+        (expression_to_string e1)
+        (asmt_to_string e2)
+    | Expression t -> expression_to_string t
+
+let fundef_to_string (fund:fundef) =
+    sprintf "let rec %s %s =\n\t%s in\n"
+        (Id.to_string fund.name)
+        (infix_to_string (fun x -> (Id.to_string x)) fund.args " ")
+        (asmt_to_string fund.body)
+
+let rec list_to_string (l) = match l with
+    | t::q -> sprintf "%s\n\n%s" (fundef_to_string t) (list_to_string q)
+    | [] -> ""
+
+let toplevel_to_string (toplvl:toplevel) = match toplvl with
+    | Fundefs l -> list_to_string l

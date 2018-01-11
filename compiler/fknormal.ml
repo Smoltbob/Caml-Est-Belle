@@ -63,12 +63,12 @@ let is_ident_or_const (ast:Fsyntax.t)  =
 
 let ident_or_const_to_k (ast:Fsyntax.t): t =
     match ast with
-    |Unit -> Unit 
-    |Bool a -> Bool a 
-    |Int a -> Int a 
+    |Unit -> Unit
+    |Bool a -> Bool a
+    |Int a -> Int a
     |Float a -> Float a
-    |Var a -> Var a 
-    |_ -> failwith "Knormal.ident_or_const_to_k error" 
+    |Var a -> Var a
+    |_ -> failwith "Knormal.ident_or_const_to_k error"
 
 
 (** K-normalization. Applied to ast, return a flatter version of it: aside from let and letrec, all constructs will have a bounded depth.
@@ -82,15 +82,15 @@ let rec knormal (ast:Fsyntax.t) : t =
     |Float a -> Float a
     |Var a -> Var a
 
-    |Not b -> knormal_unary (fun x->Not x) b 
+    |Not b -> knormal_unary (fun x->Not x) b
     |Neg b -> knormal_unary (fun x->Neg x) b
-    |Sub (a, b) -> knormal_binary (fun x->fun y->Sub(x,y)) a b  
-    |Add (a, b) -> knormal_binary (fun x->fun y->Add(x,y)) a b  
-    |FAdd (a, b) -> knormal_binary_brute (fun x->fun y->FAdd(x,y)) a b 
+    |Sub (a, b) -> knormal_binary (fun x->fun y->Sub(x,y)) a b
+    |Add (a, b) -> knormal_binary (fun x->fun y->Add(x,y)) a b
+    |FAdd (a, b) -> knormal_binary_brute (fun x->fun y->FAdd(x,y)) a b
     |FNeg b -> knormal_unary (fun x->FNeg x) b
-    |FSub (a, b) -> knormal_binary_brute (fun x->fun y->FSub(x,y)) a b  
-    |FMul (a, b) -> knormal_binary_brute (fun x->fun y->FMul(x,y)) a b  
-    |FDiv (a, b) -> knormal_binary_brute (fun x->fun y->FDiv(x,y)) a b  
+    |FSub (a, b) -> knormal_binary_brute (fun x->fun y->FSub(x,y)) a b
+    |FMul (a, b) -> knormal_binary_brute (fun x->fun y->FMul(x,y)) a b
+    |FDiv (a, b) -> knormal_binary_brute (fun x->fun y->FDiv(x,y)) a b
     (*
     |Eq (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
@@ -179,7 +179,7 @@ knormal_binary (c:t->t->t) (a:Fsyntax.t) (b:Fsyntax.t) =
             Let((a',t), knormal a,
                 c (Var a') (ident_or_const_to_k b))
         )
-        else 
+        else
             Let((a',t), knormal a,
                 let (b',t) = newvar () in
                 Let((b',t), knormal b,
@@ -192,13 +192,13 @@ knormal_binary_brute (c:t->t->t) (a:Fsyntax.t) (b:Fsyntax.t) =
     Let((a',t), knormal a,
         Let((b',t), knormal b,
         c (Var a') (Var b')))
-    
+
 
 
 and
 knormal_unary c a =
     let (a',t) = newvar () in
-        Let((a',t), knormal a, c (Var a'))         
+        Let((a',t), knormal a, c (Var a'))
 
 
 (** Produces a string out of a K-normalized ast
@@ -234,7 +234,7 @@ let rec k_to_string (exp:t) : string =
           sprintf "(let rec %s %s = %s in\n %s)"
           (let (x, _) = fd.name in (Id.to_string x))
           (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
-          (k_to_string fd.body)   (*CHANGE LATER*)
+          (k_to_string fd.body)
           (k_to_string e)
   | LetTuple (l, e1, e2)->
           sprintf "(let (%s) = %s in\n %s)"
