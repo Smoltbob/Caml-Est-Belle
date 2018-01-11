@@ -51,7 +51,9 @@ let rec to_arm_formal_args args i =
 
 (* Helpers for 3-addresses operation (like add or sub) *)
 let rec store_in_stack register_id (frame_offset, need_push) =
+    print_string "store\n";
     let push_stack = if need_push then "\tadd sp, sp, #-4\n" else "" in
+    print_string (push_stack ^ "\n");
     sprintf "%s\tstr r%i, [fp, #%i]\n" push_stack register_id frame_offset
 
 let rec operation_to_arm op e1 e2 dest =
@@ -84,7 +86,7 @@ let rec exp_to_arm exp dest =
 and asmt_to_arm asm dest =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP ...Imm" *)
-    | Let (id, e, a) -> sprintf "%s %s" (exp_to_arm e id) (asmt_to_arm a "")
+    | Let (id, e, a) -> sprintf "%s%s" (exp_to_arm e id) (asmt_to_arm a "")
     | Expression e -> sprintf "%s" (exp_to_arm e dest)
 
 (* Helper functions for fundef *)
@@ -108,7 +110,8 @@ let rec epilogue_to_arm args =
 let rec fundef_to_arm fundef =
     (* Write down the label *)
     reset_frame_table ();
-    sprintf "\t.globl %s\n%s:\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n%s%s\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name (get_args fundef.args) (asmt_to_arm fundef.body "")
+    let get_args_string = get_args fundef.args in
+    sprintf "\t.globl %s\n%s:\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n%s%s\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name get_args_string (asmt_to_arm fundef.body "")
 
 let rec fundefs_to_arm fundefs =
     match fundefs with
