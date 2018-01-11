@@ -231,7 +231,7 @@ let rec k_to_string (exp:t) : string =
           sprintf "(let rec %s %s = %s in\n %s)"
           (let (x, _) = fd.name in (Id.to_string x))
           (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
-          (k_to_string fd.body)   (*CHANGE LATER*)
+          (k_to_string fd.body)
           (k_to_string e)
   | LetTuple (l, e1, e2)->
           sprintf "(let (%s) = %s in\n %s)"
