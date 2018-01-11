@@ -61,12 +61,12 @@ let is_ident_or_const (ast:Fsyntax.t)  =
 
 let ident_or_const_to_k (ast:Fsyntax.t): t =
     match ast with
-    |Unit -> Unit 
-    |Bool a -> Bool a 
-    |Int a -> Int a 
+    |Unit -> Unit
+    |Bool a -> Bool a
+    |Int a -> Int a
     |Float a -> Float a
-    |Var a -> Var a 
-    |_ -> failwith "Knormal.ident_or_const_to_k error" 
+    |Var a -> Var a
+    |_ -> failwith "Knormal.ident_or_const_to_k error"
 
 
 (** K-normalization. Applied to ast, return a flatter version of it: aside from let and letrec, all constructs will have a bounded depth.
@@ -80,15 +80,15 @@ let rec knormal (ast:Fsyntax.t) : t =
     |Float a -> Float a
     |Var a -> Var a
 
-    |Not b -> knormal_unary (fun x->Not x) b 
+    |Not b -> knormal_unary (fun x->Not x) b
     |Neg b -> knormal_unary (fun x->Neg x) b
-    |Sub (a, b) -> knormal_binary (fun x->fun y->Sub(x,y)) a b  
-    |Add (a, b) -> knormal_binary (fun x->fun y->Add(x,y)) a b  
-    |FAdd (a, b) -> knormal_binary_brute (fun x->fun y->FAdd(x,y)) a b 
+    |Sub (a, b) -> knormal_binary (fun x->fun y->Sub(x,y)) a b
+    |Add (a, b) -> knormal_binary (fun x->fun y->Add(x,y)) a b
+    |FAdd (a, b) -> knormal_binary_brute (fun x->fun y->FAdd(x,y)) a b
     |FNeg b -> knormal_unary (fun x->FNeg x) b
-    |FSub (a, b) -> knormal_binary_brute (fun x->fun y->FSub(x,y)) a b  
-    |FMul (a, b) -> knormal_binary_brute (fun x->fun y->FMul(x,y)) a b  
-    |FDiv (a, b) -> knormal_binary_brute (fun x->fun y->FDiv(x,y)) a b  
+    |FSub (a, b) -> knormal_binary_brute (fun x->fun y->FSub(x,y)) a b
+    |FMul (a, b) -> knormal_binary_brute (fun x->fun y->FMul(x,y)) a b
+    |FDiv (a, b) -> knormal_binary_brute (fun x->fun y->FDiv(x,y)) a b
     (*
     |Eq (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
@@ -105,18 +105,18 @@ let rec knormal (ast:Fsyntax.t) : t =
     *)
 
     |App (a,b) ->  ( match a with
-                    
-                    |Var(fct) -> (  
+
+                    |Var(fct) -> (
                         let rec aux vars_rem k_vars =
                             match vars_rem with
-                            |[] -> App(Var("min_caml_"^fct), List.rev k_vars) (*a temporary solution to name external functions*)
+                            |[] -> App(Var(fct), List.rev k_vars)
                             |h::q -> let (x,t) = newvar () in Let((x,t), knormal h, aux q ((Var x)::k_vars))
                         in
                         aux b []
                        )
-                    
 
-                    |_ -> ( 
+
+                    |_ -> (
                         let (f,t) = newvar () in
                         let rec aux vars_rem k_vars =
                             match vars_rem with
@@ -146,10 +146,8 @@ let rec knormal (ast:Fsyntax.t) : t =
                               Let((y',t), Bool(true),
                                IfEq(x', y', knormal b, knormal c)))
                     )
-
-    |Let (a, b, c) -> if is_ident_or_const b then Let(a, ident_or_const_to_k b, knormal c)
-                        else Let(a, knormal b, knormal c)
-    |LetRec (a, b) ->  LetRec ({name=("min_caml_"^(fst a.name), snd a.name); args=a.args; body=(knormal a.body)}, knormal b) (*later on, adding min_caml_ to external funtcions should be moved to fclosure.ml*)
+    |Let (a, b, c) -> Let (a, knormal b, knormal c) (*OK*)
+    |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b)
     |_ -> failwith "knormal: NotImplementedYet"
     (*
     |Tuple a -> Tuple(List.map knormal a)
@@ -178,7 +176,7 @@ knormal_binary (c:t->t->t) (a:Fsyntax.t) (b:Fsyntax.t) =
             Let((a',t), knormal a,
                 c (Var a') (ident_or_const_to_k b))
         )
-        else 
+        else
             Let((a',t), knormal a,
                 let (b',t) = newvar () in
                 Let((b',t), knormal b,
@@ -191,13 +189,13 @@ knormal_binary_brute (c:t->t->t) (a:Fsyntax.t) (b:Fsyntax.t) =
     Let((a',t), knormal a,
         Let((b',t), knormal b,
         c (Var a') (Var b')))
-    
+
 
 
 and
 knormal_unary c a =
     let (a',t) = newvar () in
-        Let((a',t), knormal a, c (Var a'))         
+        Let((a',t), knormal a, c (Var a'))
 
 
 (** Produces a string out of a K-normalized ast
