@@ -51,12 +51,8 @@ let rec to_arm_formal_args args i =
 
 (* Helpers for 3-addresses operation (like add or sub) *)
 let rec store_in_stack register_id dest =
-    print_string "store\n";
-    print_int (Hashtbl.length vartbl_s); print_string "\n";
     let frame_offset, need_push = frame_position dest in
-    print_int (Hashtbl.length vartbl_s); print_string "\n";
     let push_stack = if need_push then "\tadd sp, sp, #-4\n" else "" in
-    print_string (push_stack ^ "\n");
     sprintf "%s\tstr r%i, [fp, #%i]\n" push_stack register_id frame_offset
 
 let rec operation_to_arm op e1 e2 dest =
