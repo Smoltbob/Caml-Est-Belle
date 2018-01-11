@@ -50,18 +50,18 @@ and fundef = {
 let hash_fundef = Hashtbl.create 10
 
 let rec add_und (fund:fundef) = let (id,typ) = fund.name in
-    {name = ("_"^id,typ); args = fund.args; formal_fv = []; body = scan_fundef fund.body}
+    {name = ("_"^id,typ); args = fund.args; formal_fv = fund.formal_fv; body = scan_fundef fund.body}
 and scan_fundef clos :t = match clos with
     | LetRec (fund, een) -> Hashtbl.add hash_fundef (fst fund.name) ();
                                  LetRec (add_und fund, scan_fundef een)
-    | Let (x, valu, een) -> Let (x, valu, scan_fundef een)
+    | Let (x, valu, een) -> Let (x, scan_fundef valu, scan_fundef een)
     | AppD (id, l) ->   if Hashtbl.mem hash_fundef id then
                             AppD ("_"^id, l)
                         else
                             AppD ("_min_caml_"^id, l)
     | _ -> clos
 
-(** This function transform unnested expressions into a Fclosure.t *)
+(** This function transform unnested expressions into a"_" Fclosure.t *)
 let rec clos_exp (k:Fknormal.t) :t = match k with
     | Unit -> Unit
     | Bool a -> Bool a
@@ -91,9 +91,9 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     | Let (x, a, b) -> Let (x, clos_exp a, clos_exp b)
     | LetRec (fundef, a) -> LetRec ({name = fundef.name; args = fundef.args; formal_fv = []; body = (clos_exp fundef.body)}, (clos_exp a))
     | App (f, l) -> (match f with
-                        | (Var id) -> AppD ("_"^id, List.map clos_exp l)
+                        | (Var id) -> AppD (id, List.map clos_exp l)
                         | _ -> failwith "matchfailure App")
-    | _-> failwith "match not exhaustive in clos_exp fclosure.ml"
+    | _ -> failwith "match not exhaustive in clos_exp fclosure.ml"
 
 (* Ye Olde Buggy Version
 let rec the_savage_phi (fb:Fknormal.t) : (Fknormal.fundef option * Fknormal.t)  =
@@ -101,7 +101,7 @@ let rec the_savage_phi (fb:Fknormal.t) : (Fknormal.fundef option * Fknormal.t)  
     |Let(a,b,c) -> (
                     let recbody, newin = the_savage_phi c in
                     match recbody with
-                    |None -> (None,  Let(a, b, newin))
+                    |None -> (None,  Let(a, b, newin)) ()
                     |Some fbody -> (Some fbody, Let(a,b, newin))
                     )
     |LetRec(fbody, recin) -> (Some fbody, recin)
