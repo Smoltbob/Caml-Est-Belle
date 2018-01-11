@@ -20,4 +20,4 @@ val closure_to_asmlstring_main : Fclosure.t -> string
 @param exp is an Fclosure.t*)
 val closure_to_asmlstring : Fclosure.t -> string
 
-(* val asml_to_string : Bsyntax.t -> string *)
+val toplevel_to_string : Bsyntax.toplevel -> string
