@@ -14,10 +14,10 @@ let catchfailwith funct x = try (funct x) with
 let print_asml l =
     let s = Fparser.exp Flexer.token l in
     let c = (Fclosure.clos_out (Freduction.reduc (Falphaconversion.alpha (Fknormal.knormal s)))) in
+    let prog = Fasmlgen.asml_head c in
     if !asml_only then
-        Fasmlgen.closure_to_asmlstring_main c
+        Fasmlgen.toplevel_to_string prog
     else
-        let prog = Fasmlgen.asml_head c in
         (*Barmgenerator.toplevel_to_arm prog*)
         Barmspillgenerator.toplevel_to_arm prog
 

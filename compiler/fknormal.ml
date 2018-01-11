@@ -45,6 +45,8 @@ let newvar () = let res = ("v"^(Printf.sprintf "%d" !last), Ftype.gentyp ()) in 
 (**Unused.*)
 let newfct args body = let res = {name = newvar (); args = args; body = body } in res
 
+
+
 let is_ident_or_const (ast:Fsyntax.t)  =
     (*  (*uncomment when immediates in arithmetic operations are working in asmlgen*)
     match ast with
@@ -61,12 +63,12 @@ let is_ident_or_const (ast:Fsyntax.t)  =
 
 let ident_or_const_to_k (ast:Fsyntax.t): t =
     match ast with
-    |Unit -> Unit 
-    |Bool a -> Bool a 
-    |Int a -> Int a 
+    |Unit -> Unit
+    |Bool a -> Bool a
+    |Int a -> Int a
     |Float a -> Float a
-    |Var a -> Var a 
-    |_ -> failwith "Knormal.ident_or_const_to_k error" 
+    |Var a -> Var a
+    |_ -> failwith "Knormal.ident_or_const_to_k error"
 
 
 (** K-normalization. Applied to ast, return a flatter version of it: aside from let and letrec, all constructs will have a bounded depth.
@@ -80,15 +82,15 @@ let rec knormal (ast:Fsyntax.t) : t =
     |Float a -> Float a
     |Var a -> Var a
 
-    |Not b -> knormal_unary (fun x->Not x) b 
+    |Not b -> knormal_unary (fun x->Not x) b
     |Neg b -> knormal_unary (fun x->Neg x) b
-    |Sub (a, b) -> knormal_binary (fun x->fun y->Sub(x,y)) a b  
-    |Add (a, b) -> knormal_binary (fun x->fun y->Add(x,y)) a b  
-    |FAdd (a, b) -> knormal_binary_brute (fun x->fun y->FAdd(x,y)) a b 
+    |Sub (a, b) -> knormal_binary (fun x->fun y->Sub(x,y)) a b
+    |Add (a, b) -> knormal_binary (fun x->fun y->Add(x,y)) a b
+    |FAdd (a, b) -> knormal_binary_brute (fun x->fun y->FAdd(x,y)) a b
     |FNeg b -> knormal_unary (fun x->FNeg x) b
-    |FSub (a, b) -> knormal_binary_brute (fun x->fun y->FSub(x,y)) a b  
-    |FMul (a, b) -> knormal_binary_brute (fun x->fun y->FMul(x,y)) a b  
-    |FDiv (a, b) -> knormal_binary_brute (fun x->fun y->FDiv(x,y)) a b  
+    |FSub (a, b) -> knormal_binary_brute (fun x->fun y->FSub(x,y)) a b
+    |FMul (a, b) -> knormal_binary_brute (fun x->fun y->FMul(x,y)) a b
+    |FDiv (a, b) -> knormal_binary_brute (fun x->fun y->FDiv(x,y)) a b
     (*
     |Eq (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
@@ -104,27 +106,17 @@ let rec knormal (ast:Fsyntax.t) : t =
                    )
     *)
 
-    |App (a,b) ->  ( match a with
-                    
-                    |Var(fct) -> (  
-                        let rec aux vars_rem k_vars =
-                            match vars_rem with
-                            |[] -> App(Var("min_caml_"^fct), List.rev k_vars) (*a temporary solution to name external functions*)
-                            |h::q -> let (x,t) = newvar () in Let((x,t), knormal h, aux q ((Var x)::k_vars))
-                        in
-                        aux b []
-                       )
-                    
-
-                    |_ -> ( 
-                        let (f,t) = newvar () in
-                        let rec aux vars_rem k_vars =
-                            match vars_rem with
-                            |[] -> App(Var(f), List.rev k_vars)
-                            |h::q -> let (x,t) = newvar () in Let((x,t), knormal h, aux q ((Var x)::k_vars))
-                        in
-                        Let((f, t), knormal a, aux b [])
-                        )
+    |App (a,b) ->  (let rec aux (fname:Id.t) (vars_rem:Fsyntax.t list) (k_vars:t list) : t =
+                    match vars_rem with
+                        |[] -> App(Var(fname), List.rev k_vars) (*a temporary solution to name external functions*)
+                        |h::q -> (match h with
+                                 |Var(_) -> aux fname q ((knormal h)::k_vars) 
+                                 |_ -> let (x,t) = newvar () in Let((x,t), knormal h, aux fname q ((Var x)::k_vars))
+                                 )
+                    in
+                    match a with
+                        |Var(fct) -> aux fct b []
+                        |_ -> let (f,t) = newvar () in Let((f, t), knormal a, aux f b [])
                   )
     |If (a, b, c) ->(match a with  (*TODO: improve as the rest except for the 'true' in the default case*)
                      | LE(x, y) -> let (x',t) = newvar () in
@@ -149,11 +141,20 @@ let rec knormal (ast:Fsyntax.t) : t =
 
     |Let (a, b, c) -> if is_ident_or_const b then Let(a, ident_or_const_to_k b, knormal c)
                         else Let(a, knormal b, knormal c)
-    |LetRec (a, b) ->  LetRec ({name=("min_caml_"^(fst a.name), snd a.name); args=a.args; body=(knormal a.body)}, knormal b) (*later on, adding min_caml_ to external funtcions should be moved to fclosure.ml*)
+    |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b) (*later on, adding min_caml_ to external funtcions should be moved to fclosure.ml*)
+    |Tuple a -> (let rec tuple_aux (els:Fsyntax.t list) (vars:t list) =
+                  match els with
+                  |[] -> Tuple(List.rev vars) 
+                  |h::q -> (match h with
+                            |Var(_) -> tuple_aux q ((knormal h)::vars)
+                            |_ -> let (x,t) = newvar () in Let((x,t), knormal h, tuple_aux q ((Var x)::vars))
+                           )
+                in tuple_aux a []
+                )
     |_ -> failwith "knormal: NotImplementedYet"
     (*
-    |Tuple a -> Tuple(List.map knormal a)
     |LetTuple (a, b, c) -> LetTuple (a, knormal b, knormal c)
+
     |Array (a, b) -> Array (knormal a, knormal b)
     |Get (a, b) -> Get (knormal a, knormal b)
     |Put (a, b, c) -> Put (knormal a, knormal b, knormal c)
@@ -178,7 +179,7 @@ knormal_binary (c:t->t->t) (a:Fsyntax.t) (b:Fsyntax.t) =
             Let((a',t), knormal a,
                 c (Var a') (ident_or_const_to_k b))
         )
-        else 
+        else
             Let((a',t), knormal a,
                 let (b',t) = newvar () in
                 Let((b',t), knormal b,
@@ -191,13 +192,13 @@ knormal_binary_brute (c:t->t->t) (a:Fsyntax.t) (b:Fsyntax.t) =
     Let((a',t), knormal a,
         Let((b',t), knormal b,
         c (Var a') (Var b')))
-    
+
 
 
 and
 knormal_unary c a =
     let (a',t) = newvar () in
-        Let((a',t), knormal a, c (Var a'))         
+        Let((a',t), knormal a, c (Var a'))
 
 
 (** Produces a string out of a K-normalized ast
@@ -233,7 +234,7 @@ let rec k_to_string (exp:t) : string =
           sprintf "(let rec %s %s = %s in\n %s)"
           (let (x, _) = fd.name in (Id.to_string x))
           (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
-          (k_to_string fd.body)   (*CHANGE LATER*)
+          (k_to_string fd.body)
           (k_to_string e)
   | LetTuple (l, e1, e2)->
           sprintf "(let (%s) = %s in\n %s)"
