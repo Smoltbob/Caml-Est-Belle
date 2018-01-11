@@ -193,7 +193,8 @@ and phi (ast:Fknormal.t) : Fknormal.t =
 
 (*------THE-VERSION-AFTER-TRUE-CLOSURE--------------------------------------*)
 let closures = Hashtbl.create 100
-let known = ref [] 
+let known = ref ["_min_caml_print_int"] (*TODO: add the others*) 
+(* (a try at using sets, but couldn't be bothered to check if comparison works properly. Maybe come back later)
 module SS = Set.Make(struct
                         let compare = fun (x,_)->fun (y,_)->Pervasives.compare x y 
                         type t = Id.t * Ftype.t
@@ -234,6 +235,49 @@ let rec find_fv ast args =
     |Var id -> test_var id args 
     |AppD (a, b) -> SS.union (test_var a args) (test_list b args) 
     | _-> failwith "Fclosure:find_fv NotYetImplemented"
+*)
+
+
+let rec memv x l =
+    match l with
+    |[] -> false 
+    |(y,_)::q -> if y=x then true else memv x q   
+
+let rec union l k =
+    match l with
+    |[] -> k
+    |h::q -> if (memv (fst h) k) then (union q k) else (h::(union q k))
+
+let test_var (x:Id.t) bv = 
+    let t = Ftype.gentyp () in
+    if memv x bv then
+        [] 
+    else
+        [(x, t)]
+
+let test_list l bv = 
+    let rec test_list_aux y x =
+        match x with
+        |Var(a) -> union (test_var a bv) y
+        |_ -> failwith "find_fv->test_list: wrong App"
+    in
+    List.fold_left test_list_aux [] l
+
+let rec find_fv ast args =
+    match ast with
+    |Let (a,b,c) -> union (find_fv b args) (find_fv c (a::args))
+    |LetRec (a, b) -> union (find_fv a.body (a.name::args)) (find_fv b (a.name::args))
+    |Unit -> [] 
+    |Bool b -> []
+    |Int i -> []
+    |Not e -> []
+    |Add (a, b) -> union (find_fv a args) (find_fv b args) 
+    |Sub (a, b) -> union (find_fv a args) (find_fv b args) 
+    |IfEq (x, y, a, b) -> union (test_var x args) (union (test_var y args) (union (find_fv a args) (find_fv b args)))
+    |IfLE (x, y, a, b) -> union (test_var x args) (union (test_var y args) (union (find_fv a args) (find_fv b args)))
+    |Var id -> test_var id args 
+    |AppD (a, b) -> union (test_var a args) (test_list b args) 
+    | _-> failwith "Fclosure:find_fv NotYetImplemented"
 
 (*In the following functions:
     * COND(ast) means that ast has LetRec only as root or right sons and that 
@@ -253,13 +297,37 @@ and psi cat ls rs =
     match ls with
     |LetRec(a,b) -> LetRec(a, (psi cat b rs)) (*it's a psi-cat, bros*)
     |_ -> chi cat ls (phi rs)
-
+(*
 and phi (ast:t) : t = 
      (*output: COND(output) *)
     match ast with
     |Let(x,y,z) -> psi (fun ls->fun rs->Let(x, ls, rs)) (phi y) z 
     |LetRec(y,z) ->(
                      let fv = SS.elements (find_fv y.body (make_set y.args)) in
+                     match fv with
+                     |[] -> (known:=(fst y.name)::(!known);
+                             psi (fun ls->fun rs->
+                             LetRec({name=y.name; args=y.args; formal_fv=[]; body=ls},rs))
+                                 (phi y.body) z)
+                     |_ -> ( let clos_name = (fst y.name)^"c" in (*Hashtbl.add closures y.name clos_name;*)
+                             psi (fun ls->fun rs ->
+                             LetRec({name=y.name; args=y.args; formal_fv=fv; body=ls},rs))
+                                 (phi y.body) (LetCls(clos_name, (fst y.name), (List.map fst fv), z)))
+                   )
+    |IfEq(u,v,y,z) -> psi (fun ls->fun rs->IfEq(u,v,ls,rs)) (phi y) z
+    |IfLE(u,v,y,z) -> psi (fun ls->fun rs->IfLE(u,v,ls,rs)) (phi y) z
+    |LetCls(u,v,a,b) -> chi (fun ls->fun rs->LetCls(u,v,a,rs)) Unit (phi b)
+    |AppD(a, b) when List.mem a !known -> AppD(a, b)
+    |AppD(a, b) -> let clos_name = a^"c" (*Hashtbl.find closures a*) in
+                   AppC(clos_name, b)
+    |_ -> ast
+*)
+and phi (ast:t) : t = 
+     (*output: COND(output) *)
+    match ast with
+    |Let(x,y,z) -> psi (fun ls->fun rs->Let(x, ls, rs)) (phi y) z 
+    |LetRec(y,z) ->(
+                     let fv = (find_fv y.body y.args) in
                      match fv with
                      |[] -> (known:=(fst y.name)::(!known);
                              psi (fun ls->fun rs->
@@ -332,18 +400,19 @@ let rec clos_to_string (c:t) : string =
   | IfLE (x, y, e2, e3) ->
           sprintf "(if %s <= %s then %s else %s)" (Id.to_string x) (Id.to_string y) (clos_to_string e2) (clos_to_string e3)
   | Let ((id,t), e1, e2) ->
-          sprintf "(let %s = %s in %s)" (Id.to_string id) (clos_to_string e1) (clos_to_string e2)
+          sprintf "(let %s = %s in \n%s)" (Id.to_string id) (clos_to_string e1) (clos_to_string e2)
   | Var id -> Id.to_string id
   | AppD (e1, le2) -> sprintf "(%s %s)" (Id.to_string e1) (infix_to_string clos_to_string le2 " ")
   | AppC (e1, le2) -> sprintf "AppC(%s %s)" (Id.to_string e1) (infix_to_string clos_to_string le2 " ")
   | LetCls (x,l,fv,z) ->
-          sprintf "(make_closure %s = (%s, %s) in %s)" x l 
+          sprintf "(make_closure %s = (%s, %s) in \n%s)" x l 
           (infix_to_string (fun x -> x) fv " ")
           (clos_to_string z)
   | LetRec (fd, e) ->
-          sprintf "(let rec %s %s = %s in %s)"
+          sprintf "(let rec %s [%s] [%s] =\n    %s in\n%s)"
           (let (x, _) = fd.name in (Id.to_string x))
           (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.args " ")
+          (infix_to_string (fun (x,_) -> (Id.to_string x)) fd.formal_fv " ")
           (clos_to_string fd.body)
           (clos_to_string e)
   | LetTuple (l, e1, e2)->
