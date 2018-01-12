@@ -142,7 +142,16 @@ let rec knormal (ast:Fsyntax.t) : t =
     |Let (a, b, c) -> if is_ident_or_const b then Let(a, ident_or_const_to_k b, knormal c)
                         else Let(a, knormal b, knormal c)
     |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b) (*later on, adding min_caml_ to external funtcions should be moved to fclosure.ml*)
-    |Tuple a -> (let rec tuple_aux (els:Fsyntax.t list) (vars:t list) =
+    |Array (a, b) -> knormal_binary_brute (fun x->fun y->Array(x,y)) a b
+    |Get (a, b) -> knormal_binary_brute (fun x->fun y->Get(x,y)) a b 
+    |Put (a, b, c) -> if is_ident_or_const a then  
+                    knormal_binary_brute (fun x->fun y->Put(ident_or_const_to_k a,x,y)) b c 
+                    else (
+                        let (a',t) = newvar () in
+                        Let((a',t), knormal a, (knormal_binary_brute (fun x->fun y->Put(Var a',x,y)) b c) )
+                    )
+    |Tuple a -> (let rec tuple_aux (els:Fsyntax.t list) (vars:t list) = 
+          (*tuples should be considered as unimplemented for now*)
                   match els with
                   |[] -> Tuple(List.rev vars) 
                   |h::q -> (match h with
@@ -155,10 +164,7 @@ let rec knormal (ast:Fsyntax.t) : t =
     (*
     |LetTuple (a, b, c) -> LetTuple (a, knormal b, knormal c)
 
-    |Array (a, b) -> Array (knormal a, knormal b)
-    |Get (a, b) -> Get (knormal a, knormal b)
-    |Put (a, b, c) -> Put (knormal a, knormal b, knormal c)
-    *)
+   *)
 
 and
 knormal_binary (c:t->t->t) (a:Fsyntax.t) (b:Fsyntax.t) =

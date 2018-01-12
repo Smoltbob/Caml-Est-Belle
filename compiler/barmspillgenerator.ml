@@ -114,7 +114,7 @@ and asmt_to_arm asm dest =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP ...Imm" *)
     | Let (id, e, a) -> let exp_string = exp_to_arm e id in sprintf "%s%s" exp_string (asmt_to_arm a "")
-    | Expression e -> sprintf "%s" (exp_to_arm e dest)
+    | Expression e -> sprintf "%s\tldr r0, [fp, #%i]\n" (exp_to_arm e dest) (fst (frame_position dest))
 
 (* Helper functions for fundef *)
 let rec pull_remaining_args l =
