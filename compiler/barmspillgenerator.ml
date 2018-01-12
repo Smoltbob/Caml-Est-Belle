@@ -37,12 +37,12 @@ let genif =
 let rec to_arm_formal_args args i =
     match args with
     | [] -> sprintf ""
-    | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (fst (frame_position (List.hd l))) (to_arm_formal_args (List.tl l) (i-1))
+    | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (fst (frame_position (List.hd l))) (to_arm_formal_args (List.tl l) (i+1))
     | _ -> failwith "Not handled yet"
 
 (* Helpers for 3-addresses operation (like add or sub) *)
 let rec store_in_stack register_id (frame_offset, need_push) =
-    let push_stack = if need_push then "\tadd sp, sp, -4\n" else "" in
+    let push_stack = if need_push then "\tadd sp, sp, #-4\n" else "" in
     sprintf "%s\tstr r%i, [fp, #%i]\n" push_stack register_id frame_offset
 
 let rec operation_to_arm op e1 e2 dest =
@@ -58,13 +58,34 @@ let rec exp_to_arm exp dest =
     | Var id -> sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) (store_in_stack 4 (frame_position dest))
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
-    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1 0) (String.sub l 1 ((String.length l) - 1))
+    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (String.sub l 1 ((String.length l) - 1)) (store_in_stack 0 (frame_position dest))
+
+    | MemAcc (id1, id2) ->
+            let saver7 = sprintf "\tstmfd sp!, {r7}\n" in
+            let makeaddr1 = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (fst (frame_position id1)) (fst (frame_position id2)) in
+            let makeaddr2 = sprintf "\tadd r7, r4, r5\n" in
+            let load = sprintf "\tldr r7, [r7]\n" in
+            (* we want to mov r7 into the destination register / stack *)
+            let mov = sprintf "%s" (store_in_stack 7 (frame_position dest)) in
+            let restorer7 = sprintf "\tldmfd sp!, {r7}\n" in
+                sprintf "%s%s%s%s%s%s" saver7 makeaddr1 makeaddr2 load mov restorer7
+
+    | MemAff (id1, id2, id3) ->
+            let saver7 = sprintf "\tstmfd sp!, {r7}\n" in
+            let makeaddr1 = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (fst (frame_position id1)) (fst (frame_position id2)) in
+            let makeaddr2 = sprintf "\tadd r7, r4, r5\n" in
+            let prepstore = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id3)) in
+            let store = sprintf "\tstr r4, [r7]\n" in
+            let restorer7 = sprintf "\tldmfd sp!, {r7}\n" in
+                sprintf "%s%s%s%s%s%s" saver7 makeaddr1 makeaddr2 prepstore store restorer7
+
 
     | If (id1, e1, asmt1, asmt2, comp) ->
             let counter = genif() in 
                 let set_registers = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (fst (frame_position id1)) (fst (frame_position e1)) in 
                 let code = sprintf "\tcmp r4, r5\n\t%s if%s\n %s\tb end%s\n\nif%s:\n%s\nend%s:\n" comp counter (asmt_to_arm asmt2 dest) counter counter (asmt_to_arm asmt1 dest) counter in
                 sprintf "%s%s" set_registers code
+
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
