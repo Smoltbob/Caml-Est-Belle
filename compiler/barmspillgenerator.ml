@@ -101,14 +101,14 @@ and asmt_to_arm asm dest =
 let rec pull_remaining_args l =
     match l with
     | [] -> ""
-    | arg::args -> ""
+    | arg::args -> "\tldmfd r5!, {r4}\n\tstmfd sp!, {r4}\n"
 
 let rec get_args args =
     match args with
     | [] -> sprintf ""
     | l when (List.length l = 1) -> sprintf "\tstmfd sp!, {r0}\n\n"
     | l when (List.length l <= 4) -> sprintf "\tstmfd sp!, {r0-r%i}\n\n" ((List.length l)-1)
-    | a1::a2::a3::a4::l -> sprintf "%s%s" (pull_remaining_args l) (get_args (a1::a2::a3::a4::[]:string list))
+    | a1::a2::a3::a4::l -> sprintf "\tmov r5, fp\n\tadd r5, r5, #%i\n%s%s" (4*(List.length l) - 8) (pull_remaining_args l) (get_args (a1::a2::a3::a4::[]:string list))
     | _ -> failwith "Error while pushing arguments to the stack"
 
 (** This function is a recursive function to conver tpye fundef into type asmt
