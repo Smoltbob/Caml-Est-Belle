@@ -120,7 +120,7 @@ let rec fundef_to_arm fundef =
     push_frame_table ();
     register_args fundef.args;
     let get_args_string = get_args fundef.args in
-    let function_string = sprintf "\t.globl %s\n%s:\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n%s%s\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name get_args_string (asmt_to_arm fundef.body "") in
+    let function_string = sprintf "\t.globl %s\n%s:\n\t@prologue\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n\t@get arguments\n%s\t@function code\n%s\n\t@epilogue\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name get_args_string (asmt_to_arm fundef.body "") in
     pop_frame_table ();
     function_string
 
