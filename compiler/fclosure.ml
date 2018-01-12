@@ -5,6 +5,7 @@ open Fsyntax;;
 open Printf;;
 
 
+
 type t =
     | Let of (Id.t * Ftype.t) * t * t
     | LetRec of fundef * t
@@ -372,7 +373,7 @@ let clos_out k =
     let clos = (clos_exp (phi k)) in
     merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos)
     *)
-    scan_fundef (phi (clos_exp k))
+    scan_fundef ((*phi*) (clos_exp k))
 
 
 (** This function is for debugging purpose only, it returns its argument as a string *)
