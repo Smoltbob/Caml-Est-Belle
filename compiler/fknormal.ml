@@ -150,6 +150,12 @@ let rec knormal (ast:Fsyntax.t) : t =
                         let (a',t) = newvar () in
                         Let((a',t), knormal a, (knormal_binary_brute (fun x->fun y->Put(Var a',x,y)) b c) )
                     )
+    (*
+    |Tuple a ->  let (r, t) = newvar () in
+                 let cnt = ref (-1) in
+                 Let((r,t),, List.fold_right (fun x->fun y->Let("_", let Put(newvar(), )) (List.map) a Var r)
+*)
+    (* old version
     |Tuple a -> (let rec tuple_aux (els:Fsyntax.t list) (vars:t list) = 
           (*tuples should be considered as unimplemented for now*)
                   match els with
@@ -161,6 +167,7 @@ let rec knormal (ast:Fsyntax.t) : t =
                 in tuple_aux a []
                 )
     |_ -> failwith "knormal: NotImplementedYet"
+    *)
     (*
     |LetTuple (a, b, c) -> LetTuple (a, knormal b, knormal c)
 
