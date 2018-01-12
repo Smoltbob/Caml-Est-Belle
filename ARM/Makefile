@@ -8,7 +8,7 @@ PRG=$(subst .s,.arm,${ASM})
 
 all: ${PRG}
 
-%.o : %.s libmincaml.S
+%.o : %.s libmincaml.S talloc.S
 	${AS} -o $@ $^
 
 %.arm : %.o

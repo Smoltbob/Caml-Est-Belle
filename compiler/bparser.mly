@@ -72,6 +72,12 @@ exp:
     { Add($2, $3) } /* should be ADD IDENT ident_or_imm */
 | SUB IDENT IDENT
     { Sub($2, $3) }
+/* MEM LPAREN IDENT PLUS ident_or_imm RPAREN */
+| MEM LPAREN IDENT PLUS IDENT RPAREN DOT
+    { MemAcc($3, $5) }
+/* Should be MEM LPAREN IDENT PLUS ident_or_imm RPAREN ASSIGN IDENT */
+| MEM LPAREN IDENT PLUS IDENT RPAREN ASSIGN IDENT
+    { MemAff($3, $5, $8) }
 | IF IDENT EQUAL IDENT THEN asmt ELSE asmt /* should be ADD IDENT equal ident_or_imm THEN asmt ELSE asmt */
     { If($2, $4, $6, $8, "beq") }
 | IF IDENT LE IDENT THEN asmt ELSE asmt /* should be ADD IDENT equal ident_or_imm THEN asmt ELSE asmt */

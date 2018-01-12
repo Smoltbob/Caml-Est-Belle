@@ -3,6 +3,8 @@ The function returning a string is just a dbeugging function for now *)
 open Fknormal;;
 
 type t =
+    | Let of (Id.t * Ftype.t) * t * t
+    | LetRec of fundef * t
     | LetCls of Id.t * Id.l * (Id.t list) * t
                  (*name of clsr * lbl of fct * free vars of fct * in*)
     | AppC of (Id.t * t list)
@@ -25,16 +27,14 @@ type t =
     | IfEq of Id.t * Id.t * t * t
     | IfLE of Id.t * Id.t * t * t
     | IfBool of t * t * t
-    | Let of (Id.t * Ftype.t) * t * t
     | Var of Id.t
-    | LetRec of fundef * t
     | Tuple of t list
     | LetTuple of (Id.t * Ftype.t) list * t * t
     | Array of t * t
     | Get of t * t
     | Put of t * t * t
 and fundef = {
-                name : Id.t * Ftype.t;
+                name : Id.l * Ftype.t;
                 args : (Id.t * Ftype.t) list;
                 formal_fv : (Id.t * Ftype.t) list;
                 body : t

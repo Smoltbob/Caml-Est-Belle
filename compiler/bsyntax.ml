@@ -4,25 +4,28 @@ open List;;
 (** This module defines the type of the AST as well as functions
   to display it.*)
 type t =
-  | Int of int
-  | Float of float
-  | Neg of Id.t
-  | Fneg of Id.t
-  | Fsub of Id.t * Id.t
-  | Fadd of Id.t * Id.t
-  | Fmul of Id.t * Id.t
-  | Fdiv of Id.t * Id.t
-  | Add of Id.t * Id.t
-  | Sub of Id.t * Id.t
-  | Var of Id.t
-  | Eq of Id.t * t
-  | If of Id.t * Id.t * asmt * asmt * string
-  | Call of Id.t * formal_args
-  | Nop
+    | Int of int
+    | Float of float
+    | Neg of Id.t
+    | Fneg of Id.t
+    | Fsub of Id.t * Id.t
+    | Fadd of Id.t * Id.t
+    | Fmul of Id.t * Id.t
+    | Fdiv of Id.t * Id.t
+    | Add of Id.t * Id.t
+    | Sub of Id.t * Id.t
+    | Var of Id.t
+    | Eq of Id.t * t
+    | Call of Id.t * formal_args
+    | If of Id.t * Id.t * asmt * asmt * string
+    | MemAcc of Id.t * Id.t
+    | MemAff of Id.t * Id.t * Id.t
+    | Nop
 
 and formal_args = Id.t list
 
 and asmt =
+    | LetCls of Id.t * Id.l * formal_args * asmt
     | Let of Id.t * t * asmt
     | Expression of t
     (* | Additional case for parenthesis ? Don't think so ? *)
@@ -72,6 +75,8 @@ let rec exp_to_string exp =
   | Fsub (id1, id2) -> sprintf "(fsub %s %s)" (Id.to_string id1) (Id.to_string id2)
   | Fmul (id1, id2) -> sprintf "(fmul %s %s)" (Id.to_string id1) (Id.to_string id2)
   | Fdiv (id1, id2) -> sprintf "(fdiv %s %s)" (Id.to_string id1) (Id.to_string id2)
+  | MemAcc (id1, id2) -> sprintf "(mem(%s + %s))" (Id.to_string id1) (Id.to_string id2)
+  | MemAff (id1, id2, id3) -> sprintf "(mem(%s + %s)<-%s)" (Id.to_string id1) (Id.to_string id2) (Id.to_string id3)
   | Add (e1, e2) -> sprintf "(add %s %s)" (Id.to_string e1) (Id.to_string e2)
   | Sub (e1, e2) -> sprintf "(sub %s %s)" (Id.to_string e1) (Id.to_string e2)
   | Var id -> Id.to_string id
