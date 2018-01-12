@@ -5,40 +5,47 @@ open Printf;;
 open List;;
 
 (** A hashtable: the keys are the name of variables and the contant of each key is a tuple (bool, int), if bool is equal to "true", then the variable is in the register and the int is the index of register, else the variable is in the memory, the int is the address . *)
-let vartbl_s = Hashtbl.create 10
 
-(** address in virtual memory stack refer to current fp*)
-let frame_index = ref 0
+let frames_stack = Stack.create ()
 
 (* WIP ARM generation *)
-(** This function is to allocate 4 bytes for variable x and update the vartbl_s, and return the address
+(** This function is to allocate 4 bytes for variable x and update the (Stack.top frames_table), and return the address
 @param variable_name the variable name in type id.t
 @return the relative address of x in type int *)
 let rec frame_position variable_name =
-	if (not (Hashtbl.mem vartbl_s variable_name)) then
-		    (frame_index := !frame_index - 4;
-            Hashtbl.add vartbl_s variable_name !frame_index;
-            (!frame_index, true))
+    let top_frame_table = Stack.top frames_stack in
+	if (not (Hashtbl.mem top_frame_table variable_name)) then
+            (let frame_index = -4 * (Hashtbl.length top_frame_table) - 4 in
+            Hashtbl.add top_frame_table variable_name frame_index;
+            (frame_index, true))
     else
-    (Hashtbl.find vartbl_s variable_name, false)
+    (Hashtbl.find top_frame_table variable_name, false)
 
 let rec register_args args =
     match args with
     | [] -> ()
-    | arg::arg_list -> if (not (Hashtbl.mem vartbl_s arg)) then
-		                    (frame_index := !frame_index - 4;
-                            Hashtbl.add vartbl_s arg !frame_index);
+    | arg::arg_list -> let top_frame_table = Stack.top frames_stack in if (not (Hashtbl.mem top_frame_table arg)) then
+                            (let frame_index = -4 * (Hashtbl.length top_frame_table) - 4 in
+                            Hashtbl.add top_frame_table arg frame_index);
                        register_args arg_list
 
-let rec reset_frame_table () =
-    Hashtbl.reset vartbl_s;
-    frame_index := 0
+let rec push_frame_table () =
+    let (new_frame_table:(string, int) Hashtbl.t) = Hashtbl.create 10 in
+    Stack.push new_frame_table frames_stack
+
+let rec pop_frame_table () =
+    let _ = Stack.pop frames_stack in ()
 
 let genif =
   let counter = ref (-1) in
   fun () ->
     incr counter;
     sprintf "%d" !counter
+
+let rec stack_remaining_arguments args =
+    match args with
+    | [] -> ""
+    | arg::arg_list -> sprintf "\tldr r4, [fp, #%i]\n\tstmfd sp!, {r4}\n%s" (fst (frame_position arg)) (stack_remaining_arguments arg_list)
 
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
 @param args the list of arguments, in type string
@@ -47,15 +54,18 @@ let rec to_arm_formal_args args i =
     match args with
     | [] -> sprintf ""
     | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (fst (frame_position (List.hd l))) (to_arm_formal_args (List.tl l) (i-1))
-    | _ -> failwith "Not handled yet"
+    | a1::a2::a3::a4::l -> sprintf "%s%s" (to_arm_formal_args (a1::a2::a3::a4::[]:string list)  0) (stack_remaining_arguments l)
+    | _ -> failwith "Error while parsing arguments"
 
 (* Helpers for 3-addresses operation (like add or sub) *)
-let rec store_in_stack register_id (frame_offset, need_push) =
+let rec store_in_stack register_id dest =
+    let frame_offset, need_push = frame_position dest in
     let push_stack = if need_push then "\tadd sp, sp, #-4\n" else "" in
     sprintf "%s\tstr r%i, [fp, #%i]\n" push_stack register_id frame_offset
 
 let rec operation_to_arm op e1 e2 dest =
-    sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\t%s r6, r4, r5\n%s" (fst (frame_position e1)) (fst (frame_position e2)) op (store_in_stack 6 (frame_position dest))
+    let store_string = store_in_stack 6 dest in
+    sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\t%s r6, r4, r5\n%s" (fst (frame_position e1)) (fst (frame_position e2)) op store_string
 
 (** This function is to convert assignments into arm code 
 @param exp expression in the assigment
@@ -63,8 +73,8 @@ let rec operation_to_arm op e1 e2 dest =
 @return unit*)
 let rec exp_to_arm exp dest =
     match exp with
-    | Int i -> sprintf "\tmov r4, #%s\n%s" (string_of_int i) (store_in_stack 4 (frame_position dest))
-    | Var id -> sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) (store_in_stack 4 (frame_position dest))
+    | Int i -> let store_string = store_in_stack 4 dest in sprintf "\tmov r4, #%s\n%s" (string_of_int i) store_string
+    | Var id -> let store_string = store_in_stack 4 dest in sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1 0) (String.sub l 1 ((String.length l) - 1))
@@ -84,7 +94,7 @@ let rec exp_to_arm exp dest =
 and asmt_to_arm asm dest =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP ...Imm" *)
-    | Let (id, e, a) -> sprintf "%s %s" (exp_to_arm e id) (asmt_to_arm a "")
+    | Let (id, e, a) -> let exp_string = exp_to_arm e id in sprintf "%s%s" exp_string (asmt_to_arm a "")
     | Expression e -> sprintf "%s" (exp_to_arm e dest)
 
 (* Helper functions for fundef *)
@@ -96,23 +106,21 @@ let rec get_args args =
     | l when (List.length l <= 4) -> sprintf "\tstmfd sp!, {r0-r%i}\n\n" ((List.length l)-1)
     | _ -> failwith "Not handled yet"
 
-let rec epilogue_to_arm args =
-    match args with
-    | [] -> ""
-    | l -> sprintf "\tadd sp, sp, #%i\n" (4*(List.length l))
-
 (** This function is a recursive function to conver tpye fundef into type asmt
 @param fundef program in type fundef
 @return unit*)
 (* OK *)
 let rec fundef_to_arm fundef =
     (* Write down the label *)
-    reset_frame_table ();
-    sprintf "\t.globl %s\n%s:\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n%s%s\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name (get_args fundef.args) (asmt_to_arm fundef.body "")
+    push_frame_table ();
+    let get_args_string = get_args fundef.args in
+    let function_string = sprintf "\t.globl %s\n%s:\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n%s%s\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name get_args_string (asmt_to_arm fundef.body "") in
+    pop_frame_table ();
+    function_string
 
 let rec fundefs_to_arm fundefs =
     match fundefs with
-    | [start] -> reset_frame_table (); sprintf "\t.globl _start\n_start:\n\tmov fp, sp\n\n%s\n\tbl min_caml_exit\n" (asmt_to_arm start.body "") 
+    | [start] -> push_frame_table (); let start_string = sprintf "\t.globl _start\n_start:\n\tmov fp, sp\n\n%s\n\tbl min_caml_exit\n" (asmt_to_arm start.body "") in pop_frame_table (); start_string
     | h::l -> sprintf "%s%s" (fundef_to_arm h) (fundefs_to_arm l)
     | _ -> failwith "No main function found"
 
