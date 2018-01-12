@@ -59,7 +59,7 @@ and scan_fundef clos :t = match clos with
     | AppD (id, l) ->   if Hashtbl.mem hash_fundef id then
                             AppD ("_"^id, l)
                         else
-                            AppD ("_min_caml_"^id, l)
+                            AppD ("min_caml_"^id, l)
     | AppC (id, l) -> AppC (id, l)
     | _ -> clos
 
