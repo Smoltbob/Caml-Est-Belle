@@ -18,6 +18,8 @@ type t =
     | Eq of Id.t * t
     | Call of Id.t * formal_args
     | If of Id.t * Id.t * asmt * asmt * string
+    | MemAcc of Id.t * Id.t
+    | MemAff of Id.t * Id.t * Id.t
     | Nop
 
 and formal_args = Id.t list
