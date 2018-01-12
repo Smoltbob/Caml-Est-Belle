@@ -42,13 +42,13 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
                           |Var(u), Var(v) -> IfLE(u, v, g m b, g m c)
                           |_ -> failwith "Beta.g: match failure IfLE")
 
+    |Array (a, b) -> Array (g m a, g m b)
+    |Get (a, b) -> Get (g m a, g m b)
+    |Put (a, b, c) -> Put (g m a, g m b, g m c)
     |_ -> failwith "Beta.g: NotYetImplemented"
     (* 
     |Tuple a -> Tuple(List.map alpha a)
     |LetTuple (a, b, c) -> LetTuple ( a, alpha b,  alpha c )
-    |Array (a, b) -> Array (alpha a, alpha b)
-    |Get (a, b) -> Get (alpha a, alpha b)
-    |Put (a, b, c) -> Put (alpha a, alpha b,  alpha c)
     *)
 
 let f (k:Fknormal.t) = 

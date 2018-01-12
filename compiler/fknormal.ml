@@ -150,11 +150,21 @@ let rec knormal (ast:Fsyntax.t) : t =
                         let (a',t) = newvar () in
                         Let((a',t), knormal a, (knormal_binary_brute (fun x->fun y->Put(Var a',x,y)) b c) )
                     )
-    (*
     |Tuple a ->  let (r, t) = newvar () in
-                 let cnt = ref (-1) in
-                 Let((r,t),, List.fold_right (fun x->fun y->Let("_", let Put(newvar(), )) (List.map) a Var r)
-*)
+                 let cnt = ref 0 in
+                 let a' = List.map (fun x-> let c = !cnt in incr cnt; knormal (Put(Var r, Int c, x))) a in
+                 let (aa, t) = newvar () in
+                 Let((aa,t), knormal (List.hd a), (*replace with anything?*)
+                     Let((r,t),
+                      Array(Int (List.length a'), (Var aa)),
+                      List.fold_right (fun x->fun y->Let(("_", Ftype.gentyp ()), x, y)) a' (Var r)))
+                  
+    |LetTuple (a, b, c) -> let (b', t) = newvar () in
+                           let cnt = ref ((List.length a) - 1)  in
+                           Let((b',t), knormal b,
+                           List.fold_right (fun x->fun y->let cn = !cnt in decr cnt; let (d',t) = newvar () in Let((d',t),Int cn,Let(x, Get(Var b', Var d'),y))) a (knormal c))
+                           
+
     (* old version
     |Tuple a -> (let rec tuple_aux (els:Fsyntax.t list) (vars:t list) = 
           (*tuples should be considered as unimplemented for now*)
@@ -166,12 +176,11 @@ let rec knormal (ast:Fsyntax.t) : t =
                            )
                 in tuple_aux a []
                 )
-    |_ -> failwith "knormal: NotImplementedYet"
     *)
     (*
-    |LetTuple (a, b, c) -> LetTuple (a, knormal b, knormal c)
 
    *)
+    |_ -> failwith "knormal: NotImplementedYet"
 
 and
 knormal_binary (c:t->t->t) (a:Fsyntax.t) (b:Fsyntax.t) =
