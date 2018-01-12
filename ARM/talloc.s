@@ -1,0 +1,1 @@
+../tests/arm/talloc.s
