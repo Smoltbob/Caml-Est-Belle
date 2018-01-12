@@ -1,4 +1,4 @@
-(** This file is to generate arm code from Bsyntax.toplevel stutructure by spill eveyrthing variables allocation method*)
+(** This file is to generate arm code from Bsyntax.toplevel stutructure by spill everything variables allocation method*)
 
 open Bsyntax;;
 open Printf;;
@@ -42,6 +42,9 @@ let genif =
     incr counter;
     sprintf "%d" !counter
 
+let remove_underscore function_name =
+    String.sub function_name 1 ((String.length function_name) - 1)
+
 let rec stack_remaining_arguments args =
     match args with
     | [] -> ""
@@ -77,7 +80,7 @@ let rec exp_to_arm exp dest =
     | Var id -> let store_string = store_in_stack 4 dest in sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
-    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (String.sub l 1 ((String.length l) - 1)) (store_in_stack 0 dest)
+    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (remove_underscore l) (store_in_stack 0 dest)
 
     | MemAcc (id1, id2) ->
             let saver7 = sprintf "\tstmfd sp!, {r7}\n" in
@@ -141,7 +144,8 @@ let rec fundef_to_arm fundef =
     push_frame_table ();
     register_args fundef.args;
     let get_args_string = get_args fundef.args in
-    let function_string = sprintf "\t.globl %s\n%s:\n\t@prologue\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n\t@get arguments\n%s\t@function code\n%s\n\t@epilogue\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name get_args_string (asmt_to_arm fundef.body "") in
+    let arm_name = remove_underscore fundef.name in
+    let function_string = sprintf "\t.globl %s\n%s:\n\t@prologue\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n\t@get arguments\n%s\t@function code\n%s\n\t@epilogue\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" arm_name arm_name get_args_string (asmt_to_arm fundef.body "") in
     pop_frame_table ();
     function_string
 
