@@ -45,7 +45,7 @@ let genif =
 let rec stack_remaining_arguments args =
     match args with
     | [] -> ""
-    | arg::arg_list -> sprintf "\tldr r4, [fp, #%i]\n\tstmfd sp!, {r4}\n%s" (fst (frame_position arg)) (stack_remaining_arguments arg_list)
+    | arg::arg_list -> sprintf "%s\tldr r4, [fp, #%i]\n\tstmfd sp!, {r4}\n" (stack_remaining_arguments arg_list) (fst (frame_position arg))
 
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
 @param args the list of arguments, in type string
@@ -98,13 +98,18 @@ and asmt_to_arm asm dest =
     | Expression e -> sprintf "%s" (exp_to_arm e dest)
 
 (* Helper functions for fundef *)
+let rec pull_remaining_args l =
+    match l with
+    | [] -> ""
+    | arg::args -> "\tldmfd r5!, {r4}\n\tstmfd sp!, {r4}\n"
+
 let rec get_args args =
-    register_args args;
     match args with
     | [] -> sprintf ""
     | l when (List.length l = 1) -> sprintf "\tstmfd sp!, {r0}\n\n"
     | l when (List.length l <= 4) -> sprintf "\tstmfd sp!, {r0-r%i}\n\n" ((List.length l)-1)
-    | _ -> failwith "Not handled yet"
+    | a1::a2::a3::a4::l -> sprintf "\tmov r5, fp\n\tadd r5, r5, #%i\n%s%s" (4*(List.length l) - 8) (pull_remaining_args l) (get_args (a1::a2::a3::a4::[]:string list))
+    | _ -> failwith "Error while pushing arguments to the stack"
 
 (** This function is a recursive function to conver tpye fundef into type asmt
 @param fundef program in type fundef
@@ -113,8 +118,9 @@ let rec get_args args =
 let rec fundef_to_arm fundef =
     (* Write down the label *)
     push_frame_table ();
+    register_args fundef.args;
     let get_args_string = get_args fundef.args in
-    let function_string = sprintf "\t.globl %s\n%s:\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n%s%s\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name get_args_string (asmt_to_arm fundef.body "") in
+    let function_string = sprintf "\t.globl %s\n%s:\n\t@prologue\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n\t@get arguments\n%s\t@function code\n%s\n\t@epilogue\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" fundef.name fundef.name get_args_string (asmt_to_arm fundef.body "") in
     pop_frame_table ();
     function_string
 
