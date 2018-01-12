@@ -24,6 +24,10 @@ rule token = parse
     { NEG }
 | "fneg"
     { FNEG }
+| "+"
+    { PLUS }
+| "."
+    { DOT }
 | "<="
     { LE }
 | ">="
@@ -56,6 +60,10 @@ rule token = parse
     { CALL }
 | "nop" 
     { NOP }
+| "<-"
+    { ASSIGN }
+| "mem"
+    { MEM }
 | "()" | ""
     { NIL }
 | '_'

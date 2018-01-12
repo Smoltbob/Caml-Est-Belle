@@ -73,6 +73,8 @@ let rec exp_to_string exp =
   | Fsub (id1, id2) -> sprintf "(fsub %s %s)" (Id.to_string id1) (Id.to_string id2)
   | Fmul (id1, id2) -> sprintf "(fmul %s %s)" (Id.to_string id1) (Id.to_string id2)
   | Fdiv (id1, id2) -> sprintf "(fdiv %s %s)" (Id.to_string id1) (Id.to_string id2)
+  | MemAcc (id1, id2) -> sprintf "(mem(%s + %s))" (Id.to_string id1) (Id.to_string id2)
+  | MemAff (id1, id2, id3) -> sprintf "(mem(%s + %s)<-%s)" (Id.to_string id1) (Id.to_string id2) (Id.to_string id3)
   | Add (e1, e2) -> sprintf "(add %s %s)" (Id.to_string e1) (Id.to_string e2)
   | Sub (e1, e2) -> sprintf "(sub %s %s)" (Id.to_string e1) (Id.to_string e2)
   | Var id -> Id.to_string id
