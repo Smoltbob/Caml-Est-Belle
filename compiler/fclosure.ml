@@ -37,7 +37,7 @@ type t =
     | Get of t * t
     | Put of t * t * t
 and fundef = {
-                name : Id.t * Ftype.t;
+                name : Id.l * Ftype.t;
                 args : (Id.t * Ftype.t) list;
                 formal_fv : (Id.t * Ftype.t) list;
                 body : t
@@ -54,11 +54,13 @@ let rec add_und (fund:fundef) = let (id,typ) = fund.name in
 and scan_fundef clos :t = match clos with
     | LetRec (fund, een) -> Hashtbl.add hash_fundef (fst fund.name) ();
                                  LetRec (add_und fund, scan_fundef een)
+    | LetCls (cname, flabel, fv, een) ->
     | Let (x, valu, een) -> Let (x, scan_fundef valu, scan_fundef een)
     | AppD (id, l) ->   if Hashtbl.mem hash_fundef id then
                             AppD ("_"^id, l)
                         else
                             AppD ("_min_caml_"^id, l)
+    | AppC (id, l) -> AppC (id, l)
     | _ -> clos
 
 (** This function transform unnested expressions into a"_" Fclosure.t *)
@@ -173,7 +175,7 @@ and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
 
 (*--------THE-VERSION-BEFORE-TRUE-CLOSURE-----------------------------------*)
 (*
-let rec subphi cat (y:Fknormal.t) (z:Fknormal.t) lr : Fknormal.t = 
+let rec subphi cat (y:Fknormal.t) (z:Fknormal.t) lr : Fknormal.t =
     match (phi y) with
     |LetRec(a, b) -> phi (LetRec(a, cat b z))
     |_ -> (match (phi z) with
@@ -192,27 +194,27 @@ and phi (ast:Fknormal.t) : Fknormal.t =
 
 
 (*------THE-VERSION-AFTER-TRUE-CLOSURE--------------------------------------*)
-let closures = Hashtbl.create 100
-let known = ref ["_min_caml_print_int"] (*TODO: add the others*) 
+let closures = Hashtbl.create 10
+let known = ref ["print_int"] (*TODO: add the others*)
 (* (a try at using sets, but couldn't be bothered to check if comparison works properly. Maybe come back later)
 module SS = Set.Make(struct
-                        let compare = fun (x,_)->fun (y,_)->Pervasives.compare x y 
+                        let compare = fun (x,_)->fun (y,_)->Pervasives.compare x y
                         type t = Id.t * Ftype.t
                      end)
 
-let rec make_set l = 
+let rec make_set l =
     match l with
     |[] -> SS.empty
     |h::q -> SS.add h (make_set q)
 
-let test_var (x:Id.t) bv = 
+let test_var (x:Id.t) bv =
     let t = Ftype.gentyp () in
     if SS.mem (x, t) bv then
         SS.singleton (x, t)
     else
         SS.empty
 
-let test_list l bv = 
+let test_list l bv =
     let rec test_list_aux y x =
         match x with
         |Var(a) -> SS.union (test_var a bv) y
@@ -224,38 +226,38 @@ let rec find_fv ast args =
     match ast with
     |Let (a,b,c) -> SS.union (find_fv b args) (find_fv c (SS.add a args))
     |LetRec (a, b) -> SS.union (find_fv a.body (SS.add a.name args)) (find_fv b (SS.add a.name args))
-    |Unit -> SS.empty 
-    |Bool b -> SS.empty 
-    |Int i -> SS.empty 
-    |Not e -> SS.empty 
-    |Add (a, b) -> SS.union (find_fv a args) (find_fv b args) 
-    |Sub (a, b) -> SS.union (find_fv a args) (find_fv b args) 
+    |Unit -> SS.empty
+    |Bool b -> SS.empty
+    |Int i -> SS.empty
+    |Not e -> SS.empty
+    |Add (a, b) -> SS.union (find_fv a args) (find_fv b args)
+    |Sub (a, b) -> SS.union (find_fv a args) (find_fv b args)
     |IfEq (x, y, a, b) -> SS.union (test_var x args) (SS.union (test_var y args) (SS.union (find_fv a args) (find_fv b args)))
     |IfLE (x, y, a, b) -> SS.union (test_var x args) (SS.union (test_var y args) (SS.union (find_fv a args) (find_fv b args)))
-    |Var id -> test_var id args 
-    |AppD (a, b) -> SS.union (test_var a args) (test_list b args) 
+    |Var id -> test_var id args
+    |AppD (a, b) -> SS.union (test_var a args) (test_list b args)
     | _-> failwith "Fclosure:find_fv NotYetImplemented"
 *)
 
 
 let rec memv x l =
     match l with
-    |[] -> false 
-    |(y,_)::q -> if y=x then true else memv x q   
+    |[] -> false
+    |(y,_)::q -> if y=x then true else memv x q
 
 let rec union l k =
     match l with
     |[] -> k
     |h::q -> if (memv (fst h) k) then (union q k) else (h::(union q k))
 
-let test_var (x:Id.t) bv = 
+let test_var (x:Id.t) bv =
     let t = Ftype.gentyp () in
     if memv x bv then
-        [] 
+        []
     else
         [(x, t)]
 
-let test_list l bv = 
+let test_list l bv =
     let rec test_list_aux y x =
         match x with
         |Var(a) -> union (test_var a bv) y
@@ -267,20 +269,20 @@ let rec find_fv ast args =
     match ast with
     |Let (a,b,c) -> union (find_fv b args) (find_fv c (a::args))
     |LetRec (a, b) -> union (find_fv a.body (a.name::args)) (find_fv b (a.name::args))
-    |Unit -> [] 
+    |Unit -> []
     |Bool b -> []
     |Int i -> []
     |Not e -> []
-    |Add (a, b) -> union (find_fv a args) (find_fv b args) 
-    |Sub (a, b) -> union (find_fv a args) (find_fv b args) 
+    |Add (a, b) -> union (find_fv a args) (find_fv b args)
+    |Sub (a, b) -> union (find_fv a args) (find_fv b args)
     |IfEq (x, y, a, b) -> union (test_var x args) (union (test_var y args) (union (find_fv a args) (find_fv b args)))
     |IfLE (x, y, a, b) -> union (test_var x args) (union (test_var y args) (union (find_fv a args) (find_fv b args)))
-    |Var id -> test_var id args 
-    |AppD (a, b) -> union (test_var a args) (test_list b args) 
+    |Var id -> test_var id args
+    |AppD (a, b) -> union (test_var a args) (test_list b args)
     | _-> failwith "Fclosure:find_fv NotYetImplemented"
 
 (*In the following functions:
-    * COND(ast) means that ast has LetRec only as root or right sons and that 
+    * COND(ast) means that ast has LetRec only as root or right sons and that
     * if the right son rs of a node is not LetRec then rs contains no LetRec
     * *)
 
@@ -298,10 +300,10 @@ and psi cat ls rs =
     |LetRec(a,b) -> LetRec(a, (psi cat b rs)) (*it's a psi-cat, bros*)
     |_ -> chi cat ls (phi rs)
 (*
-and phi (ast:t) : t = 
+and phi (ast:t) : t =
      (*output: COND(output) *)
     match ast with
-    |Let(x,y,z) -> psi (fun ls->fun rs->Let(x, ls, rs)) (phi y) z 
+    |Let(x,y,z) -> psi (fun ls->fun rs->Let(x, ls, rs)) (phi y) z
     |LetRec(y,z) ->(
                      let fv = SS.elements (find_fv y.body (make_set y.args)) in
                      match fv with
@@ -322,10 +324,10 @@ and phi (ast:t) : t =
                    AppC(clos_name, b)
     |_ -> ast
 *)
-and phi (ast:t) : t = 
+and phi (ast:t) : t =
      (*output: COND(output) *)
     match ast with
-    |Let(x,y,z) -> psi (fun ls->fun rs->Let(x, ls, rs)) (phi y) z 
+    |Let(x,y,z) -> psi (fun ls->fun rs->Let(x, ls, rs)) (phi y) z
     |LetRec(y,z) ->(
                      let fv = (find_fv y.body y.args) in
                      match fv with
@@ -341,9 +343,6 @@ and phi (ast:t) : t =
     |IfEq(u,v,y,z) -> psi (fun ls->fun rs->IfEq(u,v,ls,rs)) (phi y) z
     |IfLE(u,v,y,z) -> psi (fun ls->fun rs->IfLE(u,v,ls,rs)) (phi y) z
     |LetCls(u,v,a,b) -> chi (fun ls->fun rs->LetCls(u,v,a,rs)) Unit (phi b)
-    |AppD(a, b) when List.mem a !known -> AppD(a, b)
-    |AppD(a, b) -> let clos_name = a^"c" (*Hashtbl.find closures a*) in
-                   AppC(clos_name, b)
     |_ -> ast
 
 (*--------------------------------------------------------------------------*)
@@ -372,9 +371,9 @@ let clos_out k =
     (*let clos = (clos_exp (the_cunning_psi k)) in*)
     (*
     let clos = (clos_exp (phi k)) in
-    merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos) 
+    merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos)
     *)
-    phi (clos_exp k)
+    scan_fundef (phi (clos_exp k))
 
 
 (** This function is for debugging purpose only, it returns its argument as a string *)
@@ -405,7 +404,7 @@ let rec clos_to_string (c:t) : string =
   | AppD (e1, le2) -> sprintf "(%s %s)" (Id.to_string e1) (infix_to_string clos_to_string le2 " ")
   | AppC (e1, le2) -> sprintf "AppC(%s %s)" (Id.to_string e1) (infix_to_string clos_to_string le2 " ")
   | LetCls (x,l,fv,z) ->
-          sprintf "(make_closure %s = (%s, %s) in \n%s)" x l 
+          sprintf "(make_closure %s = (%s, %s) in \n%s)" x l
           (infix_to_string (fun x -> x) fv " ")
           (clos_to_string z)
   | LetRec (fd, e) ->
