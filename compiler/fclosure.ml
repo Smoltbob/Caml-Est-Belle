@@ -6,6 +6,8 @@ open Printf;;
 
 
 type t =
+    | Let of (Id.t * Ftype.t) * t * t
+    | LetRec of fundef * t
     | LetCls of Id.t * Id.l * (Id.t list) * t
                  (*name of clsr * lbl of fct * free vars of fct * in*)
     | AppC of (Id.t * t list)
@@ -28,9 +30,7 @@ type t =
     | IfEq of Id.t * Id.t * t * t
     | IfLE of Id.t * Id.t * t * t
     | IfBool of t * t * t
-    | Let of (Id.t * Ftype.t) * t * t
     | Var of Id.t
-    | LetRec of fundef * t
     | Tuple of t list
     | LetTuple of (Id.t * Ftype.t) list * t * t
     | Array of t * t
@@ -54,7 +54,6 @@ let rec add_und (fund:fundef) = let (id,typ) = fund.name in
 and scan_fundef clos :t = match clos with
     | LetRec (fund, een) -> Hashtbl.add hash_fundef (fst fund.name) ();
                                  LetRec (add_und fund, scan_fundef een)
-    | LetCls (cname, flabel, fv, een) ->
     | Let (x, valu, een) -> Let (x, scan_fundef valu, scan_fundef een)
     | AppD (id, l) ->   if Hashtbl.mem hash_fundef id then
                             AppD ("_"^id, l)
@@ -260,7 +259,7 @@ let test_var (x:Id.t) bv =
 let test_list l bv =
     let rec test_list_aux y x =
         match x with
-        |Var(a) -> union (test_var a bv) y
+        |Var a -> union (test_var a bv) y
         |_ -> failwith "find_fv->test_list: wrong App"
     in
     List.fold_left test_list_aux [] l
@@ -401,7 +400,7 @@ let rec clos_to_string (c:t) : string =
   | Let ((id,t), e1, e2) ->
           sprintf "(let %s = %s in \n%s)" (Id.to_string id) (clos_to_string e1) (clos_to_string e2)
   | Var id -> Id.to_string id
-  | AppD (e1, le2) -> sprintf "(%s %s)" (Id.to_string e1) (infix_to_string clos_to_string le2 " ")
+  | AppD (e1, le2) -> sprintf "AppD(%s %s)" (Id.to_string e1) (infix_to_string clos_to_string le2 " ")
   | AppC (e1, le2) -> sprintf "AppC(%s %s)" (Id.to_string e1) (infix_to_string clos_to_string le2 " ")
   | LetCls (x,l,fv,z) ->
           sprintf "(make_closure %s = (%s, %s) in \n%s)" x l

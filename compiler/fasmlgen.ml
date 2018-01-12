@@ -43,8 +43,9 @@ let rec asml_t_triv t = match t with
             | _ -> failwith "not a list of variables. Maybe the argument is of type unit ?"
         in
         Call (f, trans l))
+    (* | AppC (c, l) *)
     | Var x -> Var x
-    | _ -> failwith "asml_t_triv matchfailure"
+    | _ -> failwith "asml_t_triv matchfailure not implemented"
 
 (** This function this is a recursive function on Let, AppD and (LetRec TBA). It calls asml_t_triv when it encounters a simple case that ends the recursion like a sum.
 @param c is an Fclosure.t
