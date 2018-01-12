@@ -342,6 +342,10 @@ and phi (ast:t) : t =
     |IfEq(u,v,y,z) -> psi (fun ls->fun rs->IfEq(u,v,ls,rs)) (phi y) z
     |IfLE(u,v,y,z) -> psi (fun ls->fun rs->IfLE(u,v,ls,rs)) (phi y) z
     |LetCls(u,v,a,b) -> chi (fun ls->fun rs->LetCls(u,v,a,rs)) Unit (phi b)
+    |AppD(a, b) when List.mem a !known -> AppD(a, b)
+    |AppD(a, b) -> let clos_name = a^"c" (*Hashtbl.find closures a*) in
+                   AppC(clos_name, b)
+ 
     |_ -> ast
 
 (*--------------------------------------------------------------------------*)
