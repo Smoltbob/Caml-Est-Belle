@@ -2,16 +2,16 @@ let rec for3 x y size =
     let c = land x y in
     let u = if x < size then
         if c = 0 then print_char "* " else print_char "  " 
-    else nop in
+    else () in
     let x = x + 1 in
     let test = x + y in
-    if test < size then for3 x y size else nop 
+    if test < size then for3 x y size else () 
 
 let rec for2 i y size =
     let u = 
-        if y > 0 then print_char " " else nop in
+        if y > 0 then print_char " " else () in
     let i = i + 1 in 
-        if i < y then for2 i y size else nop
+        if i < y then for2 i y size else ()
 
 let rec for1 y size = 
     let i = 0 in 
@@ -20,7 +20,7 @@ let rec for1 y size =
     let u = for3 x y size in
     let u = print_char "\n" in
     let y = y - 1 in
-    if y >= 0 then for1 y size else nop
+    if y >= 0 then for1 y size else ()
 
 let sierpinsky size =
     let y = size - 1 in 
