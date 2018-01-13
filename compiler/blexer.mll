@@ -64,6 +64,8 @@ rule token = parse
     { ASSIGN }
 | "mem"
     { MEM }
+| "new"
+    { NEW }
 | "()" | ""
     { NIL }
 | '_'

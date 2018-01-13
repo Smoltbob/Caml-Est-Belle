@@ -20,6 +20,7 @@ type t =
     | If of Id.t * Id.t * asmt * asmt * string
     | MemAcc of Id.t * Id.t
     | MemAff of Id.t * Id.t * Id.t
+    | New of t
     | Nop
 
 and formal_args = Id.t list
@@ -83,6 +84,7 @@ let rec exp_to_string exp =
   | Eq (e1, e2) -> sprintf "(%s = %s)" (Id.to_string e1) (exp_to_string e2)
   | If (id1, e1, asmt1, asmt2, comp) -> sprintf "(if %s %s %s then %s else %s)" (Id.to_string id1) (comp_to_string comp) (Id.to_string e1) (to_string_asm asmt1) (to_string_asm asmt2)
   | Call (l1, a1) -> sprintf "(call %s %s)" (Id.to_string l1) (to_string_args a1)
+  | New (e1) -> sprintf "(new %s)" (exp_to_string e1)
   | Nop -> sprintf "nop"
 
 (** Prints an asmt. It can be an assignement (with a let) or an expression alone.

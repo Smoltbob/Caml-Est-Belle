@@ -66,6 +66,8 @@ exp:
     { Int($1) }
 | IDENT
     { Var($1) }
+| NEW ident_or_imm
+    { New($2) }
 | LABEL
     { Var($1) } /* Make a special label function ? */
 | ADD IDENT IDENT /* addition */ /* should be ADD IDENT ident_or_imm */
