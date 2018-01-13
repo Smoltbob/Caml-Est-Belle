@@ -31,6 +31,7 @@ let addtyp x = (x, Btype.gentyp ())
 %token ASSIGN
 %token ADD
 %token SUB
+%token LAND
 %token CALL
 %token NEW
 %token NOP
@@ -66,12 +67,16 @@ exp:
     { Int($1) }
 | IDENT
     { Var($1) }
+| NEW ident_or_imm
+    { New($2) }
 | LABEL
     { Var($1) } /* Make a special label function ? */
 | ADD IDENT IDENT /* addition */ /* should be ADD IDENT ident_or_imm */
     { Add($2, $3) } /* should be ADD IDENT ident_or_imm */
 | SUB IDENT IDENT
     { Sub($2, $3) }
+| LAND IDENT IDENT
+    { Land($2, $3) }
 /* MEM LPAREN IDENT PLUS ident_or_imm RPAREN */
 | MEM LPAREN IDENT PLUS IDENT RPAREN DOT
     { MemAcc($3, $5) }
