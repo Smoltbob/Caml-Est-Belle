@@ -1,5 +1,5 @@
 let rec for3 x y size =
-    let c = x land y in
+    let c = land x y in
     let u = if x < size then
         if c = 0 then print_char "* " else print_char "  " 
     else nop in
