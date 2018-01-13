@@ -18,6 +18,11 @@ let print_asml l =
         Fasmlgen.closure_to_asmlstring_main c
     else
         let prog = Fasmlgen.asml_head c in
+		Bliveinterval.calcu_live_interval prog;
+(*		Bliveinterval.print_live_interval !Bliveinterval.live_interval_s;
+		Bliveinterval.print_live_interval !Bliveinterval.live_interval_e;*)
+		Bliveinterval.to_hashtbl !Bliveinterval.live_interval_s;
+		Bliveinterval.to_hashtbl !Bliveinterval.live_interval_e;
         (*Barmgenerator.toplevel_to_arm prog*)
         Barmspillgenerator.toplevel_to_arm prog
 

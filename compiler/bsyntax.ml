@@ -37,7 +37,6 @@ and fundef = {
 type toplevel =
     | Fundefs of (fundef list) (* Once we implement functions we will have a list *)
 
-
 (** Prints the functions arguments. They are stored in a list.
    @param argu the list of arguments
 *)
@@ -74,7 +73,7 @@ let rec exp_to_string exp =
   | Call (l1, a1) -> sprintf "(call %s %s)" (Id.to_string l1) (to_string_args a1)
   | Nop -> sprintf "nop"
 
-(*(** Prints an asmt. It can be an assignement (with a let) or an expression alone.
+(** Prints an asmt. It can be an assignement (with a let) or an expression alone.
     @param asm The asmt to print.
 *)
 and to_string_asm asm =
@@ -95,7 +94,7 @@ let rec to_string_fundef fund =
 let rec to_string_top top =
     match top with
   | Fundefs f -> sprintf "(%s)" (to_string_fundef (hd f))
-*)
+
 
 let rec print_list_idx l i =
    match i with
