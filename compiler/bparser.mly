@@ -31,6 +31,7 @@ let addtyp x = (x, Btype.gentyp ())
 %token ASSIGN
 %token ADD
 %token SUB
+%token LAND
 %token CALL
 %token NEW
 %token NOP
@@ -74,6 +75,8 @@ exp:
     { Add($2, $3) } /* should be ADD IDENT ident_or_imm */
 | SUB IDENT IDENT
     { Sub($2, $3) }
+| LAND IDENT IDENT
+    { Land($2, $3) }
 /* MEM LPAREN IDENT PLUS ident_or_imm RPAREN */
 | MEM LPAREN IDENT PLUS IDENT RPAREN DOT
     { MemAcc($3, $5) }

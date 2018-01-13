@@ -14,6 +14,7 @@ type t =
     | Fdiv of Id.t * Id.t
     | Add of Id.t * Id.t
     | Sub of Id.t * Id.t
+    | Land of Id.t * Id.t
     | Var of Id.t
     | Eq of Id.t * t
     | Call of Id.t * formal_args
@@ -80,6 +81,7 @@ let rec exp_to_string exp =
   | MemAff (id1, id2, id3) -> sprintf "(mem(%s + %s)<-%s)" (Id.to_string id1) (Id.to_string id2) (Id.to_string id3)
   | Add (e1, e2) -> sprintf "(add %s %s)" (Id.to_string e1) (Id.to_string e2)
   | Sub (e1, e2) -> sprintf "(sub %s %s)" (Id.to_string e1) (Id.to_string e2)
+  | Land (e1, e2) -> sprintf "(land %s %s)" (Id.to_string e1) (Id.to_string e2)
   | Var id -> Id.to_string id
   | Eq (e1, e2) -> sprintf "(%s = %s)" (Id.to_string e1) (exp_to_string e2)
   | If (id1, e1, asmt1, asmt2, comp) -> sprintf "(if %s %s %s then %s else %s)" (Id.to_string id1) (comp_to_string comp) (Id.to_string e1) (to_string_asm asmt1) (to_string_asm asmt2)

@@ -50,6 +50,8 @@ rule token = parse
     { ADD }
 | "sub" 
     { SUB }
+| "land"
+    { LAND }
 | "if"
     { IF }
 | "then"

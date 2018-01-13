@@ -80,6 +80,7 @@ let rec exp_to_arm exp dest =
     | Var id -> let store_string = store_in_stack 4 dest in sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
+    | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (remove_underscore l) (store_in_stack 0 dest)
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
