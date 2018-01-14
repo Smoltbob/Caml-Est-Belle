@@ -4,6 +4,7 @@ open Fknormal;;
 open Fsyntax;;
 open Printf;;
 
+let known = ref ["print_int"] (*TODO: add the others*)
 
 type t =
     | Let of (Id.t * Ftype.t) * t * t
@@ -58,6 +59,7 @@ and scan_fundef clos :t = match clos with
     | AppD (id, l) ->   if Hashtbl.mem hash_fundef id then
                             AppD ("_"^id, l)
                         else
+                            known := id::!known
                             AppD ("min_caml_"^id, l)
     | AppC (id, l) -> AppC (id, l)
     | _ -> clos
@@ -194,7 +196,6 @@ and phi (ast:Fknormal.t) : Fknormal.t =
 
 (*------THE-VERSION-AFTER-TRUE-CLOSURE--------------------------------------*)
 let closures = Hashtbl.create 10
-let known = ref ["print_int"] (*TODO: add the others*)
 (* (a try at using sets, but couldn't be bothered to check if comparison works properly. Maybe come back later)
 module SS = Set.Make(struct
                         let compare = fun (x,_)->fun (y,_)->Pervasives.compare x y
@@ -345,7 +346,6 @@ and phi (ast:t) : t =
     |AppD(a, b) when List.mem a !known -> AppD(a, b)
     |AppD(a, b) -> let clos_name = a^"c" (*Hashtbl.find closures a*) in
                    AppC(clos_name, b)
- 
     |_ -> ast
 
 (*--------------------------------------------------------------------------*)

@@ -5,6 +5,21 @@ open Printf;;
 open Bsyntax;;
 
 
+(*TODO unnest toplevel that are inside lets and inside letrecs and put them before the function call of the function they are defined in.*)
+(* let rec unnest_letcls toplvl = match toplvl with
+    | _ -> ()
+
+let rec addmem_to_letrecs l = match l with
+    | t::q -> ()
+
+let rec addmem_to_letrecs_with_fv toplvl = match toplvl with
+    | Fundefs l -> addmem_to_letrecs l *)
+
+(*TODO use this function to alloc the pointer of the function as well as the pointers to the fv*)
+let rec mem_fv_closure addr fv count call = match fv with
+    | t::q -> Let ("tu"^(string_of_int count), MemAff (addr, 4*count, t), mem_fv_closure addr q (count+1)) (*TODO change the name of tu+id*)
+    | [] -> call
+
 (** This function takes care of the base cases such as sums and variables.
 @param t is a Fclosure.t
 @return a Bsyntax.t *)
@@ -43,7 +58,10 @@ let rec asml_t_triv t = match t with
             | _ -> failwith "not a list of variables. Maybe the argument is of type unit ?"
         in
         Call (f, trans l))
-    (* | AppC (c, l) *)
+    (*TODO : unnest the letcls if it is inside another let  and replace appc with callc*)
+    | AppC (c, l) -> LetCls (c, New (c, 1 + List.length fv),
+                        Let ("tu0", MemAff (addr, 0, c (*TODO retrieve the addr of c*)),
+                        mem_fv_closure addr fv 4 (Expression CallC (c, l))))
     | Var x -> Var x
     | _ -> failwith "asml_t_triv matchfailure not implemented"
 
@@ -51,6 +69,10 @@ let rec asml_t_triv t = match t with
 @param c is an Fclosure.t
 @return an Bsyntax.asmt*)
 let rec asml_exp (c:Fclosure.t) :asmt = match c with
+    (*TODO unnest the letcls from the lets*)
+    | Let (x, AppC (c,l), b) -> LetCls (c, New (c, 1 + List.length fv),
+                        Let ("tu0", MemAff (addr, 0, c (*TODO retrieve the addr of c*)),
+                        mem_fv_closure addr fv 4 (Let (x, CallC (c, l), asml_exp b)))
     | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
     | _ -> Expression (asml_t_triv c)
 
@@ -75,11 +97,25 @@ let rec expression_to_string exp = match exp with
     | Var id -> Id.to_string id
     | Add (e1, e2) -> sprintf "add %s %s" e1 e2
     | Sub (e1, e2) -> sprintf "sub %s %s" e1 e2
-    | Call (f, args) -> sprintf "call %s %s" f (infix_to_string (fun x->x) args " ")
+    | Call (f, args) -> sprintf "call %s %s"
+        f
+        (infix_to_string (fun x->x) args " ")
+    | New i -> sprintf "new %i" i
+    | MemAcc (id, i) -> sprintf "mem(%s+%i)"
+        (Id.to_string id)
+        i
+    | MemAff (id1, i, id2) -> sprintf "mem(%s+%i) <- %s"
+        (Id.to_string id1)
+        i
+        (Id.to_string id2)
     | _ -> "\n[[ match not found in asml gen ]]\n"
 
 let rec asmt_to_string (body:Bsyntax.asmt) = match body with
     | Let (id, e1, e2) -> sprintf "let %s = %s in\n\t%s"
+        (Id.to_string id)
+        (expression_to_string e1)
+        (asmt_to_string e2)
+    | LeCls (id, e1, e2) ->  sprintf "let %s = %s in\n\t%s"
         (Id.to_string id)
         (expression_to_string e1)
         (asmt_to_string e2)
