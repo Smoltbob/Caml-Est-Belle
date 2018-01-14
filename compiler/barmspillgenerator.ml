@@ -67,8 +67,15 @@ let rec store_in_stack register_id dest =
     sprintf "%s\tstr r%i, [fp, #%i]\n" push_stack register_id frame_offset
 
 let rec operation_to_arm op e1 e2 dest =
-    let store_string = store_in_stack 6 dest in
-    sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n\t%s r6, r4, r5\n%s" (fst (frame_position e1)) (fst (frame_position e2)) op store_string
+    let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position e1)) in
+        (match e2 with
+         | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in
+                    let return_result = sprintf "\t%s r6, r4, r5\n%s" op (store_in_stack 6 dest) in
+                    sprintf "%s%s%s" store_arg1 store_arg2 return_result
+         | Int i -> let store_arg2 = sprintf "\tmov r5, #%i\n" i in
+                    let return_result = sprintf "\t%s r6, r4, r5\n%s" op (store_in_stack 6 dest) in
+                    sprintf "%s%s%s" store_arg1 store_arg2 return_result
+        )
 
 (** This function is to convert assignments into arm code 
 @param exp expression in the assigment
@@ -85,25 +92,42 @@ let rec exp_to_arm exp dest =
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
                 | Var id -> let call = sprintf "%s\tbl talloc\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
-                in sprintf "%s" call
+                            in sprintf "%s" call
                 | Int i -> let store_string = store_in_stack 0 dest in 
                            let prepare_arg = sprintf "\tmov r0, #%s\n" (string_of_int i) in
                            let call_alloc = sprintf "\tbl talloc\n%s" (store_in_stack 0 dest) in
                                sprintf "%s%s%s" prepare_arg store_string call_alloc
     )
+    (* TODO factorise *)
     | MemAcc (id1, id2) ->
-            let makeaddr1 = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (fst (frame_position id1)) (fst (frame_position id2)) in
-            let load = sprintf "\tldr r4, [r4, r5, LSL #2]\n" in
-            let mov = sprintf "%s" (store_in_stack 4 dest) in
-                sprintf "%s%s%s" makeaddr1 load mov 
+            let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
+                (match id2 with
+                | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in
+                            let load = sprintf "\tldr r4, [r4, r5, LSL #2]\n" in
+                            let mov = sprintf "%s" (store_in_stack 4 dest) in
+                            sprintf "%s%s%s%s" store_arg1 store_arg2 load mov 
+                | Int i ->  let store_arg2 = sprintf "\tmov r5, #%i\n" i in
+                            let load = sprintf "\tldr r4, [r4, r5, LSL #2]\n" in
+                            let mov = sprintf "%s" (store_in_stack 4 dest) in
+                            sprintf "%s%s%s%s" store_arg1 store_arg2 load mov 
+                )
 
+    (* TODO factorise *)
     | MemAff (id1, id2, id3) ->
             let saver7 = sprintf "\tstmfd sp!, {r7}\n" in
-            let makeaddr1 = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (fst (frame_position id1)) (fst (frame_position id2)) in
-            let prepstore = sprintf "\tldr r7, [fp, #%i]\n" (fst (frame_position id3)) in
-            let store = sprintf "\tstr r7, [r4, r5, LSL #2]\n" in
-            let restorer7 = sprintf "\tldmfd sp!, {r7}\n" in
-                sprintf "%s%s%s%s%s" saver7 makeaddr1 prepstore store restorer7
+            let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
+            (match id2 with
+            | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in
+                        let prepstore = sprintf "\tldr r7, [fp, #%i]\n" (fst (frame_position id3)) in
+                        let store = sprintf "\tstr r7, [r4, r5, lsl #2]\n" in
+                        let restorer7 = sprintf "\tldmfd sp!, {r7}\n" in
+                            sprintf "%s%s%s%s%s%s" saver7 store_arg1 store_arg2 prepstore store restorer7
+            | Int i ->  let store_arg2 = sprintf "\tmov r5, #%i\n" i in
+                        let prepstore = sprintf "\tldr r7, [fp, #%i]\n" (fst (frame_position id3)) in
+                        let store = sprintf "\tstr r7, [r4, r5, lsl #2]\n" in
+                        let restorer7 = sprintf "\tldmfd sp!, {r7}\n" in
+                        sprintf "%s%s%s%s%s%s" saver7 store_arg1 store_arg2 prepstore store restorer7
+            )
 
     | If (id1, e1, asmt1, asmt2, comp) ->
             let counter = genif() in 

@@ -1,0 +1,6 @@
+let _ =
+    let a = 2 in
+    let b = 8 in
+    let c = call _talloc a b in
+    let d = mem(c + 0). in
+    call _min_caml_print_int d

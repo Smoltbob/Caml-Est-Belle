@@ -71,17 +71,17 @@ exp:
     { New($2) }
 | LABEL
     { Var($1) } /* Make a special label function ? */
-| ADD IDENT IDENT /* addition */ /* should be ADD IDENT ident_or_imm */
+| ADD IDENT ident_or_imm /* addition */ /* should be ADD IDENT ident_or_imm */
     { Add($2, $3) } /* should be ADD IDENT ident_or_imm */
-| SUB IDENT IDENT
+| SUB IDENT ident_or_imm
     { Sub($2, $3) }
-| LAND IDENT IDENT
+| LAND IDENT ident_or_imm
     { Land($2, $3) }
 /* MEM LPAREN IDENT PLUS ident_or_imm RPAREN */
-| MEM LPAREN IDENT PLUS IDENT RPAREN DOT
+| MEM LPAREN IDENT PLUS ident_or_imm RPAREN DOT
     { MemAcc($3, $5) }
 /* Should be MEM LPAREN IDENT PLUS ident_or_imm RPAREN ASSIGN IDENT */
-| MEM LPAREN IDENT PLUS IDENT RPAREN ASSIGN IDENT
+| MEM LPAREN IDENT PLUS ident_or_imm RPAREN ASSIGN IDENT
     { MemAff($3, $5, $8) }
 | IF IDENT EQUAL IDENT THEN asmt ELSE asmt /* should be ADD IDENT equal ident_or_imm THEN asmt ELSE asmt */
     { If($2, $4, $6, $8, "beq") }
