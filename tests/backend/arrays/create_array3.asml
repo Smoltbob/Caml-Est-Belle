@@ -1,0 +1,50 @@
+let _ =
+    let a = 5 in
+    let b = 8 in
+    let c = call _talloc a b in
+
+    let d = 0 in 
+    let e = mem(c + d). in
+    let f = call _min_caml_print_int e in
+
+    let d = 1 in 
+    let e = mem(c + d). in
+    let f = call _min_caml_print_int e in
+
+    let d = 2 in 
+    let e = mem(c + d). in
+    let f = call _min_caml_print_int e in
+
+    let d = 3 in 
+    let e = mem(c + d). in
+    let f = call _min_caml_print_int e in
+
+    let d = 4 in 
+    let e = mem(c + d). in
+    let f = call _min_caml_print_int e in
+
+    let a = 5 in
+    let b = 3 in
+    let c = call _talloc a b in
+
+    let d = 0 in 
+    let e = mem(c + d). in
+    let f = call _min_caml_print_int e in
+
+    let d = 1 in 
+    let e = mem(c + d). in
+    let f = call _min_caml_print_int e in
+
+    let d = 2 in 
+    let e = mem(c + d). in
+    let f = call _min_caml_print_int e in
+
+    let d = 3 in 
+    let e = mem(c + d). in
+    let f = call _min_caml_print_int e in
+
+    let d = 4 in 
+    let e = mem(c + d). in
+    let f = call _min_caml_print_int e in
+    
+    nop
