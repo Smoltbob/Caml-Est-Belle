@@ -1,1 +1,1 @@
-(((Let x = (sub x x) in (Let y = (sub y y) in (Let x = (add x 2) in (Let y = (add y 3) in (Let z = (add x y) in (nop))))))))
+(((Let x = 1 in (Let y = 2 in (Let z = (add x y) in (Let x = (sub z x) in ((call _min_caml_print_int x))))))))

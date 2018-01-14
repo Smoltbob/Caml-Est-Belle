@@ -1,3 +1,0 @@
-let _ =
-    let a = new 8 in
-    nop

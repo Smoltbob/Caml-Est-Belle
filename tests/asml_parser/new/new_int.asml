@@ -1,0 +1,3 @@
+let _ = 
+    let b = new 2 in
+    call _min_caml_print_int b
