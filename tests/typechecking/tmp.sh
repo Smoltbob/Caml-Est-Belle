@@ -7,5 +7,6 @@ for file in valid/*.ml; do
     filename=$(basename "$file")
     filename="${filename%.*}"
     echo $file
+    # I like this
     echo "well typed"> valid/expected_tc/$filename.exp
 done
