@@ -50,6 +50,8 @@ rule token = parse
     { ADD }
 | "sub" 
     { SUB }
+| "land"
+    { LAND }
 | "if"
     { IF }
 | "then"
@@ -64,6 +66,8 @@ rule token = parse
     { ASSIGN }
 | "mem"
     { MEM }
+| "new"
+    { NEW }
 | "()" | ""
     { NIL }
 | '_'

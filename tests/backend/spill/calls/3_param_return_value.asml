@@ -1,3 +1,0 @@
-let _ =
-    let x = call _function x y z in
-    nop

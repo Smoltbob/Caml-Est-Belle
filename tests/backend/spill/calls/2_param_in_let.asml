@@ -1,3 +1,0 @@
-let _ =
-    let x = call _coolfunction x y in
-    add x x x
