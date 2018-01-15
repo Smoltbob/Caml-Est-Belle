@@ -17,7 +17,10 @@ let rec addmem_to_letrecs_with_fv toplvl = match toplvl with
 
 (*TODO use this function to alloc the pointer of the function as well as the pointers to the fv*)
 let rec mem_fv_closure addr fv count call = match fv with
-    | t::q -> Let ("tu"^(string_of_int count), MemAff (addr, 4*count, t), mem_fv_closure addr q (count+1)) (*TODO change the name of tu+id*)
+    | t::q -> Let (
+                "tu"^(string_of_int count),
+                MemAff (addr, 4*count, t),
+                mem_fv_closure addr q (count+1)) (*TODO change the name of tu+id*)
     | [] -> call
 
 (** This function takes care of the base cases such as sums and variables.
@@ -61,7 +64,7 @@ let rec asml_t_triv t = match t with
     (*TODO : unnest the letcls if it is inside another let  and replace appc with callc*)
     | AppC (c, l) -> LetCls (c, New (c, 1 + List.length fv),
                         Let ("tu0", MemAff (addr, 0, c (*TODO retrieve the addr of c*)),
-                        mem_fv_closure addr fv 4 (Expression CallC (c, l))))
+                        mem_fv_closure addr fv 4 (Expression (CallC (c, l)))))
     | Var x -> Var x
     | _ -> failwith "asml_t_triv matchfailure not implemented"
 
@@ -72,7 +75,7 @@ let rec asml_exp (c:Fclosure.t) :asmt = match c with
     (*TODO unnest the letcls from the lets*)
     | Let (x, AppC (c,l), b) -> LetCls (c, New (c, 1 + List.length fv),
                         Let ("tu0", MemAff (addr, 0, c (*TODO retrieve the addr of c*)),
-                        mem_fv_closure addr fv 4 (Let (x, CallC (c, l), asml_exp b)))
+                        mem_fv_closure addr fv 4 (Let (x, CallC (c, l), asml_exp b))))
     | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
     | _ -> Expression (asml_t_triv c)
 

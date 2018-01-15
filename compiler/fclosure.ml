@@ -4,7 +4,7 @@ open Fknormal;;
 open Fsyntax;;
 open Printf;;
 
-let known = ref ["print_int"] (*TODO: add the others*)
+let known = ref [] (*TODO: add the others*)
 
 type t =
     | Let of (Id.t * Ftype.t) * t * t
@@ -196,6 +196,7 @@ and phi (ast:Fknormal.t) : Fknormal.t =
 
 (*------THE-VERSION-AFTER-TRUE-CLOSURE--------------------------------------*)
 let closures = Hashtbl.create 10
+(* let known = ref ["_min_caml_print_int"; "_min_caml_print_newline"] (*TODO: add the others*) *)
 (* (a try at using sets, but couldn't be bothered to check if comparison works properly. Maybe come back later)
 module SS = Set.Make(struct
                         let compare = fun (x,_)->fun (y,_)->Pervasives.compare x y
@@ -329,7 +330,7 @@ and phi (ast:t) : t =
     match ast with
     |Let(x,y,z) -> psi (fun ls->fun rs->Let(x, ls, rs)) (phi y) z
     |LetRec(y,z) ->(
-                     let fv = (find_fv y.body y.args) in
+            let fv = (find_fv y.body ((List.map (fun x->(x, Ftype.gentyp ())) !known)@y.args)) in
                      match fv with
                      |[] -> (known:=(fst y.name)::(!known);
                              psi (fun ls->fun rs->
@@ -376,7 +377,7 @@ let clos_out k =
     let clos = (clos_exp (phi k)) in
     merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos)
     *)
-    scan_fundef ((*phi*) (clos_exp k))
+     phi (scan_fundef (clos_exp k))
 
 
 (** This function is for debugging purpose only, it returns its argument as a string *)

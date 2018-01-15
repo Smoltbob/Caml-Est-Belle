@@ -13,10 +13,6 @@
     swi #0
 .endm
 
-.data
-.balign 4
-heapsize: .word 0
-
 .text
 .global talloc
 talloc:
@@ -29,8 +25,6 @@ talloc:
     mov r8, r0              @ Store the base address of current break in r8
 
     @ Adds the heap size to the current break
-    ldr r3, _heapsize       @ Load address of variable
-    ldr r3, [r3]            @ Load value of address
     add r4, r8, r5, LSL #2  @ Add to it the current break 
     
     @ Calls the syscall brk
@@ -53,5 +47,3 @@ talloc:
     mov r0, r8
     ldmfd sp!, {r4,r5,r6,r7,r8,lr}
     bx lr
-
-_heapsize: .word heapsize

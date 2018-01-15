@@ -39,11 +39,61 @@ let rec convert lst x =
                             else convert tl  x
             |_ ->  x
 
+let rename x =
+    let c = !ctr in incr ctr;
+    x ^ string_of_int c
+
+
+    
 (**
   this fuction is to parse the AST and create a new and unique name for each variable
   @param k_t:Fknormal.t the knormalized AST
   @return  AST with new names
 *)
+let rec alpha_g env (k_t:Fknormal.t) : Fknormal.t  =
+    match k_t with
+    |Let ((a,t), b, c) -> let a' = rename a in
+            Let ((a', t), alpha_g ((a,a')::env) b, alpha_g ((a,a')::env) c) 
+    |LetRec (a, b) -> let name' = (rename (fst a.name), snd a.name) in
+                      let args' = List.map (fun (x,t)->(rename x,t)) a.args in
+                      let inenv = (fst a.name, fst name')::env in
+                      let funenv = (List.map2 (fun (x,_) (y,_) -> (x,y)) a.args args') @ inenv in
+                      LetRec({name=name'; args=args'; body=(alpha_g funenv a.body)}, alpha_g inenv b)
+    |Var a -> Var (convert env a)
+    |Unit -> Unit
+    |Bool a -> Bool a
+    |Int a ->  Int a
+    |Float a -> Float a
+    |Not b -> Not (alpha_g env b)
+    |Neg b -> Neg (alpha_g env  b)
+    |Sub (a, b) -> Sub(alpha_g env  a, alpha_g env  b)
+    |Add (a, b) -> Add(alpha_g env  a, alpha_g env b)
+    |FAdd (a, b) -> FAdd(alpha_g env  a, alpha_g env b)
+    |FNeg b -> FNeg (alpha_g env  b)
+    |FSub (a, b) -> FSub(alpha_g env a, alpha_g env b)
+    |FMul (a, b) -> FMul(alpha_g env a, alpha_g env b)
+    |FDiv (a, b) -> FDiv (alpha_g env a, alpha_g env b)
+    |Eq (a, b) -> Eq (alpha_g env a, alpha_g env b)
+    |LE (a, b) -> LE (alpha_g env a, alpha_g env b)
+    |IfEq (x, y, b, c) -> let x' = convert env x in
+                          let y' = convert env y in
+                          IfEq(x', y', alpha_g env b, alpha_g env c) 
+    |IfLE (x, y, b, c) -> let x' = convert env x in
+                          let y' = convert env y in
+                          IfLE(x', y', alpha_g env b, alpha_g env c) 
+    |Array (a, b) -> Array (alpha_g env a, alpha_g env b)
+    |Get (a, b) -> Get (alpha_g env a, alpha_g env b)
+    |Put (a, b, c) -> Put (alpha_g env a, alpha_g env b,  alpha_g env c)
+    |App (a,b) -> App (alpha_g env a, List.map (alpha_g env) b)
+    |_ -> failwith "AlphaConv:g Match failure"
+    (*
+    |Tuple a -> Tuple(List.map (alpha_g env) a)
+    |LetTuple (a, b, c) -> LetTuple ( a, alpha_g env b,  alpha_g env c )
+    *)
+
+let alpha k = alpha_g [] k
+
+(* old version
 let rec alpha (k_t:Fknormal.t) : Fknormal.t  =
     match k_t with
     |Let (a, b, c) -> (push a);
@@ -100,3 +150,4 @@ let rec alpha (k_t:Fknormal.t) : Fknormal.t  =
     |Put (a, b, c) -> Put (alpha a, alpha b,  alpha c)
     |App (Var(a),b) -> let a' =  Var(convert !alphaMap a) in App (a', List.map alpha b)
     |App (_, b) -> failwith "Falphaconversion.alpha: wrong App"
+     *)

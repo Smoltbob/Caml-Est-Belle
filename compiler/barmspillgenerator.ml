@@ -56,7 +56,7 @@ let rec stack_remaining_arguments args =
 let rec to_arm_formal_args args i =
     match args with
     | [] -> sprintf ""
-    | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (fst (frame_position (List.hd l))) (to_arm_formal_args (List.tl l) (i-1))
+    | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (fst (frame_position (List.hd l))) (to_arm_formal_args (List.tl l) (i+1))
     | a1::a2::a3::a4::l -> sprintf "%s%s" (to_arm_formal_args (a1::a2::a3::a4::[]:string list)  0) (stack_remaining_arguments l)
     | _ -> failwith "Error while parsing arguments"
 
@@ -80,27 +80,30 @@ let rec exp_to_arm exp dest =
     | Var id -> let store_string = store_in_stack 4 dest in sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
+    | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (remove_underscore l) (store_in_stack 0 dest)
-
+    | New (e1) -> (match e1 with
+                (* We want to call min_caml_create_array on the id and return the adress *)
+                | Var id -> let call = sprintf "%s\tbl talloc\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
+                in sprintf "%s" call
+                | Int i -> let store_string = store_in_stack 0 dest in 
+                           let prepare_arg = sprintf "\tmov r0, #%s\n" (string_of_int i) in
+                           let call_alloc = sprintf "\tbl talloc\n%s" (store_in_stack 0 dest) in
+                               sprintf "%s%s%s" prepare_arg store_string call_alloc
+    )
     | MemAcc (id1, id2) ->
-            let saver7 = sprintf "\tstmfd sp!, {r7}\n" in
             let makeaddr1 = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (fst (frame_position id1)) (fst (frame_position id2)) in
-            let makeaddr2 = sprintf "\tadd r7, r4, r5\n" in
-            let load = sprintf "\tldr r7, [r7]\n" in
-            (* we want to mov r7 into the destination register / stack *)
-            let mov = sprintf "%s" (store_in_stack 7 dest) in
-            let restorer7 = sprintf "\tldmfd sp!, {r7}\n" in
-                sprintf "%s%s%s%s%s%s" saver7 makeaddr1 makeaddr2 load mov restorer7
+            let load = sprintf "\tldr r4, [r4, r5, LSL #2]\n" in
+            let mov = sprintf "%s" (store_in_stack 4 dest) in
+                sprintf "%s%s%s" makeaddr1 load mov 
 
     | MemAff (id1, id2, id3) ->
             let saver7 = sprintf "\tstmfd sp!, {r7}\n" in
             let makeaddr1 = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (fst (frame_position id1)) (fst (frame_position id2)) in
-            let makeaddr2 = sprintf "\tadd r7, r4, r5\n" in
-            let prepstore = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id3)) in
-            let store = sprintf "\tstr r4, [r7]\n" in
+            let prepstore = sprintf "\tldr r7, [fp, #%i]\n" (fst (frame_position id3)) in
+            let store = sprintf "\tstr r7, [r4, r5, LSL #2]\n" in
             let restorer7 = sprintf "\tldmfd sp!, {r7}\n" in
-                sprintf "%s%s%s%s%s%s" saver7 makeaddr1 makeaddr2 prepstore store restorer7
-
+                sprintf "%s%s%s%s%s" saver7 makeaddr1 prepstore store restorer7
 
     | If (id1, e1, asmt1, asmt2, comp) ->
             let counter = genif() in 
@@ -119,7 +122,7 @@ and asmt_to_arm asm dest =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP ...Imm" *)
     | Let (id, e, a) -> let exp_string = exp_to_arm e id in sprintf "%s%s" exp_string (asmt_to_arm a "")
-    | Expression e -> sprintf "%s" (exp_to_arm e dest)
+    | Expression e -> sprintf "%s\tldr r0, [fp, #%i]\n" (exp_to_arm e dest) (fst (frame_position dest))
 
 (* Helper functions for fundef *)
 let rec pull_remaining_args l =
@@ -142,7 +145,7 @@ let rec get_args args =
 let rec fundef_to_arm fundef =
     (* Write down the label *)
     push_frame_table ();
-    register_args fundef.args;
+    register_args (List.rev fundef.args);
     let get_args_string = get_args fundef.args in
     let arm_name = remove_underscore fundef.name in
     let function_string = sprintf "\t.globl %s\n%s:\n\t@prologue\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n\t@get arguments\n%s\t@function code\n%s\n\t@epilogue\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" arm_name arm_name get_args_string (asmt_to_arm fundef.body "") in

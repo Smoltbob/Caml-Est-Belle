@@ -101,16 +101,19 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
     *)
     |App (a,b) ->  (match a with |Var(a') -> let a = (if Hashtbl.mem m a' then Hashtbl.find m a' else a) in App (a, b)
                                  |_->failwith "ConstFold.g: bad App"
+
+    |IfEq (x, y, b, c) -> match (g m (Var y)) with |Var y' -> IfEq (x, y', g m b, g m c) 
+                                      |_ -> assert false
+    |IfLE (x, y, b, c) -> match (g m (Var y)) with |Var y' -> IfLE (x, y', g m b, g m c) 
+                                      |_ -> assert false
+    |Array (a, b) -> Array (a, b)
+    |Get (a, b) -> Get (a, b)
+    |Put (a, b, c) -> Put (a, b, c)
                    )
     |_ -> failwith "ConstFold.g: NotYetImplemented"
     (* 
-    |IfEq (x, y, b, c) -> IfEq (convert !alphaMap x, convert !alphaMap y, alpha b,  alpha c )
-    |IfLE (x, y, b, c) -> IfLE (convert !alphaMap x, convert !alphaMap y, alpha b,  alpha c )
     |Tuple a -> Tuple(List.map alpha a)
     |LetTuple (a, b, c) -> LetTuple ( a, alpha b,  alpha c )
-    |Array (a, b) -> Array (alpha a, alpha b)
-    |Get (a, b) -> Get (alpha a, alpha b)
-    |Put (a, b, c) -> Put (alpha a, alpha b,  alpha c)
     *)
 
 let f (k:Fknormal.t) = 

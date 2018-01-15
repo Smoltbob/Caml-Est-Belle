@@ -41,7 +41,7 @@ done
 # Going through asml files in the folder to execute them
 for folder in "$dir"/*/; do
     # Right now we only check the if then else statement
-    if [[ $(basename $folder) == "if" ]]; then
+    if [ $(basename $folder) != "ARM" ] && [ $(basename $folder) != "valid" ]; then
         echo $(basename $folder)
         for file in "$folder"*.asml; do
             # Removing extention from filename

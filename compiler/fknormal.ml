@@ -142,7 +142,32 @@ let rec knormal (ast:Fsyntax.t) : t =
     |Let (a, b, c) -> if is_ident_or_const b then Let(a, ident_or_const_to_k b, knormal c)
                         else Let(a, knormal b, knormal c)
     |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b) (*later on, adding min_caml_ to external funtcions should be moved to fclosure.ml*)
-    |Tuple a -> (let rec tuple_aux (els:Fsyntax.t list) (vars:t list) =
+    |Array (a, b) -> knormal_binary_brute (fun x->fun y->Array(x,y)) a b
+    |Get (a, b) -> knormal_binary_brute (fun x->fun y->Get(x,y)) a b 
+    |Put (a, b, c) -> if is_ident_or_const a then  
+                    knormal_binary_brute (fun x->fun y->Put(ident_or_const_to_k a,x,y)) b c 
+                    else (
+                        let (a',t) = newvar () in
+                        Let((a',t), knormal a, (knormal_binary_brute (fun x->fun y->Put(Var a',x,y)) b c) )
+                    )
+    |Tuple a ->  let (r, t) = newvar () in
+                 let cnt = ref 0 in
+                 let a' = List.map (fun x-> let c = !cnt in incr cnt; knormal (Put(Var r, Int c, x))) a in
+                 let (aa, t) = newvar () in
+                 Let((aa,t), knormal (List.hd a), (*replace with anything?*)
+                     Let((r,t),
+                      Array(Int (List.length a'), (Var aa)),
+                      List.fold_right (fun x->fun y->Let(("_", Ftype.gentyp ()), x, y)) a' (Var r)))
+                  
+    |LetTuple (a, b, c) -> let (b', t) = newvar () in
+                           let cnt = ref ((List.length a) - 1)  in
+                           Let((b',t), knormal b,
+                           List.fold_right (fun x->fun y->let cn = !cnt in decr cnt; let (d',t) = newvar () in Let((d',t),Int cn,Let(x, Get(Var b', Var d'),y))) a (knormal c))
+                           
+
+    (* old version
+    |Tuple a -> (let rec tuple_aux (els:Fsyntax.t list) (vars:t list) = 
+          (*tuples should be considered as unimplemented for now*)
                   match els with
                   |[] -> Tuple(List.rev vars) 
                   |h::q -> (match h with
@@ -151,14 +176,11 @@ let rec knormal (ast:Fsyntax.t) : t =
                            )
                 in tuple_aux a []
                 )
-    |_ -> failwith "knormal: NotImplementedYet"
-    (*
-    |LetTuple (a, b, c) -> LetTuple (a, knormal b, knormal c)
-
-    |Array (a, b) -> Array (knormal a, knormal b)
-    |Get (a, b) -> Get (knormal a, knormal b)
-    |Put (a, b, c) -> Put (knormal a, knormal b, knormal c)
     *)
+    (*
+
+   *)
+    |_ -> failwith "knormal: NotImplementedYet"
 
 and
 knormal_binary (c:t->t->t) (a:Fsyntax.t) (b:Fsyntax.t) =
