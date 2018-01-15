@@ -1,0 +1,10 @@
+let _ = 
+    let a = 0 in
+    let b = 1 in
+    let c = 2 in
+    if a <= b then 
+        let d = add b c in
+        let e = add d d in
+        call _min_caml_print_int e
+    else
+        nop        

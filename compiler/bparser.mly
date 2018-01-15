@@ -31,6 +31,7 @@ let addtyp x = (x, Btype.gentyp ())
 %token ASSIGN
 %token ADD
 %token SUB
+%token LAND
 %token CALL
 %token NEW
 %token NOP
@@ -66,14 +67,26 @@ exp:
     { Int($1) }
 | IDENT
     { Var($1) }
+| NEW ident_or_imm
+    { New($2) }
 | LABEL
-    { Var($1) } /* Make a special label function ? */
-| ADD IDENT IDENT /* addition */ /* should be ADD IDENT ident_or_imm */
-    { Add($2, $3) } /* should be ADD IDENT ident_or_imm */
-| SUB IDENT IDENT
+    { Var($1) } 
+| ADD IDENT ident_or_imm 
+    { Add($2, $3) } 
+| SUB IDENT ident_or_imm
     { Sub($2, $3) }
-| IF IDENT EQUAL IDENT THEN asmt ELSE asmt /* should be ADD IDENT equal ident_or_imm THEN asmt ELSE asmt */
-    { If($2, $4, $6, $8) }
+| LAND IDENT ident_or_imm
+    { Land($2, $3) }
+| MEM LPAREN IDENT PLUS ident_or_imm RPAREN DOT
+    { MemAcc($3, $5) }
+| MEM LPAREN IDENT PLUS ident_or_imm RPAREN ASSIGN IDENT
+    { MemAff($3, $5, $8) }
+| IF IDENT EQUAL ident_or_imm THEN asmt ELSE asmt 
+    { If($2, $4, $6, $8, "beq") }
+| IF IDENT LE ident_or_imm THEN asmt ELSE asmt 
+    { If($2, $4, $6, $8, "ble") }
+| IF IDENT GE ident_or_imm THEN asmt ELSE asmt 
+    { If($2, $4, $6, $8, "bge") }
 | CALL LABEL formal_args
     { Call($2, $3) }
 | NOP

@@ -1,5 +1,6 @@
 open Printf
 type t = string
+type l = string
 
 (** Function is a syntactic sugar *)
 let to_string x = x

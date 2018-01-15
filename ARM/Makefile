@@ -8,7 +8,7 @@ PRG=$(subst .s,.arm,${ASM})
 
 all: ${PRG}
 
-%.o : %.s libmincaml.S
+%.o : %.s libmincaml.S talloc.S
 	${AS} -o $@ $^
 
 %.arm : %.o
@@ -16,8 +16,8 @@ all: ${PRG}
 
 .PHONY: clean test echo
 clean:
+	rm *.core
 	rm *.arm
-	rm *.o
 
 echo:
 	echo ${ASM}
