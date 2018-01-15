@@ -62,7 +62,7 @@ min_caml_hello_world:
 	.globl min_caml_print_char
 min_caml_print_char:
 	sub	sp, #4   @ room for char
-        strb	r0, [sp]
+    strb r0, [sp]
 	mov	r0, #1 @ file descriptor
 	mov	r1, sp
 	mov	r2, #1
