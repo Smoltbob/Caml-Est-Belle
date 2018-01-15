@@ -26,7 +26,7 @@ let rec register_args args =
     | arg::arg_list -> let top_frame_table = Stack.top frames_stack in if (not (Hashtbl.mem top_frame_table arg)) then
                             (let frame_index = -4 * (Hashtbl.length top_frame_table) - 4 in
                             Hashtbl.add top_frame_table arg frame_index);
-                       register_args arg_list
+                           register_args arg_list
 
 let rec push_frame_table () =
     let (new_frame_table:(string, int) Hashtbl.t) = Hashtbl.create 10 in
