@@ -1,0 +1,6 @@
+let _ =
+    let c = 42 in
+    let s = 32 in 
+    let a = call _min_caml_print_char s in
+    let a = call _min_caml_print_char c in
+    call _min_caml_print_newline

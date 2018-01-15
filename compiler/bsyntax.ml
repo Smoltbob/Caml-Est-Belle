@@ -7,7 +7,6 @@ type t =
     | Int of int
     | Float of float
     | Neg of Id.t
-    | Fneg of Id.t
     | Add of Id.t * t
     | Sub of Id.t * t
     | Land of Id.t * t
