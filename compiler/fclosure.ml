@@ -5,6 +5,7 @@ open Fsyntax;;
 open Printf;;
 
 let known = ref [] (*TODO: add the others*)
+let hash_fundef = Hashtbl.create 10
 
 type t =
     | Let of (Id.t * Ftype.t) * t * t
@@ -48,19 +49,18 @@ and fundef = {
 
 (* type toplevel = fundef list *)
 
-let hash_fundef = Hashtbl.create 10
 
 let rec add_und (fund:fundef) = let (id,typ) = fund.name in
     {name = ("_"^id,typ); args = fund.args; formal_fv = fund.formal_fv; body = scan_fundef fund.body}
 and scan_fundef clos :t = match clos with
-    | LetRec (fund, een) -> Hashtbl.add hash_fundef (fst fund.name) ();
+    | LetRec (fund, een) -> Hashtbl.add hash_fundef (fst fund.name) (List.map fst fund.formal_fv);
                                  LetRec (add_und fund, scan_fundef een)
     | Let (x, valu, een) -> Let (x, scan_fundef valu, scan_fundef een)
     | AppD (id, l) ->   if Hashtbl.mem hash_fundef id then
                             AppD ("_"^id, l)
                         else
-                            known := id::!known
-                            AppD ("min_caml_"^id, l)
+                            (known := id::(!known);
+                            AppD ("min_caml_"^id, l))
     | AppC (id, l) -> AppC (id, l)
     | _ -> clos
 

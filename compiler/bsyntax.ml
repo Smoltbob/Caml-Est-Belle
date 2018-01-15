@@ -8,20 +8,16 @@ type t =
     | Float of float
     | Neg of Id.t
     | Fneg of Id.t
-    | Fsub of Id.t * Id.t
-    | Fadd of Id.t * Id.t
-    | Fmul of Id.t * Id.t
-    | Fdiv of Id.t * Id.t
-    | Add of Id.t * Id.t
-    | Sub of Id.t * Id.t
-    | Land of Id.t * Id.t
+    | Add of Id.t * t
+    | Sub of Id.t * t
+    | Land of Id.t * t
     | Var of Id.t
     | Eq of Id.t * t
     | Call of Id.t * formal_args
     | CallC of Id.t * formal_args
-    | If of Id.t * Id.t * asmt * asmt * string
-    | MemAcc of Id.t * Id.t
-    | MemAff of Id.t * Id.t * Id.t
+    | If of Id.t * t * asmt * asmt * string
+    | MemAcc of Id.t * t
+    | MemAff of Id.t * t * Id.t
     | New of t
     | Nop
 
@@ -73,19 +69,14 @@ let rec exp_to_string exp =
   | Int i -> string_of_int i
   | Float f -> sprintf "%.2f" f
   | Neg id -> sprintf "(neg %s)" (Id.to_string id)
-  | Fneg id -> sprintf "(fneg %s)" (Id.to_string id)
-  | Fadd (id1, id2) -> sprintf "(fadd %s %s)" (Id.to_string id1) (Id.to_string id2)
-  | Fsub (id1, id2) -> sprintf "(fsub %s %s)" (Id.to_string id1) (Id.to_string id2)
-  | Fmul (id1, id2) -> sprintf "(fmul %s %s)" (Id.to_string id1) (Id.to_string id2)
-  | Fdiv (id1, id2) -> sprintf "(fdiv %s %s)" (Id.to_string id1) (Id.to_string id2)
-  | MemAcc (id1, id2) -> sprintf "(mem(%s + %s))" (Id.to_string id1) (Id.to_string id2)
-  | MemAff (id1, id2, id3) -> sprintf "(mem(%s + %s)<-%s)" (Id.to_string id1) (Id.to_string id2) (Id.to_string id3)
-  | Add (e1, e2) -> sprintf "(add %s %s)" (Id.to_string e1) (Id.to_string e2)
-  | Sub (e1, e2) -> sprintf "(sub %s %s)" (Id.to_string e1) (Id.to_string e2)
-  | Land (e1, e2) -> sprintf "(land %s %s)" (Id.to_string e1) (Id.to_string e2)
+  | MemAcc (id1, id2) -> sprintf "(mem(%s + %s))" (Id.to_string id1) (exp_to_string id2)
+  | MemAff (id1, id2, id3) -> sprintf "(mem(%s + %s)<-%s)" (Id.to_string id1) (exp_to_string id2) (Id.to_string id3)
+  | Add (e1, e2) -> sprintf "(add %s %s)" (Id.to_string e1) (exp_to_string e2)
+  | Sub (e1, e2) -> sprintf "(sub %s %s)" (Id.to_string e1) (exp_to_string e2)
+  | Land (e1, e2) -> sprintf "(land %s %s)" (Id.to_string e1) (exp_to_string e2)
   | Var id -> Id.to_string id
   | Eq (e1, e2) -> sprintf "(%s = %s)" (Id.to_string e1) (exp_to_string e2)
-  | If (id1, e1, asmt1, asmt2, comp) -> sprintf "(if %s %s %s then %s else %s)" (Id.to_string id1) (comp_to_string comp) (Id.to_string e1) (to_string_asm asmt1) (to_string_asm asmt2)
+  | If (id1, e1, asmt1, asmt2, comp) -> sprintf "(if %s %s %s then %s else %s)" (Id.to_string id1) (comp_to_string comp) (exp_to_string e1) (to_string_asm asmt1) (to_string_asm asmt2)
   | Call (l1, a1) -> sprintf "(call %s %s)" (Id.to_string l1) (to_string_args a1)
   | New (e1) -> sprintf "(new %s)" (exp_to_string e1)
   | Nop -> sprintf "nop"

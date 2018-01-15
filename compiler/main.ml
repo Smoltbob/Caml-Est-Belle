@@ -31,6 +31,7 @@ let print_asml l =
         Fknormal.knormal s
     ))))))))
     in
+    (* Fclosure.clos_to_string c *)
     let prog = Fasmlgen.asml_head c in
     if !asml_only then
         Fasmlgen.toplevel_to_string prog

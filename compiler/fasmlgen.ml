@@ -19,8 +19,8 @@ let rec addmem_to_letrecs_with_fv toplvl = match toplvl with
 let rec mem_fv_closure addr fv count call = match fv with
     | t::q -> Let (
                 "tu"^(string_of_int count),
-                MemAff (addr, 4*count, t),
-                mem_fv_closure addr q (count+1)) (*TODO change the name of tu+id*)
+                MemAff (addr, Int (4*count), t),
+                mem_fv_closure addr q (count+1) call) (*TODO change the name of tu+id*)
     | [] -> call
 
 (** This function takes care of the base cases such as sums and variables.
@@ -30,13 +30,14 @@ let rec asml_t_triv t = match t with
     | Unit -> Nop
     | Int a -> Int a
     | Float a -> Float a
+    | Var x -> Var x
     | Neg x -> (match x with
                         | (Var y) -> Neg y
                         | _ -> failwith "matchfailure Neg")
     | FNeg x -> (match x with
                         | (Var y) -> Fneg y
                         | _ -> failwith "matchfailure FNeg")
-    | FSub (x, y) -> (match x, y with
+    (* | FSub (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Fsub (x2, y2)
                         | _ -> failwith "matchfailure FSub")
     | FAdd (x, y) -> (match x, y with
@@ -47,12 +48,12 @@ let rec asml_t_triv t = match t with
                         | _ -> failwith "matchfailure FMul")
     | FDiv (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Fdiv (x2, y2)
-                        | _ -> failwith "matchfailure FDiv")
+                        | _ -> failwith "matchfailure FDiv") *)
     | Add (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Add (x2, y2)
+                        | (Var x2, Var y2) -> Add (x2, Var y2)
                         | _ -> failwith "matchfailure Add")
     | Sub (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Sub (x2, y2)
+                        | (Var x2, Var y2) -> Sub (x2, Var y2)
                         | _ -> failwith "matchfailure Sub")
     | AppD (f, l) ->
         (let rec trans (l:Fclosure.t list) :Bsyntax.formal_args = match l with
@@ -62,21 +63,31 @@ let rec asml_t_triv t = match t with
         in
         Call (f, trans l))
     (*TODO : unnest the letcls if it is inside another let  and replace appc with callc*)
-    | AppC (c, l) -> LetCls (c, New (c, 1 + List.length fv),
-                        Let ("tu0", MemAff (addr, 0, c (*TODO retrieve the addr of c*)),
-                        mem_fv_closure addr fv 4 (Expression (CallC (c, l)))))
-    | Var x -> Var x
+    | AppC (c, l) -> Nop
+    (* | AppC (c, l) -> LetCls (c, New (c, 1 + List.length fv),
+                        Let ("tu0", MemAff (addr, Int 0, c (*TODO retrieve the addr of c*)),
+                        mem_fv_closure addr fv 4 (Expression (CallC (c, l))))) *)
+    | LetCls (a,b,c,d) -> Nop
     | _ -> failwith "asml_t_triv matchfailure not implemented"
+
+let rec to_fargs (l:Fclosure.t list) = match l with
+    | t::q -> (* we can only have Var in the t list *)
+                (match t with
+                | Var x -> x::(to_fargs l)
+                | _ -> failwith "argument not Var")
+    | [] -> []
 
 (** This function this is a recursive function on Let, AppD and (LetRec TBA). It calls asml_t_triv when it encounters a simple case that ends the recursion like a sum.
 @param c is an Fclosure.t
 @return an Bsyntax.asmt*)
 let rec asml_exp (c:Fclosure.t) :asmt = match c with
     (*TODO unnest the letcls from the lets*)
-    | Let (x, AppC (c,l), b) -> LetCls (c, New (c, 1 + List.length fv),
-                        Let ("tu0", MemAff (addr, 0, c (*TODO retrieve the addr of c*)),
-                        mem_fv_closure addr fv 4 (Let (x, CallC (c, l), asml_exp b))))
+    | Let (x, AppC (c,l), b) -> let fv = Hashtbl.find hash_fundef (String.sub c 1 (String.length c)) in
+                        LetCls (String.sub c 1 (String.length c), New (Int (1 + List.length fv)),
+                        Let ("tu0", MemAff (c, Int 0, c (*TODO retrieve the addr of c*)),
+                        mem_fv_closure c fv 4 (Let (fst x, CallC (c, to_fargs l), asml_exp b))))
     | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
+    | LetCls (id, id2, l, t) -> Expression Nop(*TODO*)
     | _ -> Expression (asml_t_triv c)
 
 let create_main c = {name = "_"; args = []; body = asml_exp c}
@@ -98,18 +109,18 @@ let rec expression_to_string exp = match exp with
     | Int i -> string_of_int i
     | Float f -> string_of_float f
     | Var id -> Id.to_string id
-    | Add (e1, e2) -> sprintf "add %s %s" e1 e2
-    | Sub (e1, e2) -> sprintf "sub %s %s" e1 e2
+    | Add (e1, e2) -> sprintf "add %s %s" e1 (expression_to_string e2)
+    | Sub (e1, e2) -> sprintf "sub %s %s" e1 (expression_to_string e2)
     | Call (f, args) -> sprintf "call %s %s"
         f
         (infix_to_string (fun x->x) args " ")
-    | New i -> sprintf "new %i" i
-    | MemAcc (id, i) -> sprintf "mem(%s+%i)"
+    | New i -> sprintf "new %s" (expression_to_string i)
+    | MemAcc (id, i) -> sprintf "mem(%s+%s)"
         (Id.to_string id)
-        i
-    | MemAff (id1, i, id2) -> sprintf "mem(%s+%i) <- %s"
+        (expression_to_string i)
+    | MemAff (id1, i, id2) -> sprintf "mem(%s+%s) <- %s"
         (Id.to_string id1)
-        i
+        (expression_to_string i)
         (Id.to_string id2)
     | _ -> "\n[[ match not found in asml gen ]]\n"
 
@@ -118,7 +129,7 @@ let rec asmt_to_string (body:Bsyntax.asmt) = match body with
         (Id.to_string id)
         (expression_to_string e1)
         (asmt_to_string e2)
-    | LeCls (id, e1, e2) ->  sprintf "let %s = %s in\n\t%s"
+    | LetCls (id, e1, e2) ->  sprintf "let %s = %s in\n\t%s"
         (Id.to_string id)
         (expression_to_string e1)
         (asmt_to_string e2)
