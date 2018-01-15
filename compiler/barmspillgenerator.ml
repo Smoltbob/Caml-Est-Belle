@@ -8,7 +8,6 @@ open List;;
 
 let frames_stack = Stack.create ()
 
-(* WIP ARM generation *)
 (** This function is to allocate 4 bytes for variable x and update the (Stack.top frames_table), and return the address
 @param variable_name the variable name in type id.t
 @return the relative address of x in type int *)
@@ -75,6 +74,7 @@ let rec operation_to_arm op e1 e2 dest =
          | Int i -> let store_arg2 = sprintf "\tmov r5, #%i\n" i in
                     let return_result = sprintf "\t%s r6, r4, r5\n%s" op (store_in_stack 6 dest) in
                     sprintf "%s%s%s" store_arg1 store_arg2 return_result
+         | _ -> failwith "Unauthorized type"
         )
 
 (** This function is to convert assignments into arm code 
@@ -89,6 +89,7 @@ let rec exp_to_arm exp dest =
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
     | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (remove_underscore l) (store_in_stack 0 dest)
+    
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
                 | Var id -> let call = sprintf "%s\tbl talloc\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
@@ -97,8 +98,9 @@ let rec exp_to_arm exp dest =
                            let prepare_arg = sprintf "\tmov r0, #%s\n" (string_of_int i) in
                            let call_alloc = sprintf "\tbl talloc\n%s" (store_in_stack 0 dest) in
                                sprintf "%s%s%s" prepare_arg store_string call_alloc
+                | _ -> failwith "Unauthorized type"
     )
-    (* TODO factorise *)
+
     | MemAcc (id1, id2) ->
             let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
             let load = sprintf "\tldr r4, [r4, r5, LSL #2]\n" in
@@ -108,53 +110,47 @@ let rec exp_to_arm exp dest =
                             sprintf "%s%s%s%s" store_arg1 store_arg2 load mov 
                 | Int i ->  let store_arg2 = sprintf "\tmov r5, #%i\n" i in
                             sprintf "%s%s%s%s" store_arg1 store_arg2 load mov 
+                | _ -> failwith "Unauthorized type"
                 );
 
-    (* TODO factorise *)
+                
     | MemAff (id1, id2, id3) ->
             let saver7 = sprintf "\tstmfd sp!, {r7}\n" in
             let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
+            let prepstore = sprintf "\tldr r7, [fp, #%i]\n" (fst (frame_position id3)) in
+            let store = sprintf "\tstr r7, [r4, r5, lsl #2]\n" in
+            let restorer7 = sprintf "\tldmfd sp!, {r7}\n" in
             (match id2 with
             | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in
-                        let prepstore = sprintf "\tldr r7, [fp, #%i]\n" (fst (frame_position id3)) in
-                        let store = sprintf "\tstr r7, [r4, r5, lsl #2]\n" in
-                        let restorer7 = sprintf "\tldmfd sp!, {r7}\n" in
-                            sprintf "%s%s%s%s%s%s" saver7 store_arg1 store_arg2 prepstore store restorer7
-            | Int i ->  let store_arg2 = sprintf "\tmov r5, #%i\n" i in
-                        let prepstore = sprintf "\tldr r7, [fp, #%i]\n" (fst (frame_position id3)) in
-                        let store = sprintf "\tstr r7, [r4, r5, lsl #2]\n" in
-                        let restorer7 = sprintf "\tldmfd sp!, {r7}\n" in
                         sprintf "%s%s%s%s%s%s" saver7 store_arg1 store_arg2 prepstore store restorer7
+            | Int i ->  let store_arg2 = sprintf "\tmov r5, #%i\n" i in
+                        sprintf "%s%s%s%s%s%s" saver7 store_arg1 store_arg2 prepstore store restorer7
+            | _ -> failwith "Unauthorized type"
             )
-    (* TODO factorise *)
+
     | If (id1, e1, asmt1, asmt2, comp) ->
             let counter = genif() in 
             let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
+            let cmpop = sprintf "\tcmp r4, r5\n" in
+            let branch1 = sprintf "\t%s if%s\n" comp counter in
+            let codeelse = sprintf "%s" (asmt_to_arm asmt2 dest) in
+            let branch2 = sprintf "\tb end%s\n\n" counter in
+            let codeif = sprintf "if%s:\n%s\n" counter (asmt_to_arm asmt1 dest) in
+            let endop = sprintf "end%s:\n" counter in
             (match e1 with
             | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in 
-                        let cmpop = sprintf "\tcmp r4, r5\n" in
-                        let branch1 = sprintf "\t%s if%s\n" comp counter in
-                        let codeelse = sprintf "%s" (asmt_to_arm asmt2 dest) in
-                        let branch2 = sprintf "\tb end%s\n\n" counter in
-                        let codeif = sprintf "if%s:\n%s\n" counter (asmt_to_arm asmt1 dest) in
-                        let endop = sprintf "end%s:\n" counter in
                         sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
             | Int i  -> let store_arg2 = sprintf "\tmov r5,#%i\n" i in 
-                        let cmpop = sprintf "\tcmp r4, r5\n" in
-                        let branch1 = sprintf "\t%s if%s\n" comp counter in
-                        let codeelse = sprintf "%s" (asmt_to_arm asmt2 dest) in
-                        let branch2 = sprintf "\tb end%s\n\n" counter in
-                        let codeif = sprintf "if%s:\n%s\n" counter (asmt_to_arm asmt1 dest) in
-                        let endop = sprintf "end%s:\n" counter in
                         sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
+            | _ -> failwith "Unauthorized type"
             )
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
-(** This function is a recursive function to convert type asmt into assignments
+(** This function is a recursive function to print expressions contained in
+  a statement
 @param asm program in type asmt
 @return unit*)
-(* OK *)
 and asmt_to_arm asm dest =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP ...Imm" *)
@@ -175,42 +171,56 @@ let rec get_args args =
     | a1::a2::a3::a4::l -> sprintf "\tmov r5, fp\n\tadd r5, r5, #%i\n%s%s" (4*(List.length l) + 8) (pull_remaining_args l) (get_args (a1::a2::a3::a4::[]:string list))
     | _ -> failwith "Error while pushing arguments to the stack"
 
-(** This function will print a single function definition *)
+(** Puts the stack pointer where it was before a function call in order to free
+ * space.
+ * If we had less than 4 arguments then the stack was not used for them,
+ * otherwise it was. *)
 let rec epilogue args =
     if (List.length args <= 4) then
-        "\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n"
+        "\tmov sp, fp
+        \tldmfd sp!, {fp, pc}\n\n\n"
     else
-        sprintf "\tmov sp, fp\n\tldmfd sp!, {fp, lr}\n\tadd sp, sp, #%i\n\tbx lr\n\n\n" (4*((List.length args) -4))
+        sprintf "\tmov sp, fp
+                 \tldmfd sp!, {fp, lr}
+                 \tadd sp, sp, #%i
+                 \tbx lr\n\n\n" (4 * ((List.length args) - 4))
 
-(** This function is a recursive function to conver tpye fundef into type asmt
+(** This function handles the printing of a given function
 @param fundef program in type fundef
 *)
-(* OK *)
 let rec fundef_to_arm fundef =
-    (* Write down the label *)
     push_frame_table ();
     register_args (List.rev fundef.args);
-    let get_args_string = get_args fundef.args in
     let arm_name = remove_underscore fundef.name in
-    let function_string = sprintf "\t.globl %s\n%s:\n\t@prologue\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n\t@get arguments\n%s\t@function code\n%s\n\t@epilogue\n%s" arm_name arm_name get_args_string (asmt_to_arm fundef.body "") (epilogue fundef.args) in
+    let label = sprintf "\t.globl %s\n%s:\n" arm_name arm_name in
+    let prologue = sprintf "\t@prologue\n\tstmfd sp!, {fp, lr}\n" in
+    let mov = sprintf "\tmov fp, sp\n\n" in
+    let get_args = sprintf "\t@get arguments\n%s" (get_args fundef.args) in
+    let functioncode = sprintf "\t@function code\n%s" (asmt_to_arm fundef.body "") in
+    let epilogue = sprintf "\n\t@epilogue\n%s" (epilogue fundef.args) in
     pop_frame_table ();
-    function_string
-
+    sprintf "%s%s%s%s%s%s" label prologue mov get_args functioncode epilogue
+    
 (** This function prints the function definitions contained in the list
 @param fundefs the list of definitions
 *)
+(* The main function is at the top of the list. We give it the name _start and
+ * print it first. Then we print the other functions one after the other by
+ * going through the list *)
 let rec fundefs_to_arm fundefs =
     match fundefs with
     | [start] -> push_frame_table (); 
-    let start_string = sprintf "\t.globl _start\n_start:\n\tmov fp, sp\n\n%s\n\tbl min_caml_exit\n" (asmt_to_arm start.body "") in pop_frame_table (); 
-    start_string
+    let start_string = sprintf "\t.globl _start\n_start:\n" in 
+    let mov = sprintf "\tmov fp, sp\n\n" in
+    let print_code = sprintf "%s\n" (asmt_to_arm start.body "") in 
+    let print_exit = sprintf "\tbl min_caml_exit\n" in pop_frame_table (); 
+    sprintf "%s%s%s%s" start_string mov print_code print_exit
     | h::l -> sprintf "%s%s" (fundef_to_arm h) (fundefs_to_arm l)
     | _ -> failwith "No main function found"
 
 (** This function is a recursive function to conver tpye toplevel into type fundef
 @param toplevel program in type toplevel
 @return unit*)
-(* OK *)
 let rec toplevel_to_arm toplevel =
     match toplevel with
     | Fundefs functions_list -> sprintf "\t.text\n%s" (fundefs_to_arm functions_list)
