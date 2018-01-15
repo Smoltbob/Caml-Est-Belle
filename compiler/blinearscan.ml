@@ -4,7 +4,8 @@ open Printf;;
 
 let active = ref []
 let spill = ref []
-let free_reg = ref ["R0";"R1";"R2";"R3";"R4";"R5";"R6";"R7";"R8";"R9";"R10";"R12";]
+(* let free_reg = ref ["R0";"R1";"R2";"R3";"R4";"R5";"R6";"R7";"R8";"R9";"R10";"R12";] *)
+let free_reg = ref["R0";"R1";]
 let args_counter = ref 0
 let spill_counter = ref 0
 
