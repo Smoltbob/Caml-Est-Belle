@@ -15,6 +15,14 @@ let rec addmem_to_letrecs l = match l with
 let rec addmem_to_letrecs_with_fv toplvl = match toplvl with
     | Fundefs l -> addmem_to_letrecs l *)
 
+let rec to_fargs (l:Fclosure.t list) = match l with
+    | t::q -> (* we can only have Var in the t list *)
+                (match t with
+                | Var x -> x::(to_fargs l)
+                | _ -> failwith "argument not Var")
+    | [] -> []
+
+
 (*TODO use this function to alloc the pointer of the function as well as the pointers to the fv*)
 let rec mem_fv_closure addr fv count call = match fv with
     | t::q -> Let (
@@ -63,31 +71,27 @@ let rec asml_t_triv t = match t with
         in
         Call (f, trans l))
     (*TODO : unnest the letcls if it is inside another let  and replace appc with callc*)
-    | AppC (c, l) -> Nop
+    | AppC (c, l) -> CallC (c, to_fargs l)
     (* | AppC (c, l) -> LetCls (c, New (c, 1 + List.length fv),
                         Let ("tu0", MemAff (addr, Int 0, c (*TODO retrieve the addr of c*)),
                         mem_fv_closure addr fv 4 (Expression (CallC (c, l))))) *)
-    | LetCls (a,b,c,d) -> Nop
+    (* | LetCls (a,b,c,d) -> Nop *)
     | _ -> failwith "asml_t_triv matchfailure not implemented"
-
-let rec to_fargs (l:Fclosure.t list) = match l with
-    | t::q -> (* we can only have Var in the t list *)
-                (match t with
-                | Var x -> x::(to_fargs l)
-                | _ -> failwith "argument not Var")
-    | [] -> []
 
 (** This function this is a recursive function on Let, AppD and (LetRec TBA). It calls asml_t_triv when it encounters a simple case that ends the recursion like a sum.
 @param c is an Fclosure.t
 @return an Bsyntax.asmt*)
 let rec asml_exp (c:Fclosure.t) :asmt = match c with
     (*TODO unnest the letcls from the lets*)
-    | Let (x, AppC (c,l), b) -> let fv = Hashtbl.find hash_fundef (String.sub c 1 (String.length c)) in
+    (* | Let (x, AppC (c,l), b) ->
                         LetCls (String.sub c 1 (String.length c), New (Int (1 + List.length fv)),
                         Let ("tu0", MemAff (c, Int 0, c (*TODO retrieve the addr of c*)),
-                        mem_fv_closure c fv 4 (Let (fst x, CallC (c, to_fargs l), asml_exp b))))
+                        mem_fv_closure c fv 4 (Let (fst x, CallC (c, to_fargs l), asml_exp b)))) *)
     | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
-    | LetCls (id, id2, l, t) -> Expression Nop(*TODO*)
+    | LetCls (c, f, l, t) -> let fv = Hashtbl.find hash_fundef f in
+                        LetCls (c, New (Int (1 + List.length fv)),
+                        Let ("tu0", MemAff (c, Int 0, c (*TODO retrieve the addr of c*)),
+                        mem_fv_closure f fv 4 (asml_exp t)))
     | _ -> Expression (asml_t_triv c)
 
 let create_main c = {name = "_"; args = []; body = asml_exp c}
