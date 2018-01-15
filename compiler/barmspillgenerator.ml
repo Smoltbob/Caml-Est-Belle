@@ -101,16 +101,14 @@ let rec exp_to_arm exp dest =
     (* TODO factorise *)
     | MemAcc (id1, id2) ->
             let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
+            let load = sprintf "\tldr r4, [r4, r5, LSL #2]\n" in
+            let mov = sprintf "%s" (store_in_stack 4 dest) in
                 (match id2 with
                 | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in
-                            let load = sprintf "\tldr r4, [r4, r5, LSL #2]\n" in
-                            let mov = sprintf "%s" (store_in_stack 4 dest) in
                             sprintf "%s%s%s%s" store_arg1 store_arg2 load mov 
                 | Int i ->  let store_arg2 = sprintf "\tmov r5, #%i\n" i in
-                            let load = sprintf "\tldr r4, [r4, r5, LSL #2]\n" in
-                            let mov = sprintf "%s" (store_in_stack 4 dest) in
                             sprintf "%s%s%s%s" store_arg1 store_arg2 load mov 
-                )
+                );
 
     (* TODO factorise *)
     | MemAff (id1, id2, id3) ->
@@ -128,7 +126,7 @@ let rec exp_to_arm exp dest =
                         let restorer7 = sprintf "\tldmfd sp!, {r7}\n" in
                         sprintf "%s%s%s%s%s%s" saver7 store_arg1 store_arg2 prepstore store restorer7
             )
-
+    (* TODO factorise *)
     | If (id1, e1, asmt1, asmt2, comp) ->
             let counter = genif() in 
             let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
@@ -177,9 +175,9 @@ let rec get_args args =
     | a1::a2::a3::a4::l -> sprintf "\tmov r5, fp\n\tadd r5, r5, #%i\n%s%s" (4*(List.length l) - 8) (pull_remaining_args l) (get_args (a1::a2::a3::a4::[]:string list))
     | _ -> failwith "Error while pushing arguments to the stack"
 
-(** This function is a recursive function to conver tpye fundef into type asmt
+(** This function will print a single function definition 
 @param fundef program in type fundef
-@return unit*)
+*)
 (* OK *)
 let rec fundef_to_arm fundef =
     (* Write down the label *)
@@ -191,9 +189,14 @@ let rec fundef_to_arm fundef =
     pop_frame_table ();
     function_string
 
+(** This function prints the function definitions contained in the list
+@param fundefs the list of definitions
+*)
 let rec fundefs_to_arm fundefs =
     match fundefs with
-    | [start] -> push_frame_table (); let start_string = sprintf "\t.globl _start\n_start:\n\tmov fp, sp\n\n%s\n\tbl min_caml_exit\n" (asmt_to_arm start.body "") in pop_frame_table (); start_string
+    | [start] -> push_frame_table (); 
+    let start_string = sprintf "\t.globl _start\n_start:\n\tmov fp, sp\n\n%s\n\tbl min_caml_exit\n" (asmt_to_arm start.body "") in pop_frame_table (); 
+    start_string
     | h::l -> sprintf "%s%s" (fundef_to_arm h) (fundefs_to_arm l)
     | _ -> failwith "No main function found"
 
