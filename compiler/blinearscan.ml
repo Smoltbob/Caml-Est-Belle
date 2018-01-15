@@ -49,6 +49,9 @@ let rec spill_active_var id l=
 			active := List.tl !active;
 			let reg_id:Id.t = sprintf "f_%s__%i" (Id.to_string (snd_ning (List.hd !active))) (!spill_counter) in
 			spill := (fst_id, !spill_counter) :: !spill;
+			fprintf stdout "after spill_active_var\n";
+			print_spill !spill;
+			fprintf stdout "end spill_active_varf\n";
 			reg_id
 	
 
@@ -57,12 +60,20 @@ let rec spill_active_var id l=
 @param l active list
 @return active list *)
 let rec expire_active_list id l live_interval_s_ht = 
+	if (List.length l ) <> 0 then
+    fprintf stdout "x2_e = %i, %s_s = %i" (trd (List.hd l)) (id) (Hashtbl.find live_interval_s_ht id);
 	match l with
 	|t::q -> if (trd t) < (Hashtbl.find live_interval_s_ht id) then 
-				(free_reg := (snd_ning t) :: !free_reg; 
+				(free_reg := (snd_ning t) :: !free_reg;
+				fprintf stdout "after expire_active_list\n ";
+				print_active !active;
+				fprintf stdout "end expire_active_list\n";
 				q)
 			else t:: (expire_active_list id q live_interval_s_ht)
-	|[] -> l
+	|[] -> fprintf stdout "after expire_active_list\n ";
+			print_active !active;
+			fprintf stdout "end expire_active_list\n";
+			[]
 
 (** register_alloc is to alloc a register to a new defined variable,
 we will first expire_active_list, 
@@ -97,6 +108,9 @@ let rec load_spill_active_var id l addr live_interval_e_ht =
 			let reg_id:Id.t = sprintf "f_%s_%i_%i" (Id.to_string (snd_ning (List.hd !active))) (addr) (!spill_counter) in
 			active := add_to_active (id, (snd_ning (List.hd !active)), (Hashtbl.find live_interval_e_ht id)) !active;
 			spill := (fst_ning_id, !spill_counter) :: !spill;
+			fprintf stdout "after spill_active_var\n";
+			print_spill !spill;
+			fprintf stdout "end spill_active_var\n";
 			reg_id
 	
 
@@ -136,8 +150,8 @@ let rec alloc_id id l  live_interval_s_ht live_interval_e_ht =
 (** alloc_id_def is a to alloc a register to a new defined variable and add the new variable into active variable list;
 @param id a new defined variable, in type Id.t
 @para a register, in type Id.t*)
-let alloc_id_def id live_interval_e_ht = 
-	let reg_id = register_alloc id live_interval_e_ht in
+let alloc_id_def id live_interval_s_ht live_interval_e_ht = 
+	let reg_id = register_alloc id live_interval_s_ht in
 	if (not (Hashtbl.mem live_interval_e_ht id)) then failwith ("failure with finding a defined local variable in live_interval_e");
 	active := add_to_active (id, reg_id, (Hashtbl.find live_interval_e_ht id)) !active;
 	print_active !active;
@@ -154,7 +168,7 @@ let rec alloc_exp e live_interval_s_ht live_interval_e_ht =
 	
 let rec alloc_asm asm live_interval_s_ht live_interval_e_ht = 
 	match asm with
-	|Let (id, e, a) -> let reg_id = alloc_id_def id live_interval_e_ht in 
+	|Let (id, e, a) -> let reg_id = alloc_id_def id live_interval_s_ht live_interval_e_ht in 
 					   let reg_e = alloc_exp e live_interval_s_ht live_interval_e_ht in 
 					   let reg_asm = alloc_asm a live_interval_s_ht live_interval_e_ht in 
 					   Let (reg_id, reg_e, reg_asm)
