@@ -1,0 +1,4 @@
+let _ =
+    let a = 0 in
+        let b = 1 in
+            if a = 0 then call _min_caml_print_int a else call _min_caml_print_int b

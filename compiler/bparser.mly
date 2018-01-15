@@ -70,24 +70,22 @@ exp:
 | NEW ident_or_imm
     { New($2) }
 | LABEL
-    { Var($1) } /* Make a special label function ? */
-| ADD IDENT ident_or_imm /* addition */ /* should be ADD IDENT ident_or_imm */
-    { Add($2, $3) } /* should be ADD IDENT ident_or_imm */
+    { Var($1) } 
+| ADD IDENT ident_or_imm 
+    { Add($2, $3) } 
 | SUB IDENT ident_or_imm
     { Sub($2, $3) }
 | LAND IDENT ident_or_imm
     { Land($2, $3) }
-/* MEM LPAREN IDENT PLUS ident_or_imm RPAREN */
 | MEM LPAREN IDENT PLUS ident_or_imm RPAREN DOT
     { MemAcc($3, $5) }
-/* Should be MEM LPAREN IDENT PLUS ident_or_imm RPAREN ASSIGN IDENT */
 | MEM LPAREN IDENT PLUS ident_or_imm RPAREN ASSIGN IDENT
     { MemAff($3, $5, $8) }
-| IF IDENT EQUAL IDENT THEN asmt ELSE asmt /* should be ADD IDENT equal ident_or_imm THEN asmt ELSE asmt */
+| IF IDENT EQUAL ident_or_imm THEN asmt ELSE asmt 
     { If($2, $4, $6, $8, "beq") }
-| IF IDENT LE IDENT THEN asmt ELSE asmt /* should be ADD IDENT equal ident_or_imm THEN asmt ELSE asmt */
+| IF IDENT LE ident_or_imm THEN asmt ELSE asmt 
     { If($2, $4, $6, $8, "ble") }
-| IF IDENT GE IDENT THEN asmt ELSE asmt /* should be ADD IDENT equal ident_or_imm THEN asmt ELSE asmt */
+| IF IDENT GE ident_or_imm THEN asmt ELSE asmt 
     { If($2, $4, $6, $8, "bge") }
 | CALL LABEL formal_args
     { Call($2, $3) }

@@ -1,0 +1,13 @@
+let _ =
+    let a = 0 in 
+    let b = 1 in
+    if b = 1 then 
+        if a <= 1 then
+            if b = 1 then
+                call _min_caml_print_int a
+            else
+                nop
+        else
+            nop
+    else
+        nop

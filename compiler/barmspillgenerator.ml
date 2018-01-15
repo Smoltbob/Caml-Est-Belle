@@ -131,10 +131,25 @@ let rec exp_to_arm exp dest =
 
     | If (id1, e1, asmt1, asmt2, comp) ->
             let counter = genif() in 
-                let set_registers = sprintf "\tldr r4, [fp, #%i]\n\tldr r5, [fp, #%i]\n" (fst (frame_position id1)) (fst (frame_position e1)) in 
-                let code = sprintf "\tcmp r4, r5\n\t%s if%s\n %s\tb end%s\n\nif%s:\n%s\nend%s:\n" comp counter (asmt_to_arm asmt2 dest) counter counter (asmt_to_arm asmt1 dest) counter in
-                sprintf "%s%s" set_registers code
-
+            let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
+            (match e1 with
+            | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in 
+                        let cmpop = sprintf "\tcmp r4, r5\n" in
+                        let branch1 = sprintf "\t%s if%s\n" comp counter in
+                        let codeelse = sprintf "%s" (asmt_to_arm asmt2 dest) in
+                        let branch2 = sprintf "\tb end%s\n\n" counter in
+                        let codeif = sprintf "if%s:\n%s\n" counter (asmt_to_arm asmt1 dest) in
+                        let endop = sprintf "end%s:\n" counter in
+                        sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
+            | Int i  -> let store_arg2 = sprintf "\tmov r5,#%i\n" i in 
+                        let cmpop = sprintf "\tcmp r4, r5\n" in
+                        let branch1 = sprintf "\t%s if%s\n" comp counter in
+                        let codeelse = sprintf "%s" (asmt_to_arm asmt2 dest) in
+                        let branch2 = sprintf "\tb end%s\n\n" counter in
+                        let codeif = sprintf "if%s:\n%s\n" counter (asmt_to_arm asmt1 dest) in
+                        let endop = sprintf "end%s:\n" counter in
+                        sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
+            )
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
