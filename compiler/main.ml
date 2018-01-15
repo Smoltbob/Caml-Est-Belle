@@ -19,12 +19,15 @@ let print_asml l =
     else
         let prog = Fasmlgen.asml_head c in
 		Bliveinterval.calcu_live_interval prog;
-(*		Bliveinterval.print_live_interval !Bliveinterval.live_interval_s;
-		Bliveinterval.print_live_interval !Bliveinterval.live_interval_e;*)
-		Bliveinterval.to_hashtbl !Bliveinterval.live_interval_s;
-		Bliveinterval.to_hashtbl !Bliveinterval.live_interval_e;
+		Bliveinterval.print_live_interval !Bliveinterval.live_interval_s;
+		Bliveinterval.print_live_interval !Bliveinterval.live_interval_e;
+		let live_interval_s_ht = Bliveinterval.to_hashtbl !Bliveinterval.live_interval_s in
+		let live_interval_e_ht = Bliveinterval.to_hashtbl !Bliveinterval.live_interval_e in
+		(*Blinearscan.registeralloc prog live_interval_s_ht live_interval_e_ht*)
+		let x = (Hashtbl.find live_interval_e_ht "x2") in Printf.fprintf stdout "%i\n" (x);
+		Barmspillgenerator.toplevel_to_arm (Blinearscan.registeralloc prog live_interval_s_ht live_interval_e_ht)
         (*Barmgenerator.toplevel_to_arm prog*)
-        Barmspillgenerator.toplevel_to_arm prog
+        (*Barmspillgenerator.toplevel_to_arm prog*)
 
 let file fin fout =
     let inchan = open_in fin in

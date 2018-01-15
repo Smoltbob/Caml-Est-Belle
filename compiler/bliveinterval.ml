@@ -49,10 +49,10 @@ let rec print_live_interval live_interval =
 	
 let rec to_hashtbl l= 
 	let l_ht = Hashtbl.create (List.length l) in
-	match l with
+	(*(match l with
 	|t::q -> Hashtbl.add l_ht (fst t) (snd t); to_hashtbl q
-	|[] -> ();
-	l_ht
+	|[] -> ());*)
+	List.iter (fun (x,y) -> Hashtbl.add l_ht x y) l; l_ht
 
 
 
