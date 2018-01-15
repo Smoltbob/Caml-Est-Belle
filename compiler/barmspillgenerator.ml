@@ -165,17 +165,24 @@ and asmt_to_arm asm dest =
 let rec pull_remaining_args l =
     match l with
     | [] -> ""
-    | arg::args -> "\tldmfd r5!, {r4}\n\tstmfd sp!, {r4}\n"
+    | arg::args -> sprintf "\tldmfd r5!, {r4}\n\tstmfd sp!, {r4}\n%s" (pull_remaining_args args)
 
 let rec get_args args =
     match args with
     | [] -> sprintf ""
     | l when (List.length l = 1) -> sprintf "\tstmfd sp!, {r0}\n\n"
     | l when (List.length l <= 4) -> sprintf "\tstmfd sp!, {r0-r%i}\n\n" ((List.length l)-1)
-    | a1::a2::a3::a4::l -> sprintf "\tmov r5, fp\n\tadd r5, r5, #%i\n%s%s" (4*(List.length l) - 8) (pull_remaining_args l) (get_args (a1::a2::a3::a4::[]:string list))
+    | a1::a2::a3::a4::l -> sprintf "\tmov r5, fp\n\tadd r5, r5, #%i\n%s%s" (4*(List.length l) + 8) (pull_remaining_args l) (get_args (a1::a2::a3::a4::[]:string list))
     | _ -> failwith "Error while pushing arguments to the stack"
 
-(** This function will print a single function definition 
+(** This function will print a single function definition *)
+let rec epilogue args =
+    if (List.length args <= 4) then
+        "\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n"
+    else
+        sprintf "\tmov sp, fp\n\tldmfd sp!, {fp, lr}\n\tadd sp, sp, #%i\n\tbx lr\n\n\n" (4*((List.length args) -4))
+
+(** This function is a recursive function to conver tpye fundef into type asmt
 @param fundef program in type fundef
 *)
 (* OK *)
@@ -185,7 +192,7 @@ let rec fundef_to_arm fundef =
     register_args (List.rev fundef.args);
     let get_args_string = get_args fundef.args in
     let arm_name = remove_underscore fundef.name in
-    let function_string = sprintf "\t.globl %s\n%s:\n\t@prologue\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n\t@get arguments\n%s\t@function code\n%s\n\t@epilogue\n\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n" arm_name arm_name get_args_string (asmt_to_arm fundef.body "") in
+    let function_string = sprintf "\t.globl %s\n%s:\n\t@prologue\n\tstmfd sp!, {fp, lr}\n\tmov fp, sp\n\n\t@get arguments\n%s\t@function code\n%s\n\t@epilogue\n%s" arm_name arm_name get_args_string (asmt_to_arm fundef.body "") (epilogue fundef.args) in
     pop_frame_table ();
     function_string
 
