@@ -18,7 +18,7 @@ let rec addmem_to_letrecs_with_fv toplvl = match toplvl with
 let rec to_fargs (l:Fclosure.t list) = match l with
     | t::q -> (* we can only have Var in the t list *)
                 (match t with
-                | Var x -> x::(to_fargs l)
+                | Var x -> x::(to_fargs q)
                 | _ -> failwith "argument not Var")
     | [] -> []
 
@@ -88,9 +88,9 @@ let rec asml_exp (c:Fclosure.t) :asmt = match c with
                         Let ("tu0", MemAff (c, Int 0, c (*TODO retrieve the addr of c*)),
                         mem_fv_closure c fv 4 (Let (fst x, CallC (c, to_fargs l), asml_exp b)))) *)
     | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
-    | LetCls (c, f, l, t) -> let fv = Hashtbl.find hash_fundef f in
-                        LetCls (c, New (Int (1 + List.length fv)),
-                        Let ("tu0", MemAff (c, Int 0, c (*TODO retrieve the addr of c*)),
+    | LetCls (clo, f, l, t) -> let fv = Hashtbl.find hash_fundef (String.sub f 1 ((String.length f) - 1)) in
+                        LetCls (clo, New (Int (1 + List.length fv)),
+                        Let ("tu0", MemAff (clo, Int 0, clo (*TODO retrieve the addr of c*)),
                         mem_fv_closure f fv 4 (asml_exp t)))
     | _ -> Expression (asml_t_triv c)
 
@@ -100,7 +100,7 @@ let rec asml_list c = match c with
     | LetRec (f,a) -> ({
                         name = fst f.name;
                         args = List.map fst f.args;
-                        body = (asml_exp f.body)
+                        body = (asml_exp f.body) (*TODO memacc *)
                       })
                       ::(asml_list a)
     | _ -> [create_main c]
