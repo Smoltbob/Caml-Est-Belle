@@ -50,6 +50,7 @@ val clos_exp : Fknormal.t -> t
 (** This function is for debugging purpose only, it returns its argument as a string *)
 val clos_to_string : t -> string
 
+val hash_fundef: (Id.l, Id.t list) Hashtbl.t
 (* val clos_toplevel : Fknormal.t -> toplevel *)
 (* val fv = t -> S.t *)
 

@@ -4,6 +4,8 @@ open Fknormal;;
 open Fsyntax;;
 open Printf;;
 
+let known = ref [] (*TODO: add the others*)
+let hash_fundef = Hashtbl.create 10
 
 type t =
     | Let of (Id.t * Ftype.t) * t * t
@@ -47,18 +49,18 @@ and fundef = {
 
 (* type toplevel = fundef list *)
 
-let hash_fundef = Hashtbl.create 10
 
 let rec add_und (fund:fundef) = let (id,typ) = fund.name in
     {name = ("_"^id,typ); args = fund.args; formal_fv = fund.formal_fv; body = scan_fundef fund.body}
 and scan_fundef clos :t = match clos with
-    | LetRec (fund, een) -> Hashtbl.add hash_fundef (fst fund.name) ();
-                                 LetRec (add_und fund, scan_fundef een)
+    | LetRec (fund, een) -> Hashtbl.add hash_fundef (fst fund.name) (List.map fst fund.formal_fv);
+                        LetRec (add_und fund, scan_fundef een)
     | Let (x, valu, een) -> Let (x, scan_fundef valu, scan_fundef een)
     | AppD (id, l) ->   if Hashtbl.mem hash_fundef id then
                             AppD ("_"^id, l)
                         else
-                            AppD ("_min_caml_"^id, l)
+                            (known := id::(!known);
+                            AppD ("min_caml_"^id, l))
     | AppC (id, l) -> AppC (id, l)
     | _ -> clos
 
@@ -194,7 +196,7 @@ and phi (ast:Fknormal.t) : Fknormal.t =
 
 (*------THE-VERSION-AFTER-TRUE-CLOSURE--------------------------------------*)
 let closures = Hashtbl.create 10
-let known = ref ["_min_caml_print_int"; "_min_caml_print_newline"] (*TODO: add the others*)
+(* let known = ref ["_min_caml_print_int"; "_min_caml_print_newline"] (*TODO: add the others*) *)
 (* (a try at using sets, but couldn't be bothered to check if comparison works properly. Maybe come back later)
 module SS = Set.Make(struct
                         let compare = fun (x,_)->fun (y,_)->Pervasives.compare x y
@@ -345,7 +347,6 @@ and phi (ast:t) : t =
     |AppD(a, b) when List.mem a !known -> AppD(a, b)
     |AppD(a, b) -> let clos_name = a^"c" (*Hashtbl.find closures a*) in
                    AppC(clos_name, b)
- 
     |_ -> ast
 
 (*--------------------------------------------------------------------------*)

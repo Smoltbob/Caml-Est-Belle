@@ -13,6 +13,7 @@ type t =
     | Var of Id.t
     | Eq of Id.t * t
     | Call of Id.t * formal_args
+    | CallC of Id.t * formal_args
     | If of Id.t * t * asmt * asmt * string
     | MemAcc of Id.t * t
     | MemAff of Id.t * t * Id.t
@@ -22,7 +23,7 @@ type t =
 and formal_args = Id.t list
 
 and asmt =
-    | LetCls of Id.t * Id.l * formal_args * asmt
+    | LetCls of Id.t * t * asmt
     | Let of Id.t * t * asmt
     | Expression of t
     (* | Additional case for parenthesis ? Don't think so ? *)
