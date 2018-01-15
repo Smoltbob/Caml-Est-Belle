@@ -4,8 +4,8 @@ open Printf;;
 
 let active = ref []
 let spill = ref []
-let free_reg = ref ["R0";"R1";"R2";"R3";"R4";"R5";"R6";"R7";"R8";"R9";"R10";"R12";]
-(*let free_reg = ref["R0";"R1";]*)
+(*let free_reg = ref ["R0";"R1";"R2";"R3";"R4";"R5";"R6";"R7";"R8";"R9";"R10";"R12";]*)
+let free_reg = ref["R0";"R1";"R2"]
 let args_counter = ref 0
 let spill_counter = ref 0
 
@@ -42,17 +42,23 @@ let rec spill_active_var id l=
 	let fst_id = (fst_ning (List.hd !active)) in
 	match l with
 	|t::q -> if (fst t) = fst_id then 
-				(let reg_id:Id.t = sprintf "f_%s__%i" (Id.to_string (snd_ning (List.hd !active))) (snd t) in
+				(let id_pre = (if (String.sub (Id.to_string (snd_ning (List.hd !active))) 0 1) = "f" then
+				(String.sub (Id.to_string (snd_ning (List.hd !active))) 2 2)
+			else
+				(Id.to_string (snd_ning (List.hd !active)))) in
+				let reg_id:Id.t = sprintf "f_%s__%i" (id_pre) (snd t) in
 				active := List.tl !active;
 				reg_id)
 			else spill_active_var id q
 	|[] ->  spill_counter := !spill_counter + 4;
-			active := List.tl !active;
-			let reg_id:Id.t = sprintf "f_%s__%i" (Id.to_string (snd_ning (List.hd !active))) (!spill_counter) in
+			let id_pre = (if (String.sub (Id.to_string (snd_ning (List.hd !active))) 0 1) = "f" then
+				(String.sub (Id.to_string (snd_ning (List.hd !active))) 2 2)
+			else
+				(Id.to_string (snd_ning (List.hd !active)))) in
+				
+			let reg_id:Id.t = sprintf "f_%s__%i" (id_pre) (!spill_counter) in
 			spill := (fst_id, !spill_counter) :: !spill;
-			fprintf stdout "after spill_active_var\n";
-			print_spill !spill;
-			fprintf stdout "end spill_active_varf\n";
+			active := List.tl !active;
 			reg_id
 	
 
@@ -60,21 +66,13 @@ let rec spill_active_var id l=
 @param id a variable, in type Id.t
 @param l active list
 @return active list *)
-let rec expire_active_list id l live_interval_s_ht = 
-	if (List.length l ) <> 0 then
-    fprintf stdout "x2_e = %i, %s_s = %i" (trd (List.hd l)) (id) (Hashtbl.find live_interval_s_ht id);
+let rec expire_active_list id l live_interval_s_ht =
 	match l with
 	|t::q -> if (trd t) < (Hashtbl.find live_interval_s_ht id) then 
 				(free_reg := (snd_ning t) :: !free_reg;
-				fprintf stdout "after expire_active_list\n ";
-				print_active !active;
-				fprintf stdout "end expire_active_list\n";
 				q)
 			else t:: (expire_active_list id q live_interval_s_ht)
-	|[] -> fprintf stdout "after expire_active_list\n ";
-			print_active !active;
-			fprintf stdout "end expire_active_list\n";
-			[]
+	|[] -> []
 
 (** register_alloc is to alloc a register to a new defined variable,
 we will first expire_active_list, 
@@ -83,9 +81,6 @@ then check the length of active list, if it's equal to the number of registers w
 @return "R%i" or "f_R%i__add"(return value of spill_active_var)*)
 let register_alloc id live_interval_s_ht=
 	active := expire_active_list id !active live_interval_s_ht;
-	fprintf stdout "1..\n";
-	print_active !active;
-	fprintf stdout "2..\n";
 	if (List.length !free_reg) = 0 then
 		spill_active_var id !spill
 	else 
@@ -98,20 +93,25 @@ let rec load_spill_active_var id l addr live_interval_e_ht =
 	let fst_ning_id = (fst_ning (List.hd !active)) in
 	match l with
 	|t::q -> if (fst t) = fst_ning_id then 
-				(let reg_id:Id.t = sprintf "f_%s_%i_%i" (Id.to_string (snd_ning (List.hd !active))) (addr) (snd t) in
+				(let id_pre = (if (String.sub (Id.to_string (snd_ning (List.hd !active))) 0 1) = "f" then
+				(String.sub (Id.to_string (snd_ning (List.hd !active))) 2 2)
+			else
+				(Id.to_string (snd_ning (List.hd !active)))) in
+				let reg_id:Id.t = sprintf "f_%s_%i_%i" (id_pre) (addr) (snd t) in
 				active := List.tl !active;
-				active := add_to_active (id, (snd_ning (List.hd !active)), (Hashtbl.find live_interval_e_ht id)) !active;
+				active := add_to_active (id, id_pre, (Hashtbl.find live_interval_e_ht id)) !active;
 				reg_id)
 			else 
 				load_spill_active_var id q addr live_interval_e_ht
 	|[] ->  spill_counter := !spill_counter + 4;
 			active := List.tl !active;
-			let reg_id:Id.t = sprintf "f_%s_%i_%i" (Id.to_string (snd_ning (List.hd !active))) (addr) (!spill_counter) in
-			active := add_to_active (id, (snd_ning (List.hd !active)), (Hashtbl.find live_interval_e_ht id)) !active;
+			let id_pre = (if (String.sub (Id.to_string (snd_ning (List.hd !active))) 0 1) = "f" then
+				(String.sub (Id.to_string (snd_ning (List.hd !active))) 2 2)
+			else
+				(Id.to_string (snd_ning (List.hd !active)))) in
+			let reg_id:Id.t = sprintf "f_%s_%i_%i" (id_pre) (addr) (!spill_counter) in
+			active := add_to_active (id, (id_pre), (Hashtbl.find live_interval_e_ht id)) !active;
 			spill := (fst_ning_id, !spill_counter) :: !spill;
-			fprintf stdout "after spill_active_var\n";
-			print_spill !spill;
-			fprintf stdout "end spill_active_var\n";
 			reg_id
 	
 
@@ -125,7 +125,11 @@ let load_alloc_reg id addr live_interval_s_ht live_interval_e_ht =
 		load_spill_active_var id !spill addr live_interval_e_ht
 	else
 		(spill_counter := !spill_counter + 4;
-		active := add_to_active (id, (List.hd !free_reg), (Hashtbl.find live_interval_e_ht id) ) !active;
+		let id_pre = (if (String.sub (Id.to_string (snd_ning (List.hd !active))) 0 1) = "f" then
+				(String.sub (Id.to_string (snd_ning (List.hd !active))) 2 2)
+			else
+				(Id.to_string (snd_ning (List.hd !active)))) in
+		active := add_to_active (id, id_pre, (Hashtbl.find live_interval_e_ht id) ) !active;
 		let reg_id:Id.t = sprintf "f_%s_%i_" (List.hd !free_reg) (!spill_counter) in
 		reg_id)
 	
@@ -154,7 +158,11 @@ let rec alloc_id id l  live_interval_s_ht live_interval_e_ht =
 let alloc_id_def id live_interval_s_ht live_interval_e_ht = 
 	let reg_id = register_alloc id live_interval_s_ht in
 	if (not (Hashtbl.mem live_interval_e_ht id)) then failwith ("failure with finding a defined local variable in live_interval_e");
-	active := add_to_active (id, reg_id, (Hashtbl.find live_interval_e_ht id)) !active;
+	let id_pre = (if (String.sub reg_id 0 1) = "f" then
+				(String.sub reg_id 2 2)
+			else
+				reg_id) in
+	active := add_to_active (id, id_pre, (Hashtbl.find live_interval_e_ht id)) !active;
 	print_active !active;
 	reg_id
 
@@ -171,7 +179,7 @@ let rec alloc_asm asm live_interval_s_ht live_interval_e_ht =
 	match asm with
 	|Let (id, e, a) -> let reg_id = alloc_id_def id live_interval_s_ht live_interval_e_ht in 
 					   let reg_e = alloc_exp e live_interval_s_ht live_interval_e_ht in 
-					   let reg_asm = alloc_asm a live_interval_s_ht live_interval_e_ht in 
+					   let reg_asm = alloc_asm a live_interval_s_ht live_interval_e_ht in
 					   Let (reg_id, reg_e, reg_asm)
 	|Expression e -> let reg_e = alloc_exp e live_interval_s_ht live_interval_e_ht in Expression reg_e 
 	
@@ -182,7 +190,6 @@ let rec active_args args live_interval_e_ht =
 			let x:Id.t = sprintf "R%i" (!args_counter - 1) in 
 			free_reg := List.tl !free_reg;
 			active := add_to_active (t, x, (Hashtbl.find live_interval_e_ht t)) !active;
-			print_active !active;  
 			x :: (active_args q live_interval_e_ht)
 	|[] -> []
 	
