@@ -4,8 +4,8 @@ open Printf;;
 
 let active = ref []
 let spill = ref []
-(* let free_reg = ref ["R0";"R1";"R2";"R3";"R4";"R5";"R6";"R7";"R8";"R9";"R10";"R12";] *)
-let free_reg = ref["R0";"R1";]
+let free_reg = ref ["R0";"R1";"R2";"R3";"R4";"R5";"R6";"R7";"R8";"R9";"R10";"R12";]
+(*let free_reg = ref["R0";"R1";]*)
 let args_counter = ref 0
 let spill_counter = ref 0
 
@@ -162,8 +162,8 @@ let rec alloc_exp e live_interval_s_ht live_interval_e_ht =
 	match e with
 	|Int i -> Int i
 	|Var id -> let reg_id = alloc_id id !active live_interval_s_ht live_interval_e_ht in Var reg_id
-	|Add (a, b) -> let reg_a =alloc_id a !active live_interval_s_ht live_interval_e_ht in let reg_b = alloc_id b !active live_interval_s_ht live_interval_e_ht in Add (reg_a, reg_b) 
-	|Sub (a, b) -> let reg_a =alloc_id a !active live_interval_s_ht live_interval_e_ht in let reg_b = alloc_id b !active live_interval_s_ht live_interval_e_ht in Sub (reg_a, reg_b) 
+	|Add (a, b) -> let reg_a =alloc_id a !active live_interval_s_ht live_interval_e_ht in let reg_b = alloc_exp b live_interval_s_ht live_interval_e_ht in Add (reg_a, reg_b) 
+	|Sub (a, b) -> let reg_a =alloc_id a !active live_interval_s_ht live_interval_e_ht in let reg_b = alloc_exp b live_interval_s_ht live_interval_e_ht in Sub (reg_a, reg_b) 
 	|Eq (a, exp) -> let reg_a =alloc_id a !active live_interval_s_ht live_interval_e_ht in let reg_exp = alloc_exp exp live_interval_s_ht live_interval_e_ht in Eq (reg_a, reg_exp)
 	| _ -> failwith ("match failure with blinearscan expression: TODO")
 	

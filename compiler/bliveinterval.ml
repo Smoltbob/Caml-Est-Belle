@@ -22,8 +22,8 @@ let rec expire_asm_exp e counter =
 	(*look for var in e*)
 	match e with	
 	| Int a -> ()
-	| Add (a, b) -> modify_live_interval_e a counter; modify_live_interval_e b counter
-	| Sub (a, b) -> modify_live_interval_e a counter; modify_live_interval_e b counter
+	| Add (a, b) -> modify_live_interval_e a counter; expire_asm_exp b counter
+	| Sub (a, b) -> modify_live_interval_e a counter; expire_asm_exp b counter
 	| Var a -> modify_live_interval_e a counter
 	| Eq (a, exp) -> modify_live_interval_e a counter; expire_asm_exp exp counter
 	| _ -> failwith ("match failure with bliveinterval expression")
