@@ -23,6 +23,13 @@ let rec to_fargs (l:Fclosure.t list) = match l with
     | [] -> []
 
 
+let rec mem_fv_letrec (name:Id.t) fv count call = match fv with
+    | t::q -> Let (
+                t,
+                MemAcc ("%"^name, Int (4*count)),
+                mem_fv_letrec name q (count+1) call) (*TODO change the name of tu+id*)
+    | [] -> call
+
 (*TODO use this function to alloc the pointer of the function as well as the pointers to the fv*)
 let rec mem_fv_closure addr fv count call = match fv with
     | t::q -> Let (
@@ -100,7 +107,7 @@ let rec asml_list c = match c with
     | LetRec (f,a) -> ({
                         name = fst f.name;
                         args = List.map fst f.args;
-                        body = (asml_exp f.body) (*TODO memacc *)
+                        body = mem_fv_letrec (fst f.name) (List.map fst f.formal_fv) 1 (asml_exp f.body)
                       })
                       ::(asml_list a)
     | _ -> [create_main c]
@@ -117,6 +124,9 @@ let rec expression_to_string exp = match exp with
     | Sub (e1, e2) -> sprintf "sub %s %s" e1 (expression_to_string e2)
     | Call (f, args) -> sprintf "call %s %s"
         f
+        (infix_to_string (fun x->x) args " ")
+    | CallC (c, args) -> sprintf "callclo %s %s"
+        c
         (infix_to_string (fun x->x) args " ")
     | New i -> sprintf "new %s" (expression_to_string i)
     | MemAcc (id, i) -> sprintf "mem(%s+%s)"
@@ -140,7 +150,7 @@ let rec asmt_to_string (body:Bsyntax.asmt) = match body with
     | Expression t -> expression_to_string t
 
 let fundef_to_string (fund:fundef) =
-    sprintf "let %s %s =\n\t%s in\n"
+    sprintf "let %s %s =\n\t%s\n"
         (Id.to_string fund.name)
         (infix_to_string (fun x -> (Id.to_string x)) fund.args " ")
         (asmt_to_string fund.body)
