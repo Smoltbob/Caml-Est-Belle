@@ -39,8 +39,6 @@ test: all
 
 clean:
 	rm -rf _build
-
-mrproper: clean
 	rm -f mincamlc
 	rm -f armgen
 	rm -f asmlparse

@@ -59,8 +59,8 @@ and scan_fundef clos :t = match clos with
     | AppD (id, l) ->   if Hashtbl.mem hash_fundef id then
                             AppD ("_"^id, l)
                         else
-                            (known := ("min_caml_"^id)::(!known);
-                            AppD ("min_caml_"^id, l))
+                            (known := ("_min_caml_"^id)::(!known);
+                            AppD ("_min_caml_"^id, l))
     | AppC (id, l) -> AppC (id, l)
     | _ -> clos
 
@@ -269,7 +269,7 @@ let test_list l bv =
 let rec find_fv ast args =
     match ast with
     |Let (a,b,c) -> union (find_fv b args) (find_fv c (a::args))
-    |LetRec (a, b) -> union (find_fv a.body (a.name::args)) (find_fv b (a.name::args))
+    |LetRec (a, b) -> union (find_fv a.body ((a.name::a.args)@args)) (find_fv b ((a.name::a.args)@args))
     |Unit -> []
     |Bool b -> []
     |Int i -> []
