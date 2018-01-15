@@ -75,6 +75,7 @@ let rec operation_to_arm op e1 e2 dest =
          | Int i -> let store_arg2 = sprintf "\tmov r5, #%i\n" i in
                     let return_result = sprintf "\t%s r6, r4, r5\n%s" op (store_in_stack 6 dest) in
                     sprintf "%s%s%s" store_arg1 store_arg2 return_result
+         | _ -> failwith "Unauthorized type"
         )
 
 (** This function is to convert assignments into arm code 
@@ -97,6 +98,7 @@ let rec exp_to_arm exp dest =
                            let prepare_arg = sprintf "\tmov r0, #%s\n" (string_of_int i) in
                            let call_alloc = sprintf "\tbl talloc\n%s" (store_in_stack 0 dest) in
                                sprintf "%s%s%s" prepare_arg store_string call_alloc
+                | _ -> failwith "Unauthorized type"
     )
     (* TODO factorise *)
     | MemAcc (id1, id2) ->
@@ -108,6 +110,7 @@ let rec exp_to_arm exp dest =
                             sprintf "%s%s%s%s" store_arg1 store_arg2 load mov 
                 | Int i ->  let store_arg2 = sprintf "\tmov r5, #%i\n" i in
                             sprintf "%s%s%s%s" store_arg1 store_arg2 load mov 
+                | _ -> failwith "Unauthorized type"
                 );
 
                 
@@ -122,6 +125,7 @@ let rec exp_to_arm exp dest =
                         sprintf "%s%s%s%s%s%s" saver7 store_arg1 store_arg2 prepstore store restorer7
             | Int i ->  let store_arg2 = sprintf "\tmov r5, #%i\n" i in
                         sprintf "%s%s%s%s%s%s" saver7 store_arg1 store_arg2 prepstore store restorer7
+            | _ -> failwith "Unauthorized type"
             )
 
     | If (id1, e1, asmt1, asmt2, comp) ->
@@ -138,6 +142,7 @@ let rec exp_to_arm exp dest =
                         sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
             | Int i  -> let store_arg2 = sprintf "\tmov r5,#%i\n" i in 
                         sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
+            | _ -> failwith "Unauthorized type"
             )
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
