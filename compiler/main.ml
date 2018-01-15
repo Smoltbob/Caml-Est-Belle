@@ -54,7 +54,11 @@ let file fin fout =
        if !type_check_only then
        begin
          let s = (Fparser.exp Flexer.token (Lexing.from_channel inchan)) in
-           Typechecking.genEquations s Unit; print_string "well typed\n"
+         let env =  [("print_int" ,Fun( [Int] , Unit ));("print_float" ,Fun( [Float] , Unit ))] in
+          let eq= Typechecking.genEquations env s Unit in 
+           (* Typechecking.printEq eq;*)
+           Typechecking.unification eq
+        
        end
      else
          begin

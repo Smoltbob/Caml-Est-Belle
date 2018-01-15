@@ -15,6 +15,21 @@ let rec addmem_to_letrecs l = match l with
 let rec addmem_to_letrecs_with_fv toplvl = match toplvl with
     | Fundefs l -> addmem_to_letrecs l *)
 
+let rec to_fargs (l:Fclosure.t list) = match l with
+    | t::q -> (* we can only have Var in the t list *)
+                (match t with
+                | Var x -> x::(to_fargs q)
+                | _ -> failwith "argument not Var")
+    | [] -> []
+
+
+let rec mem_fv_letrec (name:Id.t) fv count call = match fv with
+    | t::q -> Let (
+                t,
+                MemAcc ("%"^name, Int (4*count)),
+                mem_fv_letrec name q (count+1) call) (*TODO change the name of tu+id*)
+    | [] -> call
+
 (*TODO use this function to alloc the pointer of the function as well as the pointers to the fv*)
 let rec mem_fv_closure addr fv count call = match fv with
     | t::q -> Let (
@@ -34,9 +49,9 @@ let rec asml_t_triv t = match t with
     | Neg x -> (match x with
                         | (Var y) -> Neg y
                         | _ -> failwith "matchfailure Neg")
-    (*| FNeg x -> (match x with
+    (* | FNeg x -> (match x with
                         | (Var y) -> Fneg y
-                        | _ -> failwith "matchfailure FNeg")*)
+                        | _ -> failwith "matchfailure FNeg") *)
     (* | FSub (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Fsub (x2, y2)
                         | _ -> failwith "matchfailure FSub")
@@ -63,31 +78,27 @@ let rec asml_t_triv t = match t with
         in
         Call (f, trans l))
     (*TODO : unnest the letcls if it is inside another let  and replace appc with callc*)
-    | AppC (c, l) -> Nop
+    | AppC (c, l) -> CallC (c, to_fargs l)
     (* | AppC (c, l) -> LetCls (c, New (c, 1 + List.length fv),
                         Let ("tu0", MemAff (addr, Int 0, c (*TODO retrieve the addr of c*)),
                         mem_fv_closure addr fv 4 (Expression (CallC (c, l))))) *)
-    | LetCls (a,b,c,d) -> Nop
+    (* | LetCls (a,b,c,d) -> Nop *)
     | _ -> failwith "asml_t_triv matchfailure not implemented"
-
-let rec to_fargs (l:Fclosure.t list) = match l with
-    | t::q -> (* we can only have Var in the t list *)
-                (match t with
-                | Var x -> x::(to_fargs l)
-                | _ -> failwith "argument not Var")
-    | [] -> []
 
 (** This function this is a recursive function on Let, AppD and (LetRec TBA). It calls asml_t_triv when it encounters a simple case that ends the recursion like a sum.
 @param c is an Fclosure.t
 @return an Bsyntax.asmt*)
 let rec asml_exp (c:Fclosure.t) :asmt = match c with
     (*TODO unnest the letcls from the lets*)
-    | Let (x, AppC (c,l), b) -> let fv = Hashtbl.find hash_fundef (String.sub c 1 (String.length c)) in
+    (* | Let (x, AppC (c,l), b) ->
                         LetCls (String.sub c 1 (String.length c), New (Int (1 + List.length fv)),
                         Let ("tu0", MemAff (c, Int 0, c (*TODO retrieve the addr of c*)),
-                        mem_fv_closure c fv 4 (Let (fst x, CallC (c, to_fargs l), asml_exp b))))
+                        mem_fv_closure c fv 4 (Let (fst x, CallC (c, to_fargs l), asml_exp b)))) *)
     | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
-    | LetCls (id, id2, l, t) -> Expression Nop(*TODO*)
+    | LetCls (clo, f, l, t) -> let fv = Hashtbl.find hash_fundef (String.sub f 1 ((String.length f) - 1)) in
+                        LetCls (clo, New (Int (1 + List.length fv)),
+                        Let ("tu0", MemAff (clo, Int 0, clo (*TODO retrieve the addr of c*)),
+                        mem_fv_closure f fv 4 (asml_exp t)))
     | _ -> Expression (asml_t_triv c)
 
 let create_main c = {name = "_"; args = []; body = asml_exp c}
@@ -96,7 +107,7 @@ let rec asml_list c = match c with
     | LetRec (f,a) -> ({
                         name = fst f.name;
                         args = List.map fst f.args;
-                        body = (asml_exp f.body)
+                        body = mem_fv_letrec (fst f.name) (List.map fst f.formal_fv) 1 (asml_exp f.body)
                       })
                       ::(asml_list a)
     | _ -> [create_main c]
@@ -113,6 +124,9 @@ let rec expression_to_string exp = match exp with
     | Sub (e1, e2) -> sprintf "sub %s %s" e1 (expression_to_string e2)
     | Call (f, args) -> sprintf "call %s %s"
         f
+        (infix_to_string (fun x->x) args " ")
+    | CallC (c, args) -> sprintf "callclo %s %s"
+        c
         (infix_to_string (fun x->x) args " ")
     | New i -> sprintf "new %s" (expression_to_string i)
     | MemAcc (id, i) -> sprintf "mem(%s+%s)"
@@ -136,7 +150,7 @@ let rec asmt_to_string (body:Bsyntax.asmt) = match body with
     | Expression t -> expression_to_string t
 
 let fundef_to_string (fund:fundef) =
-    sprintf "let %s %s =\n\t%s in\n"
+    sprintf "let %s %s =\n\t%s\n"
         (Id.to_string fund.name)
         (infix_to_string (fun x -> (Id.to_string x)) fund.args " ")
         (asmt_to_string fund.body)
