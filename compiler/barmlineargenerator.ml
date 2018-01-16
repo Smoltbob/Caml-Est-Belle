@@ -25,16 +25,17 @@ let rec resolve_linear_scan_register string_code =
         sprintf "r%s" (parse_string_code string_code 3 "")
 
 let rec resolve_store_load string_code =
+    print_string string_code; print_newline ();
     if string_code.[0] = 'f' then
         let reg_number = parse_string_code string_code 3 "" in
         let load_address = parse_string_code string_code (4 + (String.length reg_number)) "" in
         let store_address = parse_string_code string_code (5 + (String.length reg_number) + (String.length load_address)) "" in
-        let load_string = if load_address = "" then "" else sprintf "\tldr r%s, [fp, #-%s]\n" reg_number load_address in
+        let load_string = if load_address = "" then "" else sprintf "\tldr r%s, [fp, #%s]\n" reg_number load_address in
         let store_string = if store_address = "" then
             ""
         else
             if int_of_string store_address <= !current_frame_size then
-                sprintf "\tstr r%s, [fp, #-%s]\n" reg_number store_address
+                sprintf "\tstr r%s, [fp, #%s]\n" reg_number store_address
             else
                 (* ocaml ??? *)
                 let out = sprintf "\tstmfd sp!, r%s\n" reg_number in current_frame_size := !current_frame_size + 4; out
@@ -53,7 +54,7 @@ let rec arg_to_arm arg_code i =
     if arg_code.[0] = 'R' then
         sprintf "\tmov r%i, %s\n" i (resolve_linear_scan_register arg_code)
     else
-        resolve_store_load arg_code
+        sprintf "%s\tmov r%i, %s\n" (resolve_store_load arg_code) i (resolve_linear_scan_register arg_code)
 
 let rec stack_remaining_arguments args =
     match args with
@@ -69,7 +70,7 @@ let rec to_arm_formal_args args i =
     match args with
     | [] -> sprintf ""
     | l when (List.length l <= 4) -> sprintf "%s%s" (arg_to_arm (List.hd l) i) (to_arm_formal_args (List.tl l) (i+1))
-    | a1::a2::a3::a4::l -> sprintf "%s%s" (to_arm_formal_args (a1::a2::a3::a4::[]:string list)  0) (stack_remaining_arguments l)
+    | a1::a2::a3::a4::l -> sprintf "%s%s" (to_arm_formal_args (a1::a2::a3::a4::[]:Id.t list)  0) (stack_remaining_arguments l)
     | _ -> failwith "Error while parsing arguments"
 
 let rec operation_to_arm op e1 e2 dest =
@@ -101,7 +102,7 @@ let rec exp_to_arm exp dest =
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
     | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
-    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1 0) (remove_underscore l)
+    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s%s\tbl %s\n" (resolve_store_load dest) (to_arm_formal_args a1 0) (remove_underscore l)
     (*
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
