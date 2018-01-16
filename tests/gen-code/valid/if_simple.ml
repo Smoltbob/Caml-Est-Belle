@@ -1,6 +1,1 @@
-let rec f x =
-  if 1 = 1 then
-    print_int (x + 1)
-  else
-    print_int x
-in f 0
+let x = if 1=1 then 1 else 0 in print_int x
