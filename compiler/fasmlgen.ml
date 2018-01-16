@@ -4,6 +4,9 @@ open Fclosure;;
 open Printf;;
 open Bsyntax;;
 
+(** Transforms a list of args from fclosure into a list of args of bsyntax
+    @param l is a Fclosure.t list
+    @return formal_args *)
 let rec to_fargs (l:Fclosure.t list) = match l with
     | t::q -> (* we can only have Var in the t list *)
                 (match t with
@@ -11,7 +14,12 @@ let rec to_fargs (l:Fclosure.t list) = match l with
                 | _ -> failwith "argument not Var")
     | [] -> []
 
-
+(** Creates the memory access lines to retrieve the free variables from memory and appends call at the end.
+    @param name is an Id.t
+    @param fv is the list of free variables
+    @param count is used to count the offset for the variables
+    @param call is an asmt
+    @return asmt *)
 let rec mem_fv_letrec (name:Id.t) fv count call = match fv with
     | t::q -> Let (
                 t,
@@ -19,17 +27,22 @@ let rec mem_fv_letrec (name:Id.t) fv count call = match fv with
                 mem_fv_letrec name q (count+1) call)
     | [] -> call
 
-(*TODO use this function to alloc the pointer of the function as well as the pointers to the fv*)
-let rec mem_fv_closure addr fv count call = match fv with
+(** Creates the memory affectation lines to put the free variables in memory and appends call at the end of the instructions.
+    @param name is an Id.t
+    @param fv is the list of free variables
+    @param count is used to count the offset for the variables
+    @param call is an asmt
+    @return asmt *)
+let rec mem_fv_closure name fv count call = match fv with
     | t::q -> Let (
                 "tu"^(string_of_int count),
-                MemAff (addr, Int (4*count), t),
-                mem_fv_closure addr q (count+1) call)
+                MemAff (name, Int (4*count), t),
+                mem_fv_closure name q (count+1) call)
     | [] -> call
 
 (** This function takes care of the base cases such as sums and variables.
-@param t is a Fclosure.t
-@return a Bsyntax.t *)
+    @param t is a Fclosure.t
+    @return a Bsyntax.t *)
 let rec asml_t_triv t = match t with
     | Unit -> Nop
     | Int a -> Int a
@@ -65,7 +78,6 @@ let rec asml_t_triv t = match t with
                         Let (f^"aux", MemAcc (f, Int 0),*)
                         Call (f, to_fargs l)
     | AppC (c, l) -> CallClo (c, to_fargs l)
-    (*TODO check the requierments on types for get and put*)
     | Get (a, b) -> (match a, b with
                         | (Var a2, Var b2) -> MemAcc (a2, Var b2)
                         | _ -> failwith "matchfailure Get")
@@ -80,9 +92,9 @@ let rec asml_t_triv t = match t with
     (* | IfBool (t1, t2, t3) -> If (id1, t, asmt, asmt, string) *)
     | _ -> failwith "asml_t_triv matchfailure not implemented"
 
-(** This function this is a recursive function on Let, AppD and (LetRec TBA). It calls asml_t_triv when it encounters a simple case that ends the recursion like a sum.
-@param c is an Fclosure.t
-@return an Bsyntax.asmt*)
+(** This function is a recursive function on Let and LetCls. It calls asml_t_triv when it encounters a simple case that ends the recursion (like a sum for instance)
+    @param c is an Fclosure.t
+    @return a Bsyntax.asmt*)
 and asml_exp (c:Fclosure.t) :asmt = match c with
     | Let (x, a, b) -> Let (fst x, asml_t_triv a, asml_exp b)
     | LetCls (clo, f, l, t) ->
@@ -91,8 +103,15 @@ and asml_exp (c:Fclosure.t) :asmt = match c with
                         mem_fv_closure f l 1 (asml_exp t)))
     | _ -> Expression (asml_t_triv c)
 
+(** Creates the "let _" main and add asml_exp c to it's body to use the types defined in bsyntax.
+    @param c is an Fclosure.t
+    @return a fundef*)
 let create_main c = {name = "_"; args = []; body = asml_exp c}
 
+(** Executes asml_exp on the body of the function definitions and adds the memory access to the free variable if any.
+The closure starts with letrecs thanks to the previous unnesting. Anything that isn't a letrec is added to the main let using create_main.
+    @param c is a Fclosure.t
+    @return a fundef list*)
 let rec asml_list c = match c with
     | LetRec (f,a) -> ({
                         name = fst f.name;
@@ -102,9 +121,14 @@ let rec asml_list c = match c with
                       ::(asml_list a)
     | _ -> [create_main c]
 
+(** Create a toplevel containing asml_list to c
+    @param c Fclosure.t
+    @return toplevel*)
 let asml_head c = Fundefs (asml_list c)
 
-
+(** Creates a string from a simple expressions of type Bsyntax.t recursively and applies asmt_to_string to asmts
+    @param exp is a Bsyntax.t
+    @return a string*)
 let rec expression_to_string exp = match exp with
     | Nop -> "nop"
     | Int i -> string_of_int i
@@ -134,7 +158,10 @@ let rec expression_to_string exp = match exp with
         (asmt_to_string b)
     | _ -> "\n[[ match not found in asml gen ]]\n"
 
-and asmt_to_string (body:Bsyntax.asmt) = match body with
+(** Creates a string from an asmt of type Bsyntax.asmt recursively and applies expression_to_string to simple expressions of types Bsyntax.t
+    @param a is an asmt
+    @return a string*)
+and asmt_to_string (a:Bsyntax.asmt) = match a with
     | Let (id, e1, e2) -> sprintf "let %s = %s in\n\t%s"
         (Id.to_string id)
         (expression_to_string e1)
@@ -145,15 +172,24 @@ and asmt_to_string (body:Bsyntax.asmt) = match body with
         (asmt_to_string e2)
     | Expression t -> expression_to_string t
 
+(** Creates a string from a fundef and applies asmt_to_string to asmts
+    @param fund is a fundef
+    @return a string*)
 let fundef_to_string (fund:fundef) =
     sprintf "let %s %s =\n\t%s\n"
         (Id.to_string fund.name)
         (infix_to_string (fun x -> (Id.to_string x)) fund.args " ")
         (asmt_to_string fund.body)
 
-let rec list_to_string (l) = match l with
+(** Creates a string from a fundef list
+    @param l is a fundef list
+    @return a string*)
+let rec list_to_string l = match l with
     | t::q -> sprintf "%s\n\n%s" (fundef_to_string t) (list_to_string q)
     | [] -> ""
 
+(** Matches a toplevel to return the string of a fundef list
+    @param toplvl is a toplevel
+    @return a string*)
 let toplevel_to_string (toplvl:toplevel) = match toplvl with
     | Fundefs l -> list_to_string l
