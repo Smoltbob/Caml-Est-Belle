@@ -55,6 +55,13 @@ let rec arg_to_arm arg_code i =
     else
         resolve_store_load arg_code
 
+let rec stack_remaining_arguments args =
+    match args with
+    | [] -> ""
+    | arg::remaining -> let load_store_arg = resolve_store_load arg in
+                        let register_arg = resolve_linear_scan_register arg in
+                        sprintf "%s%s\tstmfd sp!, {r%s}\n" (stack_remaining_arguments remaining) load_store_arg register_arg
+
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
 @param args the list of arguments, in type string
 @return unit *)
@@ -62,7 +69,7 @@ let rec to_arm_formal_args args i =
     match args with
     | [] -> sprintf ""
     | l when (List.length l <= 4) -> sprintf "%s%s" (arg_to_arm (List.hd l) i) (to_arm_formal_args (List.tl l) (i+1))
-    (*| a1::a2::a3::a4::l -> sprintf "%s%s" (to_arm_formal_args (a1::a2::a3::a4::[]:string list)  0) (stack_remaining_arguments l)*)
+    | a1::a2::a3::a4::l -> sprintf "%s%s" (to_arm_formal_args (a1::a2::a3::a4::[]:string list)  0) (stack_remaining_arguments l)
     | _ -> failwith "Error while parsing arguments"
 
 let rec operation_to_arm op e1 e2 dest =
@@ -94,7 +101,7 @@ let rec exp_to_arm exp dest =
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
     | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
-    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s @no return value for now\n" (to_arm_formal_args a1 0) (remove_underscore l)
+    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1 0) (remove_underscore l)
     (*
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
@@ -137,24 +144,25 @@ let rec exp_to_arm exp dest =
                         sprintf "%s%s%s%s%s%s" saver7 store_arg1 store_arg2 prepstore store restorer7
             | _ -> failwith "Unauthorized type"
             )
-
+*)
     | If (id1, e1, asmt1, asmt2, comp) ->
             let counter = genif() in 
-            let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
-            let cmpop = sprintf "\tcmp r4, r5\n" in
+            let store_arg1 = resolve_store_load id1 in
+            let register_arg1 = resolve_linear_scan_register id1 in
             let branch1 = sprintf "\t%s if%s\n" comp counter in
             let codeelse = sprintf "%s" (asmt_to_arm asmt2 dest) in
             let branch2 = sprintf "\tb end%s\n\n" counter in
             let codeif = sprintf "if%s:\n%s\n" counter (asmt_to_arm asmt1 dest) in
             let endop = sprintf "end%s:\n" counter in
             (match e1 with
-            | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in 
+            | Var id -> let store_arg2 = resolve_store_load id in
+                        let register_arg2 = resolve_linear_scan_register id in
+                        let cmpop = sprintf "\tcmp r%s, r%s\n" register_arg1 register_arg2 in
                         sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
-            | Int i  -> let store_arg2 = sprintf "\tmov r5,#%i\n" i in 
-                        sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
+            | Int i  -> let cmpop = sprintf "\tcmp r%s, #%i\n" register_arg1 i in
+                        sprintf "%s%s%s%s%s%s%s" store_arg1 cmpop branch1 codeelse branch2 codeif endop
             | _ -> failwith "Unauthorized type"
             )
-            *)
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
@@ -168,27 +176,17 @@ and asmt_to_arm asm dest =
     | Let (id, e, a) -> let exp_string = exp_to_arm e id in sprintf "%s%s" exp_string (asmt_to_arm a "R0")
     | Expression e -> exp_to_arm e dest
 
-(* Helper functions for fundef *)
-let rec pull_remaining_args l =
-    match l with
-    | [] -> ""
-    | arg::args -> sprintf "\tldmfd r5!, {r4}\n\tstmfd sp!, {r4}\n%s" (pull_remaining_args args)
-
-let rec get_args args =
-    if List.length args <= 4 then
-        ""
-    else
-        failwith "Functions with more than 4 arguments not handled yet in linear scaning"
-
 (** Puts the stack pointer where it was before a function call in order to free
  * space.
  * If we had less than 4 arguments then the stack was not used for them,
  * otherwise it was. *)
 let rec epilogue args =
-    if (List.length args <= 4) then
-        "\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n"
-    else
-        sprintf "\tmov sp, fp\t\nldmfd sp!, {fp, lr}\t\nadd sp, sp, #%i\t\nbx lr\n\n\n" (4 * ((List.length args) - 4))
+    let remove_arguments = if (List.length args <= 4) then
+                                ""
+                           else
+                                sprintf "\tadd sp, sp, #%i\n" (4 * ((List.length args) - 4))
+    in
+    sprintf "\tmov sp, fp\n\tldmfd sp!, {fp, lr}\n%s\tldmfd sp!, {r4-r10, r12} @caller registers restoration\n\tbx lr\n\n\n" remove_arguments
 
 (** This function handles the printing of a given function
 @param fundef program in type fundef
@@ -197,12 +195,11 @@ let rec fundef_to_arm fundef =
     current_frame_size := 0;
     let arm_name = remove_underscore fundef.name in
     let label = sprintf "\t.globl %s\n%s:\n" arm_name arm_name in
-    let prologue = sprintf "\t@prologue\n\tstmfd sp!, {fp, lr}\n" in
+    let prologue = sprintf "\t@prologue\n\tstmfd sp!, {r4-r10, r12} @caller-saved registers\n\tstmfd sp!, {fp, lr}\n" in
     let mov = sprintf "\tmov fp, sp\n\n" in
-    let get_args = sprintf "\t@get arguments\n\t@stack arguments not implemented yet\n%s" (get_args fundef.args) in
     let functioncode = sprintf "\t@function code\n%s" (asmt_to_arm fundef.body "R0") in
     let epilogue = sprintf "\n\t@epilogue\n%s" (epilogue fundef.args) in
-    sprintf "%s%s%s%s%s%s" label prologue mov get_args functioncode epilogue
+    sprintf "%s%s%s%s%s" label prologue mov functioncode epilogue
     
 (** This function prints the function definitions contained in the list
 @param fundefs the list of definitions
