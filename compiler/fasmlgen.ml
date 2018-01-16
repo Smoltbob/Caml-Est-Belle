@@ -131,6 +131,7 @@ let asml_head c = Fundefs (asml_list c)
     @return a string*)
 let rec expression_to_string exp = match exp with
     | Nop -> "nop"
+    | Neg id -> "-"^(Id.to_string id)
     | Int i -> string_of_int i
     | Float f -> string_of_float f
     | Var id -> Id.to_string id

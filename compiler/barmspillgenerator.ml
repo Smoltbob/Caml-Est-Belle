@@ -87,6 +87,8 @@ let rec operation_to_arm op e1 e2 dest =
 @return unit*)
 let rec exp_to_arm exp dest =
     match exp with
+    | Neg id -> let store_string = store_in_stack 4 dest in
+                    sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
     | Int i -> let store_string = store_in_stack 4 dest in sprintf "\tmov r4, #%s\n%s" (string_of_int i) store_string
     | Var id -> (match id with 
                 | "%self" -> let store_string = store_in_stack 4 dest in
@@ -176,7 +178,7 @@ and asmt_to_arm asm dest =
     | Expression e -> sprintf "%s\tldr r0, [fp, #%i]\n" (exp_to_arm e dest) (fst (frame_position dest))
     | _ -> failwith "Unauthorized type"
 
-(* Helper functions for fundef *)
+(** Helper functions for fundef *)
 let rec pull_remaining_args l =
     match l with
     | [] -> ""
