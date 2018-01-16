@@ -5,7 +5,7 @@ open Printf;;
 let active = ref []
 let spill = ref []
 (*let free_reg = ref ["R0";"R1";"R2";"R3";"R4";"R5";"R6";"R7";"R8";"R9";"R10";"R12";]*)
-let free_reg = ref["R0";"R1";"R2"]
+let free_reg = ref["R0";"R1";]
 let args_counter = ref 0
 let spill_counter = ref 0
 
@@ -142,7 +142,7 @@ let rec alloc_id_spill id l_spill live_interval_s_ht live_interval_e_ht =
 	|t::q -> if (fst t) = id then load_alloc_reg id (snd t) live_interval_s_ht live_interval_e_ht else alloc_id_spill id q live_interval_s_ht live_interval_e_ht
 	|[] -> failwith ("failure with find variable in spill list")
 
-(** alloc_id is a to assign a register to a variable which is already defined before. if this variable is already in the active  variable list , we will return the register which is already assigned to it; else it's in memory, we will alloc a new register, find it in spill list, load it into the new register and (#######)add it into active variable list;
+(** alloc_id is a to assign a register to a variable which is already defined before. if this variable is already in the active  variable list , we will return the register which is already assigned to it; else it's in memory, we will alloc a new register, find it in spill list, load it into the new register;
 @param id the variable need to be assigned, in type Id.t
 @param l the active variable list 
 @return a register, in type Id.t*)
@@ -165,23 +165,35 @@ let alloc_id_def id live_interval_s_ht live_interval_e_ht =
 	active := add_to_active (id, id_pre, (Hashtbl.find live_interval_e_ht id)) !active;
 	print_active !active;
 	reg_id
+	
+let rec alloc_formalargs b l live_interval_s_ht live_interval_e_ht = 
+	match b with
+	|t::q -> (alloc_id t l live_interval_s_ht live_interval_e_ht) :: (alloc_formalargs q l live_interval_s_ht live_interval_e_ht)
+	|[] -> []
 
 let rec alloc_exp e live_interval_s_ht live_interval_e_ht = 
 	match e with
 	|Int i -> Int i
+	|Float i -> Float i
+	|Neg id -> let reg_id = alloc_id id !active live_interval_s_ht live_interval_e_ht in Neg reg_id
 	|Var id -> let reg_id = alloc_id id !active live_interval_s_ht live_interval_e_ht in Var reg_id
 	|Add (a, b) -> let reg_a =alloc_id a !active live_interval_s_ht live_interval_e_ht in let reg_b = alloc_exp b live_interval_s_ht live_interval_e_ht in Add (reg_a, reg_b) 
 	|Sub (a, b) -> let reg_a =alloc_id a !active live_interval_s_ht live_interval_e_ht in let reg_b = alloc_exp b live_interval_s_ht live_interval_e_ht in Sub (reg_a, reg_b) 
+	|Land (a, b) -> let reg_a =alloc_id a !active live_interval_s_ht live_interval_e_ht in let reg_b = alloc_exp b live_interval_s_ht live_interval_e_ht in Land (reg_a, reg_b) 
+	|Call (a, b) -> let reg_b = alloc_formalargs b !active live_interval_s_ht live_interval_e_ht in Call (a, reg_b)
+	|If (a,b,c,d,e) -> let reg_a =alloc_id a !active live_interval_s_ht live_interval_e_ht in let reg_b = alloc_exp b live_interval_s_ht live_interval_e_ht in let reg_c =  alloc_asm c live_interval_s_ht live_interval_e_ht in let reg_d =  alloc_asm d live_interval_s_ht live_interval_e_ht in If (reg_a, reg_b, reg_c, reg_d, e)
 	|Eq (a, exp) -> let reg_a =alloc_id a !active live_interval_s_ht live_interval_e_ht in let reg_exp = alloc_exp exp live_interval_s_ht live_interval_e_ht in Eq (reg_a, reg_exp)
+	|Nop -> Nop
 	| _ -> failwith ("match failure with blinearscan expression: TODO")
 	
-let rec alloc_asm asm live_interval_s_ht live_interval_e_ht = 
+and alloc_asm asm live_interval_s_ht live_interval_e_ht = 
 	match asm with
 	|Let (id, e, a) -> let reg_id = alloc_id_def id live_interval_s_ht live_interval_e_ht in 
 					   let reg_e = alloc_exp e live_interval_s_ht live_interval_e_ht in 
 					   let reg_asm = alloc_asm a live_interval_s_ht live_interval_e_ht in
 					   Let (reg_id, reg_e, reg_asm)
 	|Expression e -> let reg_e = alloc_exp e live_interval_s_ht live_interval_e_ht in Expression reg_e 
+	| _ -> failwith ("match failure with register alloc in closure")
 	
 let rec active_args args live_interval_e_ht =
 	match args with

@@ -18,20 +18,31 @@ let modify_live_interval_e var counter =
 	live_interval_e := delet !live_interval_e var;
 	live_interval_e := (var, counter) :: !live_interval_e
 
+let rec modify_live_interval_e_list vars counter = 
+	match vars with
+	|t::q -> modify_live_interval_e t counter; modify_live_interval_e_list q counter
+	|[] -> ()
+
 let rec expire_asm_exp e counter =
 	(*look for var in e*)
 	match e with	
 	| Int a -> ()
+	| Float a -> ()
+	| Neg a -> modify_live_interval_e a counter
 	| Add (a, b) -> modify_live_interval_e a counter; expire_asm_exp b counter
 	| Sub (a, b) -> modify_live_interval_e a counter; expire_asm_exp b counter
+	| Land (a, b) -> modify_live_interval_e a counter; expire_asm_exp b counter 
 	| Var a -> modify_live_interval_e a counter
 	| Eq (a, exp) -> modify_live_interval_e a counter; expire_asm_exp exp counter
+	| Call (a, b) -> modify_live_interval_e_list b counter
+	| If(a,b,c,d,e) -> modify_live_interval_e a counter; expire_asm_exp b counter; expire_fundef_body c; expire_fundef_body d
 	| _ -> failwith ("match failure with bliveinterval expression")
 
-let rec expire_fundef_body asm =
+and expire_fundef_body asm =
 	match asm with
 	|Let (id, e, a) -> asm_counter := !asm_counter + 1; prepend_live_interval !asm_counter id; expire_asm_exp e !asm_counter; expire_fundef_body a
 	|Expression e -> asm_counter := !asm_counter + 1; expire_asm_exp e !asm_counter
+	|_ -> failwith ("match failure with bliveinterval asm")
 
 let calcu_live_interval_f fundef = 
 	List.iter (prepend_live_interval !asm_counter) fundef.args; 
