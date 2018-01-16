@@ -77,8 +77,8 @@ let rec asml_t_triv t = match t with
     | Array (a, b) -> (match a, b with
                         | Var a2, Var b2 -> Call ("_min_caml_create_array", [a2; b2])
                         | _ -> failwith "matchfailure Array")
-    | IfEq (id1, id2, t1, t2) -> If (id1, Var id2, asml_exp t1, asml_exp t2, "eq")
-    | IfLE (id1, id2, t1, t2) -> If (id1, Var id2, asml_exp t1, asml_exp t2, "le")
+    | IfEq (id1, id2, t1, t2) -> If (id1, Var id2, asml_exp t1, asml_exp t2, "beq")
+    | IfLE (id1, id2, t1, t2) -> If (id1, Var id2, asml_exp t1, asml_exp t2, "ble")
     (* | IfBool (t1, t2, t3) -> If (id1, t, asmt, asmt, string) *)
     | _ -> failwith "asml_t_triv matchfailure not implemented"
 
