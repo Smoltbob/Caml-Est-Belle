@@ -66,6 +66,9 @@ let rec asml_t_triv t = match t with
     | FDiv (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Fdiv (x2, y2)
                         | _ -> failwith "matchfailure FDiv") *)
+    | Land (x, y) -> (match x, y with
+                        | (Var x2, Var y2) -> Add (x2, Var y2)
+                        | _ -> failwith "matchfailure Land")
     | Add (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Add (x2, Var y2)
                         | _ -> failwith "matchfailure Add")
@@ -134,6 +137,7 @@ let asml_head c = Fundefs (asml_list c)
 let rec expression_to_string exp = match exp with
     | Nop -> "nop"
     | Neg id -> "-"^(Id.to_string id)
+    | Land (id, a) -> sprintf "land %s %s" id (expression_to_string a)
     | Int i -> string_of_int i
     | Float f -> string_of_float f
     | Var id -> Id.to_string id
