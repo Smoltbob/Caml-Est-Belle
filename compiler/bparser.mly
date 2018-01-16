@@ -36,7 +36,6 @@ let addtyp x = (x, Btype.gentyp ())
 %token CALLCLO
 %token NEW
 %token NOP
-%token APPLCLO
 %token UNDERSC
 %token EOF
 %token NIL
