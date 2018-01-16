@@ -181,10 +181,12 @@ and asmt_to_arm asm dest =
  * If we had less than 4 arguments then the stack was not used for them,
  * otherwise it was. *)
 let rec epilogue args =
-    if (List.length args <= 4) then
-        "\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n"
-    else
-        sprintf "\tmov sp, fp\t\nldmfd sp!, {fp, lr}\t\nadd sp, sp, #%i\t\nbx lr\n\n\n" (4 * ((List.length args) - 4))
+    let remove_arguments = if (List.length args <= 4) then
+                                ""
+                           else
+                                sprintf "\tadd sp, sp, #%i\n" (4 * ((List.length args) - 4))
+    in
+    sprintf "\tmov sp, fp\n\tldmfd sp!, {fp, lr}\n%s\tldmfd sp!, {r4-r10, r12} @caller registers restoration\n\tbx lr\n\n\n" remove_arguments
 
 (** This function handles the printing of a given function
 @param fundef program in type fundef
@@ -193,7 +195,7 @@ let rec fundef_to_arm fundef =
     current_frame_size := 0;
     let arm_name = remove_underscore fundef.name in
     let label = sprintf "\t.globl %s\n%s:\n" arm_name arm_name in
-    let prologue = sprintf "\t@prologue\n\tstmfd sp!, {fp, lr}\n" in
+    let prologue = sprintf "\t@prologue\n\tstmfd sp!, {r4-r10, r12} @caller-saved registers\n\tstmfd sp!, {fp, lr}\n" in
     let mov = sprintf "\tmov fp, sp\n\n" in
     let functioncode = sprintf "\t@function code\n%s" (asmt_to_arm fundef.body "R0") in
     let epilogue = sprintf "\n\t@epilogue\n%s" (epilogue fundef.args) in
