@@ -78,7 +78,7 @@ let rec asml_t_triv t = match t with
         in
         Call (f, trans l))
     (*TODO : unnest the letcls if it is inside another let  and replace appc with callc*)
-    | AppC (c, l) -> CallC (c, to_fargs l)
+    | AppC (c, l) -> CallClo (c, to_fargs l)
     (* | AppC (c, l) -> LetCls (c, New (c, 1 + List.length fv),
                         Let ("tu0", MemAff (addr, Int 0, c (*TODO retrieve the addr of c*)),
                         mem_fv_closure addr fv 4 (Expression (CallC (c, l))))) *)
@@ -125,7 +125,7 @@ let rec expression_to_string exp = match exp with
     | Call (f, args) -> sprintf "call %s %s"
         f
         (infix_to_string (fun x->x) args " ")
-    | CallC (c, args) -> sprintf "callclo %s %s"
+    | CallClo (c, args) -> sprintf "callclo %s %s"
         c
         (infix_to_string (fun x->x) args " ")
     | New i -> sprintf "new %s" (expression_to_string i)

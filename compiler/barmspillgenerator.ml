@@ -85,14 +85,15 @@ let rec exp_to_arm exp dest =
     match exp with
     | Int i -> let store_string = store_in_stack 4 dest in sprintf "\tmov r4, #%s\n%s" (string_of_int i) store_string
     | Var id -> let store_string = store_in_stack 4 dest in
-            (match id with
-            | function_name when (function_name.[0] = '_') -> sprintf "\tldr r4, =%s\n%s" (remove_underscore function_name) store_string
-            | _ -> sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string)
+                sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
     | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (remove_underscore l) (store_in_stack 0 dest)
-    
+    | CallClo (l1, a1) -> let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
+                          let load_addr = sprintf "\tldr r4, =%s\n" (Id.to_string l1) in
+                          let branch = sprintf "\tblx r4\n" in 
+                          sprintf "%s%s%s" prep_args load_addr branch 
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
                 | Var id -> let call = sprintf "%s\tbl min_caml_create_array\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
