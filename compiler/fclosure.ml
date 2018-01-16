@@ -339,7 +339,7 @@ and phi (ast:t) : t =
     |Let(x,y,z) -> psi (fun ls->fun rs->Let(x, ls, rs)) (phi y) z
     |LetRec(y,z) ->(
             Hashtbl.add funs (fst y.name) ("_"^(fst y.name));
-            let fv = (find_fv y.body ((List.map (fun x->(x, Ftype.gentyp ())) !predef)@y.args)) in
+            let fv = (find_fv y.body ((y.name)::((List.map (fun x->(x, Ftype.gentyp ())) !predef)@y.args))) in
                      match fv with
                      |[] -> (known:=(fst y.name)::(!known);
                              psi (fun ls->fun rs->
