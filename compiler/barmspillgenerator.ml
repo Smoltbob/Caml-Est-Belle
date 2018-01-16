@@ -51,7 +51,7 @@ let remove_underscore function_name =
 let rec stack_remaining_arguments args =
     match args with
     | [] -> ""
-    | arg::arg_list -> sprintf "%s\tldr r4, [fp, #%i]\n\tstmfd sp!, {r4}\n" (stack_remaining_arguments arg_list) (fst (frame_position arg))
+    | arg::arg_list -> sprintf "\tldr r4, [fp, #%i]\n\tstmfd sp!, {r4}\n%s" (fst (frame_position arg)) (stack_remaining_arguments arg_list)
 
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
 @param args the list of arguments, in type string
@@ -88,7 +88,7 @@ let rec operation_to_arm op e1 e2 dest =
 let rec exp_to_arm exp dest =
     match exp with
     | Neg id -> let store_string = store_in_stack 4 dest in
-                    sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
+                    sprintf "\tldr r4, [fp, #%i]\nmov r5, #0\n\tsub r4, r5, r4\n%s" (fst (frame_position id)) store_string
     | Int i -> let store_string = store_in_stack 4 dest in sprintf "\tmov r4, #%s\n%s" (string_of_int i) store_string
     | Var id -> (match id with 
                 | "%self" -> let store_string = store_in_stack 4 dest in
@@ -102,17 +102,17 @@ let rec exp_to_arm exp dest =
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (remove_underscore l) (store_in_stack 0 dest)
     | CallClo (l1, a1) -> self := l1;
                           let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
-                          let load_addr = sprintf "\tldr r4, =%s\n" (let l = Id.to_string l1 in remove_underscore l) in
+                          let load_addr = sprintf "\tldr r4, =%s\n" (Id.to_string l1) in
                           let branch = sprintf "\tblx r4\n" in 
                           sprintf "%s%s%s" prep_args load_addr branch 
 
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
-                | Var id -> let call = sprintf "%s\tbl min_caml_create_array\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
+                | Var id -> let call = sprintf "%s\tmov r1, #0\nbl min_caml_create_array\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
                             in sprintf "%s" call
                 | Int i -> let store_string = store_in_stack 0 dest in 
                            let prepare_arg = sprintf "\tmov r0, #%s\n" (string_of_int i) in
-                           let call_alloc = sprintf "\tbl min_caml_create_array\n%s" (store_in_stack 0 dest) in
+                           let call_alloc = sprintf "\tmov r1, #0\nbl min_caml_create_array\n%s" (store_in_stack 0 dest) in
                                sprintf "%s%s%s" prepare_arg store_string call_alloc
                 | _ -> failwith "Unauthorized type"
     )
@@ -189,7 +189,7 @@ let rec get_args args =
     | [] -> sprintf ""
     | l when (List.length l = 1) -> sprintf "\tstmfd sp!, {r0}\n\n"
     | l when (List.length l <= 4) -> sprintf "\tstmfd sp!, {r0-r%i}\n\n" ((List.length l)-1)
-    | a1::a2::a3::a4::l -> sprintf "\tmov r5, fp\n\tadd r5, r5, #%i\n%s%s" (4*(List.length l) + 8) (pull_remaining_args l) (get_args (a1::a2::a3::a4::[]:string list))
+    | a1::a2::a3::a4::l -> sprintf "\tmov r5, fp\n\tadd r5, r5, #8\n%s%s" (pull_remaining_args l) (get_args (a1::a2::a3::a4::[]:string list))
     | _ -> failwith "Error while pushing arguments to the stack"
 
 (** Puts the stack pointer where it was before a function call in order to free
@@ -198,13 +198,9 @@ let rec get_args args =
  * otherwise it was. *)
 let rec epilogue args =
     if (List.length args <= 4) then
-        "\tmov sp, fp
-        \tldmfd sp!, {fp, pc}\n\n\n"
+        "\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n"
     else
-        sprintf "\tmov sp, fp
-                 \tldmfd sp!, {fp, lr}
-                 \tadd sp, sp, #%i
-                 \tbx lr\n\n\n" (4 * ((List.length args) - 4))
+        sprintf "\tmov sp, fp\n\tldmfd sp!, {fp, lr}\n\tadd sp, sp, #%i\n\tbx lr\n\n\n" (4 * ((List.length args) - 4))
 
 (** This function handles the printing of a given function
 @param fundef program in type fundef
