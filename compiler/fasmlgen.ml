@@ -50,10 +50,9 @@ let rec asml_t_triv t = match t with
                         | (Var y) -> Neg y
                         | _ -> failwith "matchfailure Neg")
 
-    (*| FNeg x -> (match x with
+    (* | FNeg x -> (match x with
                         | (Var y) -> Fneg y
-                        | _ -> failwith "matchfailure FNeg")*)
-
+                        | _ -> failwith "matchfailure FNeg") *)
     (* | FSub (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Fsub (x2, y2)
                         | _ -> failwith "matchfailure FSub")
