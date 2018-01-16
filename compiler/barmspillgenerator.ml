@@ -88,7 +88,7 @@ let rec operation_to_arm op e1 e2 dest =
 let rec exp_to_arm exp dest =
     match exp with
     | Neg id -> let store_string = store_in_stack 4 dest in
-                    sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
+                    sprintf "\tldr r4, [fp, #%i]\nmov r5, #0\n\tsub r4, r5, r4\n%s" (fst (frame_position id)) store_string
     | Int i -> let store_string = store_in_stack 4 dest in sprintf "\tmov r4, #%s\n%s" (string_of_int i) store_string
     | Var id -> (match id with 
                 | "%self" -> let store_string = store_in_stack 4 dest in
