@@ -1,7 +1,7 @@
-let x =
-let y =
-let z = 3 in 5 in 1 in 
-let e=x+y+z in()
+let x =3 in 
+let y =4 in
+let z = 3  in 
+let e=x+y+z in print_int e
 
 
 
