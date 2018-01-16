@@ -4,7 +4,7 @@ open Printf;;
 
 (* f_Ri_load_store*)
 
-let active = ref []
+let active = ref [("a","b",1);]
 let spill = ref []
 let free_reg_pool = ["R0";"R1";"R2";"R3";"R4";"R5";"R6";"R7";"R8";"R9";"R10";"R12";]
 (*let free_reg_pool = ref["R0";"R1";"R2"]*)
@@ -15,12 +15,12 @@ let trd t = let a,b,c = t in c
 let snd_ning t = let a,b,c = t in b
 let fst_ning t = let a,b,c = t in a
 
-let rec print_active l =
-	Printf.fprintf stdout "start list\n";
+(*let rec print_active l =
+	(*Printf.fprintf stdout "start list\n";*)
 	(match l with
-	|t::q -> Printf.fprintf stdout "%s %s %i\n" (Id.to_string (fst_ning t)) (snd_ning t) (trd t); print_active q
+	|t::q -> let str = ref sprintf "%s %s %i\n" (Id.to_string (fst_ning t)) (snd_ning t) (trd t) in ; print_active q
 	| [] -> ());
-	Printf.fprintf stdout "end list\n"
+	(*Printf.fprintf stdout "end list\n"*)*)
 	
 let rec print_spill l =
 	Printf.fprintf stdout "start spill list\n";
@@ -160,7 +160,7 @@ let alloc_id_def id live_interval_s_ht live_interval_e_ht =
 			else
 				reg_id) in
 	active := add_to_active (id, id_pre, (Hashtbl.find live_interval_e_ht id)) !active;
-	print_active !active;
+	(*print_active !active;*)
 	reg_id
 
 let rec remove_from_free_reg l_free=

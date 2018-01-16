@@ -38,8 +38,8 @@ let print_asml l =
         Fasmlgen.toplevel_to_string prog
     else if !linear_scanning then
 		(Bliveinterval.calcu_live_interval prog;
-		Bliveinterval.print_live_interval !Bliveinterval.live_interval_s;
-		Bliveinterval.print_live_interval !Bliveinterval.live_interval_e;
+		(*Bliveinterval.print_live_interval !Bliveinterval.live_interval_s;
+		Bliveinterval.print_live_interval !Bliveinterval.live_interval_e;*)
 		let live_interval_s_ht = Bliveinterval.to_hashtbl !Bliveinterval.live_interval_s in
 		let live_interval_e_ht = Bliveinterval.to_hashtbl !Bliveinterval.live_interval_e in
 		(*Blinearscan.registeralloc prog live_interval_s_ht live_interval_e_ht*)
