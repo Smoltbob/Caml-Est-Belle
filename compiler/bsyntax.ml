@@ -23,7 +23,7 @@ type t =
 and formal_args = Id.t list
 
 and asmt =
-    | LetCls of Id.t * t * asmt
+    (* | LetCls of Id.t * t * asmt *)
     | Let of Id.t * t * asmt
     | Expression of t
     (* | Additional case for parenthesis ? Don't think so ? *)
