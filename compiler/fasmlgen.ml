@@ -102,8 +102,8 @@ and asml_exp (c:Fclosure.t) :asmt = match c with
                         (* LetCls (clo, New (Int (1 + List.length l)), *)
                         Let (clo, New (Int (1 + List.length l)),
                         Let ("addr"^f, Var f,
-                        Let ("tu0a", MemAff (clo, Int 0, clo),
-                        mem_fv_closure f l 1 (asml_exp t))))
+                        Let ("tu0a", MemAff (clo, Int 0, f),
+                        mem_fv_closure clo l 1 (asml_exp t))))
     | _ -> Expression (asml_t_triv c)
 
 (** Creates the "let _" main and add asml_exp c to it's body to use the types defined in bsyntax.
