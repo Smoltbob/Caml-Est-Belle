@@ -103,9 +103,9 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
                                  |_->failwith "ConstFold.g: bad App")
 
     |IfEq (x, y, b, c) -> (match (g m (Var y)) with |Var y' -> IfEq (x, y', g m b, g m c)
-                                      |_ -> assert false)
+                                      |_ -> failwith "ConstFold.g: bad ifeq")
     |IfLE (x, y, b, c) -> (match (g m (Var y)) with |Var y' -> IfLE (x, y', g m b, g m c)
-                                      |_ -> assert false)
+                                      |_ -> failwith "ConstFold.g: bad ifle")
     |Array (a, b) -> Array (a, b)
     |Get (a, b) -> Get (a, b)
     |Put (a, b, c) -> Put (a, b, c)
