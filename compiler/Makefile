@@ -37,6 +37,8 @@ test: all
 	@$(MAKE) --no-print-directory test_typecheck
 	@echo "CODE GENERATION ..."
 	@$(MAKE) --no-print-directory test_gencode
+	@echo "TEACHER TESTS ..."
+	@$(MAKE) --no-print-directory test_teacher
 	@$(MAKE) --no-print-directory test_backend
 	@echo "END OF TESTS"
 	@$(MAKE) --no-print-directory stats
