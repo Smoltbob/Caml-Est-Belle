@@ -287,7 +287,7 @@ let rec find_fv ast args =
     |IfEq (x, y, a, b) -> union (test_var x args) (union (test_var y args) (union (find_fv a args) (find_fv b args)))
     |IfLE (x, y, a, b) -> union (test_var x args) (union (test_var y args) (union (find_fv a args) (find_fv b args)))
     |Var id -> test_var id args
-    |AppD (a, b) -> union (test_var a args) (test_list b args)
+    |AppD (a, b) -> (*union (test_var a args)*) (test_list b args)
     | _-> failwith "Fclosure:find_fv NotYetImplemented"
 
 (*In the following functions:
