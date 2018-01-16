@@ -137,24 +137,25 @@ let rec exp_to_arm exp dest =
                         sprintf "%s%s%s%s%s%s" saver7 store_arg1 store_arg2 prepstore store restorer7
             | _ -> failwith "Unauthorized type"
             )
-
+*)
     | If (id1, e1, asmt1, asmt2, comp) ->
             let counter = genif() in 
-            let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
-            let cmpop = sprintf "\tcmp r4, r5\n" in
+            let store_arg1 = resolve_store_load id1 in
+            let register_arg1 = resolve_linear_scan_register id1 in
             let branch1 = sprintf "\t%s if%s\n" comp counter in
             let codeelse = sprintf "%s" (asmt_to_arm asmt2 dest) in
             let branch2 = sprintf "\tb end%s\n\n" counter in
             let codeif = sprintf "if%s:\n%s\n" counter (asmt_to_arm asmt1 dest) in
             let endop = sprintf "end%s:\n" counter in
             (match e1 with
-            | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in 
+            | Var id -> let store_arg2 = resolve_store_load id in
+                        let register_arg2 = resolve_linear_scan_register id in
+                        let cmpop = sprintf "\tcmp r%s, r%s\n" register_arg1 register_arg2 in
                         sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
-            | Int i  -> let store_arg2 = sprintf "\tmov r5,#%i\n" i in 
-                        sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
+            | Int i  -> let cmpop = sprintf "\tcmp r%s, #%i\n" register_arg1 i in
+                        sprintf "%s%s%s%s%s%s%s" store_arg1 cmpop branch1 codeelse branch2 codeif endop
             | _ -> failwith "Unauthorized type"
             )
-            *)
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
