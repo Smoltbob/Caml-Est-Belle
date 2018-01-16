@@ -10,6 +10,7 @@ let spill = ref []
 let free_reg = ref["R0";"R1";"R2"]
 let args_counter = ref 0
 let spill_counter = ref 0
+let spill_args_counter = ref 4
 
 let trd t = let a,b,c = t in c
 let snd_ning t = let a,b,c = t in b
@@ -52,7 +53,7 @@ let rec spill_active_var id l=
 				active := List.tl !active;
 				reg_id)
 			else spill_active_var id q
-	|[] ->  spill_counter := !spill_counter + 4;
+	|[] ->  spill_counter := !spill_counter - 4;
 			let id_pre = (if (String.sub (Id.to_string (snd_ning (List.hd !active))) 0 1) = "f" then
 				(String.sub (Id.to_string (snd_ning (List.hd !active))) 2 2)
 			else
@@ -105,7 +106,7 @@ let rec load_spill_active_var id l addr live_interval_e_ht =
 				reg_id)
 			else 
 				load_spill_active_var id q addr live_interval_e_ht
-	|[] ->  spill_counter := !spill_counter + 4;
+	|[] ->  spill_counter := !spill_counter - 4;
 			active := List.tl !active;
 			let id_pre = (if (String.sub (Id.to_string (snd_ning (List.hd !active))) 0 1) = "f" then
 							(String.sub (Id.to_string (snd_ning (List.hd !active))) 2 2)
@@ -172,7 +173,7 @@ let rec alloc_return_val id l_active =
 	let reg_id = 
 	(match l_active with
 	|t::q -> if (snd_ning t) = "R0" then 
-				(spill_counter := !spill_counter + 4; spill := ((fst_ning t), !spill_counter) :: !spill; sprintf "f_R0__%i" (!spill_counter))
+				(spill_counter := !spill_counter - 4; spill := ((fst_ning t), !spill_counter) :: !spill; sprintf "f_R0__%i" (!spill_counter))
 			else
 				alloc_return_val id q
 	|[] -> free_reg := remove_from_free_reg !free_reg; sprintf "R0" )in
@@ -240,13 +241,27 @@ let rec active_args args live_interval_e_ht =
 			x :: (active_args q live_interval_e_ht)
 	|[] -> []
 	
+let rec spill_args args live_interval_e_ht =
+	match args with
+	|t::q -> spill_args_counter := !spill_args_counter + 4;
+			 let reg_id = List.hd !free_reg in 
+			 free_reg := List.tl !free_reg ;
+			 active := add_to_active (t, reg_id, (Hashtbl.find live_interval_e_ht t)) !active;
+			 (sprintf "f_%s_%i_" (reg_id) (!spill_args_counter)) :: (spill_args q live_interval_e_ht)
+	|[] -> []
+	
 let rec alloc_args args live_interval_e_ht =
+	let reg_args = ref [] in
 	if (List.length args) < 5 then
-		active_args args live_interval_e_ht
+		reg_args := active_args args live_interval_e_ht
 	else
-		failwith ("function arguments more than 4: TODO")
+		(match args with
+		|a::b::c::d::e -> reg_args := active_args (a::b::c::d::[]:Id.t list) live_interval_e_ht; reg_args := !reg_args @ (spill_args e live_interval_e_ht)
+		|_ -> failwith ("failwith alloc_args"));
+	!reg_args
+			
 
-let alloc_fund fund live_interval_s_ht live_interval_e_ht=
+let alloc_fund fund live_interval_s_ht live_interval_e_ht =
 	spill_counter := 0;
 	let reg_args = (alloc_args fund.args live_interval_e_ht) in
 	let reg_body = (alloc_asm fund.body live_interval_s_ht live_interval_e_ht) in
