@@ -1,7 +1,7 @@
 let _ =
     let a = 5 in
     let b = 8 in
-    let c = call _talloc a b in
+    let c = call _min_caml_create_array a b in
 
     let d = 0 in 
     let e = mem(c + d)<-d in

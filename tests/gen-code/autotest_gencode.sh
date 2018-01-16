@@ -62,13 +62,14 @@ for folder in "$dir"/*/; do
             # Printing output from parsing + ARM generation
             # Printing the expected output
             EXP=$(cat "$folder"expected_"$typ"/"$filename".exp)
-            if [[ $verb = 1 ]] || [[ "$EXP" != "$RESULT" ]]; then
+            errcode=$?
+            if [[ $verb = 1 ]] || [[ "$EXP" != "$RESULT" ]] || [[ "$errcode" != 0 ]]; then
                 echo -e "\\e[33mOutput  : $RESULT\\e[0m"
                 echo -e "\\e[35mExpected :$EXP\\e[0m"
                 echo ""
             fi
             # Comparison between the two
-            if [[ "$RESULT" == "$EXP" ]]; then
+            if [[ "$RESULT" == "$EXP" ]] && [[ "$errcode" == "0" ]]; then
                 echo -e "\\e[7mResult\\e[27m \\e[32mOK\\e[0m"
                 okcounter=$((okcounter + 1))
             else 

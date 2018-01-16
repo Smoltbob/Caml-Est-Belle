@@ -1,1 +1,1 @@
-well typed
+Fatal error: exception Failure("Unbound value: y")

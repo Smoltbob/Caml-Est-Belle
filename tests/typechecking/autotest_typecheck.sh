@@ -49,13 +49,13 @@ for folder in "$dir"/*/; do
         RESULT=$("$prog" -t "$file" 2>&1)
         # Printing the expected output
         EXP=$(cat "$folder"expected_"$typ"/"$filename".exp)
-        if [[ $verb = 1 ]] || [[ $EXP != "$RESULT" ]]; then
+        if [[ $verb = 1 ]] || [[ "${RESULT//[$' \t\n\r']/}" != "${EXP//[$' \t\n\r']/}" ]]; then
             echo -e "\\e[33mOutput  : $RESULT\\e[0m"
             echo -e "\\e[35mExpected :$EXP\\e[0m"
             echo ""
         fi
         # Comparison between the two
-        if [[ "$RESULT" == "$EXP" ]]; then
+        if [[ "${RESULT//[$' \t\n\r']/}" == "${EXP//[$' \t\n\r']/}" ]]; then
             echo -e "\\e[7mResult\\e[27m \\e[32mOK\\e[0m"
             okcounter=$((okcounter + 1))
         else 

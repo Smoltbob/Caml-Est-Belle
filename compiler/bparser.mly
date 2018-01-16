@@ -33,9 +33,9 @@ let addtyp x = (x, Btype.gentyp ())
 %token SUB
 %token LAND
 %token CALL
+%token CALLCLO
 %token NEW
 %token NOP
-%token APPLCLO
 %token UNDERSC
 %token EOF
 %token NIL
@@ -88,6 +88,8 @@ exp:
     { If($2, $4, $6, $8, "bge") }
 | CALL LABEL formal_args
     { Call($2, $3) }
+| CALLCLO IDENT formal_args
+    { CallClo($2, $3) }
 | NOP
     { Nop }
 | error
