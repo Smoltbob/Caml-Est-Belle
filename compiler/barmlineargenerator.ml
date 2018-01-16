@@ -30,12 +30,12 @@ let rec resolve_store_load string_code =
         let reg_number = parse_string_code string_code 3 "" in
         let load_address = parse_string_code string_code (4 + (String.length reg_number)) "" in
         let store_address = parse_string_code string_code (5 + (String.length reg_number) + (String.length load_address)) "" in
-        let load_string = if load_address = "" then "" else sprintf "\tldr r%s, [fp, #-%s]\n" reg_number load_address in
+        let load_string = if load_address = "" then "" else sprintf "\tldr r%s, [fp, #%s]\n" reg_number load_address in
         let store_string = if store_address = "" then
             ""
         else
             if int_of_string store_address <= !current_frame_size then
-                sprintf "\tstr r%s, [fp, #-%s]\n" reg_number store_address
+                sprintf "\tstr r%s, [fp, #%s]\n" reg_number store_address
             else
                 (* ocaml ??? *)
                 let out = sprintf "\tstmfd sp!, r%s\n" reg_number in current_frame_size := !current_frame_size + 4; out
