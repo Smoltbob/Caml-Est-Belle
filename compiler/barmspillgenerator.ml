@@ -102,17 +102,17 @@ let rec exp_to_arm exp dest =
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (remove_underscore l) (store_in_stack 0 dest)
     | CallClo (l1, a1) -> self := l1;
                           let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
-                          let load_addr = sprintf "\tldr r4, =%s\n" (let l = Id.to_string l1 in remove_underscore l) in
+                          let load_addr = sprintf "\tldr r4, =%s\n" (Id.to_string l1) in
                           let branch = sprintf "\tblx r4\n" in 
                           sprintf "%s%s%s" prep_args load_addr branch 
 
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
-                | Var id -> let call = sprintf "%s\tbl min_caml_create_array\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
+                | Var id -> let call = sprintf "%s\tmov r1, #0\nbl min_caml_create_array\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
                             in sprintf "%s" call
                 | Int i -> let store_string = store_in_stack 0 dest in 
                            let prepare_arg = sprintf "\tmov r0, #%s\n" (string_of_int i) in
-                           let call_alloc = sprintf "\tbl min_caml_create_array\n%s" (store_in_stack 0 dest) in
+                           let call_alloc = sprintf "\tmov r1, #0\nbl min_caml_create_array\n%s" (store_in_stack 0 dest) in
                                sprintf "%s%s%s" prepare_arg store_string call_alloc
                 | _ -> failwith "Unauthorized type"
     )
