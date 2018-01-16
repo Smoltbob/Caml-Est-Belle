@@ -101,7 +101,7 @@ and asml_exp (c:Fclosure.t) :asmt = match c with
                         (* LetCls (clo, New (Int (1 + List.length l)), *)
                         Let (clo, New (Int (1 + List.length l)),
                         Let ("addr"^f, Var f,
-                        Let ("tu0a", MemAff (clo, Int 0, f),
+                        Let ("tu0a", MemAff (clo, Int 0, "addr"^f),
                         mem_fv_closure clo l 1 (asml_exp t))))
     | _ -> Expression (asml_t_triv c)
 
