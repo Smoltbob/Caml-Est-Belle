@@ -7,32 +7,32 @@
 
 open Fknormal
 
-let is_constant (k:Fknormal.t) = 
+let is_constant (k:Fknormal.t) =
     match k with
     |Unit -> true
     |Bool _ -> true
     |Int _ -> true
     |Float _ -> true
-    |_ -> false 
+    |_ -> false
 
-let get_bool k= 
+let get_bool k=
     match k with
-    |Bool x -> x 
+    |Bool x -> x
     |_ -> failwith "ConstFold.get_bool: wrong type"
 
-let get_int k= 
+let get_int k=
     match k with
-    |Int x -> x 
+    |Int x -> x
     |_ -> failwith "ConstFold.get_int: wrong type"
 
-let get_float k= 
+let get_float k=
     match k with
-    |Float x -> x 
+    |Float x -> x
     |_ -> failwith "ConstFold.get_float: wrong type"
 
 type comparison = {f : 'a. 'a -> 'a -> bool}
 
-let apply_polymorph op a b = 
+let apply_polymorph op a b =
     match a,b with
     |(Int a', Int b') -> op.f a' b'
     |(Float a', Float b') -> op.f a' b'
@@ -44,7 +44,7 @@ let order a b =
 
 let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
     match k with
-    |Let ((a,t), b, c) -> let b' = g m b in 
+    |Let ((a,t), b, c) -> let b' = g m b in
                         if is_constant b' then Hashtbl.add m a b';
                         Let((a,t), b', g m c)
     |LetRec (a, b) -> LetRec(a, g m b)
@@ -52,46 +52,46 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
     |Bool a -> Bool a
     |Int a ->  Int a
     |Float a -> Float a
-    |Var a -> if Hashtbl.mem m a then Hashtbl.find m a else Var a 
+    |Var a -> if Hashtbl.mem m a then Hashtbl.find m a else Var a
     |Not b -> let b' = g m b in if is_constant b' then Bool(not (get_bool b')) else Not b'
     |Neg a -> let a' = g m a in if is_constant a' then Int(- (get_int a')) else Neg a'
     |Sub (a, b) -> let a' = g m a in
                    let b' = g m b in
                    if (is_constant a') && (is_constant b') then
-                       Int((get_int a') - (get_int b')) 
-                   else let a', b' = order a' b' in Sub(a',b')  
+                       Int((get_int a') - (get_int b'))
+                   else let a', b' = order a' b' in Sub(a',b')
     |Add (a, b) -> let a' = g m a in
                    let b' = g m b in
                    if (is_constant a') && (is_constant b') then
-                       Int((get_int a') + (get_int b')) 
+                       Int((get_int a') + (get_int b'))
                    else let a', b' = order a' b' in Add(a',b')
     |FNeg a -> let a' = g m a in if is_constant a' then Float(-. (get_float a')) else FNeg a'
 
     |FAdd (a, b) -> let a' = g m a in
                    let b' = g m b in
                    if (is_constant a') && (is_constant b') then
-                       Float((get_float a') +. (get_float b')) 
+                       Float((get_float a') +. (get_float b'))
                    else FAdd(a,b)  (*either a=a' or b=b'(=Var(x)) => we must keep both in non-immediate form*)
     |FSub (a, b) -> let a' = g m a in
                    let b' = g m b in
                    if (is_constant a') && (is_constant b') then
-                       Float((get_float a') -. (get_float b')) 
+                       Float((get_float a') -. (get_float b'))
                    else FSub(a,b)
     |FMul (a, b) -> let a' = g m a in
                    let b' = g m b in
                    if (is_constant a') && (is_constant b') then
-                       Float((get_float a') *. (get_float b')) 
+                       Float((get_float a') *. (get_float b'))
                    else FMul(a,b)
     |FDiv (a, b) -> let a' = g m a in
                    let b' = g m b in
                    if (is_constant a') && (is_constant b') then
-                       Float((get_float a') /. (get_float b')) 
+                       Float((get_float a') /. (get_float b'))
                    else FDiv(a,b)
     (*
     |Eq (a, b) -> let a' = g m a in
                    let b' = g m b in
                    if (is_constant a') && (is_constant b') then
-                       Bool(apply_polymorph {f=(=)} a' b') 
+                       Bool(apply_polymorph {f=(=)} a' b')
                    else Eq(a',b')
     |LE (a, b) -> let a' = g m a in
                    let b' = g m b in
@@ -99,24 +99,32 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
                        Bool(apply_polymorph {f=(<=)} a' b')
                    else LE(a',b')
     *)
-    |App (a,b) ->  (match a with |Var(a') -> let a = (if Hashtbl.mem m a' then Hashtbl.find m a' else a) in App (a, b)
-                                 |_->failwith "ConstFold.g: bad App"
+    |App (a,b) ->  (match a with
+                                |Var(a') -> let a = (if Hashtbl.mem m a' then Hashtbl.find m a' else a) in App (a, b)
+                                |_->failwith "ConstFold.g: bad App")
 
-    |IfEq (x, y, b, c) -> match (g m (Var y)) with |Var y' -> IfEq (x, y', g m b, g m c) 
-                                      |_ -> assert false
-    |IfLE (x, y, b, c) -> match (g m (Var y)) with |Var y' -> IfLE (x, y', g m b, g m c) 
-                                      |_ -> assert false
+    |IfEq (x, y, b, c) ->
+    (* (match (g m (Var y)) with
+                                    |Var y' -> IfEq (x, y', g m b, g m c)
+                                    |_ -> failwith "ConstFold.g: bad ifeq") *)
+                                    IfEq (x, y, g m b, g m c)
+
+    |IfLE (x, y, b, c) ->
+    (* (match (g m (Var y)) with
+                                    |Var y' -> IfLE (x, y', g m b, g m c)
+                                    |_ -> failwith "ConstFold.g: bad ifle") *)
+                                    IfLE (x, y, g m b, g m c)
+
     |Array (a, b) -> Array (a, b)
     |Get (a, b) -> Get (a, b)
     |Put (a, b, c) -> Put (a, b, c)
-                   )
     |_ -> failwith "ConstFold.g: NotYetImplemented"
-    (* 
+    (*
     |Tuple a -> Tuple(List.map alpha a)
     |LetTuple (a, b, c) -> LetTuple ( a, alpha b,  alpha c )
     *)
 
-let f (k:Fknormal.t) = 
+let f (k:Fknormal.t) =
     let expected_number = 100 in
     let m = Hashtbl.create expected_number in
     g m k

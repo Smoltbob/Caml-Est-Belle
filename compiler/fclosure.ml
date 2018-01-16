@@ -257,7 +257,7 @@ let rec union l k =
 
 let test_var (x:Id.t) bv =
     let t = Ftype.gentyp () in
-    if memv x bv then
+    if (memv x bv) || (Hashtbl.mem funs x) then
         []
     else
         [(x, t)]
@@ -278,6 +278,10 @@ let rec find_fv ast args =
     |Bool b -> []
     |Int i -> []
     |Not e -> []
+    |Neg a -> find_fv a args
+    |Get (a,b) -> find_fv a args
+    |Put (a,b,c) -> union (find_fv a args) (find_fv c args)
+    |Array (a,b) -> union (find_fv a args) (find_fv b args)
     |Add (a, b) -> union (find_fv a args) (find_fv b args)
     |Sub (a, b) -> union (find_fv a args) (find_fv b args)
     |IfEq (x, y, a, b) -> union (test_var x args) (union (test_var y args) (union (find_fv a args) (find_fv b args)))
@@ -335,13 +339,13 @@ and phi (ast:t) : t =
     |Let(x,y,z) -> psi (fun ls->fun rs->Let(x, ls, rs)) (phi y) z
     |LetRec(y,z) ->(
             Hashtbl.add funs (fst y.name) ("_"^(fst y.name));
-            let fv = (find_fv y.body ((List.map (fun x->(x, Ftype.gentyp ())) !predef)@y.args)) in
+            let fv = (find_fv y.body ((y.name)::((List.map (fun x->(x, Ftype.gentyp ())) !predef)@y.args))) in
                      match fv with
                      |[] -> (known:=(fst y.name)::(!known);
                              psi (fun ls->fun rs->
                              LetRec({name=y.name; args=y.args; formal_fv=[]; body=ls},rs))
                                  (phi y.body) z)
-                     |_ -> ( let clos_name = (fst y.name)^"c" in 
+                     |_ -> ( let clos_name = (fst y.name)^"c" in
                              Hashtbl.add closures (fst y.name) clos_name;
                              psi (fun ls->fun rs ->
                              LetRec({name=y.name; args=y.args; formal_fv=fv; body=ls},rs))
@@ -371,7 +375,7 @@ let rec id_to_cls ast =
 let rec add_prefix ast =
     match ast with
     |Let(x,y,z) -> Let(x,add_prefix y, add_prefix z)
-    |LetCls(x,l,y,z) -> LetCls(x, l, y, add_prefix z) 
+    |LetCls(x,l,y,z) -> LetCls(x, l, y, add_prefix z)
     |LetRec(x,y) -> LetRec({name=x.name; args=x.args; formal_fv=x.formal_fv; body=add_prefix x.body}, add_prefix y)
     |IfEq(u, v, x, y) -> IfEq(u, v, add_prefix x, add_prefix y)
     |IfLE(u, v, x, y) -> IfLE(u, v, add_prefix x, add_prefix y)
@@ -385,7 +389,7 @@ let add_undr_id a =
 let rec add_undr ast =
     match ast with
     |Let(x,y,z) -> Let(x,add_undr y, add_undr z)
-    |LetCls(x,l,y,z) -> LetCls(x, l, List.map add_undr_id y, add_undr z)
+    |LetCls(x,l,y,z) -> LetCls(x, add_undr_id l, List.map add_undr_id y, add_undr z)
     |LetRec(x,y) -> LetRec({name=(Hashtbl.find funs (fst x.name), snd x.name); args=x.args; formal_fv=x.formal_fv; body=add_undr x.body}, add_undr y)
     |IfEq(u, v, x, y) -> IfEq(u, v, add_undr x, add_undr y)
     |IfLE(u, v, x, y) -> IfLE(u, v, add_undr x, add_undr y)
