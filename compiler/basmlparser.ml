@@ -1,6 +1,6 @@
 let print_ast l =
   let s = (Bparser.toplevel Blexer.token l) in
-  print_string (Bsyntax.to_string_top s); print_newline ()
+  print_string (Fasmlgen.toplevel_to_string s); print_newline ()
 
 let file f =
     let inchan = open_in f in
