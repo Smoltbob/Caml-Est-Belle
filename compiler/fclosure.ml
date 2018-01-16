@@ -379,11 +379,13 @@ let rec add_prefix ast =
     |Var(a) -> if List.mem a (!predef) then Var("_min_caml_"^a) else Var(a)
     |_ -> ast
 
+let add_undr_id a =
+    if Hashtbl.mem funs a then Hashtbl.find funs a else a
 
 let rec add_undr ast =
     match ast with
     |Let(x,y,z) -> Let(x,add_undr y, add_undr z)
-    |LetCls(x,l,y,z) -> LetCls(x, l, y, add_undr z)
+    |LetCls(x,l,y,z) -> LetCls(x, l, List.map add_undr_id y, add_undr z)
     |LetRec(x,y) -> LetRec({name=(Hashtbl.find funs (fst x.name), snd x.name); args=x.args; formal_fv=x.formal_fv; body=add_undr x.body}, add_undr y)
     |IfEq(u, v, x, y) -> IfEq(u, v, add_undr x, add_undr y)
     |IfLE(u, v, x, y) -> IfLE(u, v, add_undr x, add_undr y)
