@@ -54,7 +54,7 @@ let rec arg_to_arm arg_code i =
     if arg_code.[0] = 'R' then
         sprintf "\tmov r%i, %s\n" i (resolve_linear_scan_register arg_code)
     else
-        resolve_store_load arg_code
+        sprintf "%s\tmov r%i, %s\n" (resolve_store_load arg_code) i (resolve_linear_scan_register arg_code)
 
 let rec stack_remaining_arguments args =
     match args with
@@ -102,7 +102,7 @@ let rec exp_to_arm exp dest =
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
     | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
-    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n" (to_arm_formal_args a1 0) (remove_underscore l)
+    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s%s\tbl %s\n" (resolve_store_load dest) (to_arm_formal_args a1 0) (remove_underscore l)
     (*
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
