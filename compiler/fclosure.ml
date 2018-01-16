@@ -21,6 +21,9 @@ type t =
     | Not of t
     | Neg of t
     | Add of t * t
+
+    | Land of t * t
+
     | Sub of t * t
     | FNeg of t
     | FAdd of t * t
@@ -74,6 +77,9 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     | Neg b -> Neg (clos_exp b)
     | Sub (a, b) -> Sub (clos_exp a, clos_exp b)
     | Add (a, b) -> Add (clos_exp a, clos_exp b)
+
+    | Land (a, b) -> Land (clos_exp a, clos_exp b)
+
     | FAdd (a, b) -> FAdd (clos_exp a, clos_exp b)
     | FNeg b -> FNeg (clos_exp b)
     | FSub (a, b) -> FSub (clos_exp a, clos_exp b)
@@ -283,6 +289,9 @@ let rec find_fv ast args =
     |Put (a,b,c) -> union (find_fv a args) (find_fv c args)
     |Array (a,b) -> union (find_fv a args) (find_fv b args)
     |Add (a, b) -> union (find_fv a args) (find_fv b args)
+
+    |Land (a, b) -> union (find_fv a args) (find_fv b args)
+
     |Sub (a, b) -> union (find_fv a args) (find_fv b args)
     |IfEq (x, y, a, b) -> union (test_var x args) (union (test_var y args) (union (find_fv a args) (find_fv b args)))
     |IfLE (x, y, a, b) -> union (test_var x args) (union (test_var y args) (union (find_fv a args) (find_fv b args)))
@@ -441,6 +450,9 @@ let rec clos_to_string (c:t) : string =
   | Not e -> sprintf "(not %s)" (clos_to_string e)
   | Neg e -> sprintf "(- %s)" (clos_to_string e)
   | Add (e1, e2) -> sprintf "(%s + %s)" (clos_to_string e1) (clos_to_string e2)
+
+  | Land (e1, e2) -> sprintf "(%s && %s)" (clos_to_string e1) (clos_to_string e2)
+
   | Sub (e1, e2) -> sprintf "(%s - %s)" (clos_to_string e1) (clos_to_string e2)
   | FNeg e -> sprintf "(-. %s)" (clos_to_string e)
   | FAdd (e1, e2) -> sprintf "(%s +. %s)" (clos_to_string e1) (clos_to_string e2)

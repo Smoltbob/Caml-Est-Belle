@@ -65,6 +65,9 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
                    if (is_constant a') && (is_constant b') then
                        Int((get_int a') + (get_int b'))
                    else let a', b' = order a' b' in Add(a',b')
+
+    |Land (a, b) -> Land(a,b) 
+
     |FNeg a -> let a' = g m a in if is_constant a' then Float(-. (get_float a')) else FNeg a'
 
     |FAdd (a, b) -> let a' = g m a in

@@ -16,6 +16,9 @@ type t =
   | Not of t
   | Neg of t
   | Add of t * t
+
+  | Land of t * t
+
   | Sub of t * t
   | FNeg of t
   | FAdd of t * t
@@ -91,6 +94,9 @@ let rec knormal (ast:Fsyntax.t) : t =
     |FSub (a, b) -> knormal_binary_brute (fun x->fun y->FSub(x,y)) a b
     |FMul (a, b) -> knormal_binary_brute (fun x->fun y->FMul(x,y)) a b
     |FDiv (a, b) -> knormal_binary_brute (fun x->fun y->FDiv(x,y)) a b
+    
+    |Land (a, b) -> knormal_binary (fun x->fun y->Land(x,y)) a b
+
     (*
     |Eq (a, b) -> let (a',t) = newvar () in
                    let (b',t) = newvar () in
@@ -238,7 +244,9 @@ let rec k_to_string (exp:t) : string =
 
   | Not e -> sprintf "(not %s)" (k_to_string e)
   | Neg e -> sprintf "(- %s)" (k_to_string e)
-  | Add (e1, e2) -> sprintf "(%s + %s)" (k_to_string e1) (k_to_string e2)
+
+  | Land (e1, e2) -> sprintf "(%s && %s)" (k_to_string e1) (k_to_string e2)
+
   | Sub (e1, e2) -> sprintf "(%s - %s)" (k_to_string e1) (k_to_string e2)
   | FNeg e -> sprintf "(-. %s)" (k_to_string e)
   | FAdd (e1, e2) -> sprintf "(%s +. %s)" (k_to_string e1) (k_to_string e2)

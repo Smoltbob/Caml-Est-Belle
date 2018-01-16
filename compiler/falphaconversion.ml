@@ -68,6 +68,9 @@ let rec alpha_g env (k_t:Fknormal.t) : Fknormal.t  =
     |Neg b -> Neg (alpha_g env  b)
     |Sub (a, b) -> Sub(alpha_g env  a, alpha_g env  b)
     |Add (a, b) -> Add(alpha_g env  a, alpha_g env b)
+
+    |Land (a, b) -> Land(alpha_g env  a, alpha_g env b)
+
     |FAdd (a, b) -> FAdd(alpha_g env  a, alpha_g env b)
     |FNeg b -> FNeg (alpha_g env  b)
     |FSub (a, b) -> FSub(alpha_g env a, alpha_g env b)
