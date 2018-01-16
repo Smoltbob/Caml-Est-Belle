@@ -9,8 +9,8 @@ let rec reduc k = match k with
         LetRec ({ name = f.name; args = f.args ; body = (reduc f.body) },
                 reduc a)
     | Let (x, a, b) -> (match a with
-        | Let (y, a2, b2) -> reduc (Let (y, a2, (reduc (Let (x, b2, b)))))
-        | _ -> Let (x, a, reduc b))
+        | Let (y, a2, b2) -> reduc (Let (y, reduc a2, (reduc (Let (x, b2, b)))))
+        | _ -> Let (x, reduc a, reduc b))
     (*(*args are Vars*)
     | App (f, l) -> (* f cannot be a Var so it's not an App nor a Let (see previous part knorm) *)
         let rec reduc_args l = match l with
