@@ -196,6 +196,10 @@ and phi (ast:Fknormal.t) : Fknormal.t =
 
 (*------THE-VERSION-AFTER-TRUE-CLOSURE--------------------------------------*)
 let closures = Hashtbl.create 10
+let funs = Hashtbl.create 10
+let predef = ref ["print_int"; "print_newline"]
+let known = ref []
+let _ = known := !predef
 (* let known = ref ["_min_caml_print_int"; "_min_caml_print_newline"] (*TODO: add the others*) *)
 (* (a try at using sets, but couldn't be bothered to check if comparison works properly. Maybe come back later)
 module SS = Set.Make(struct
@@ -330,13 +334,15 @@ and phi (ast:t) : t =
     match ast with
     |Let(x,y,z) -> psi (fun ls->fun rs->Let(x, ls, rs)) (phi y) z
     |LetRec(y,z) ->(
-            let fv = (find_fv y.body ((List.map (fun x->(x, Ftype.gentyp ())) !known)@y.args)) in
+            Hashtbl.add funs (fst y.name) ("_"^(fst y.name));
+            let fv = (find_fv y.body ((List.map (fun x->(x, Ftype.gentyp ())) !predef)@y.args)) in
                      match fv with
                      |[] -> (known:=(fst y.name)::(!known);
                              psi (fun ls->fun rs->
                              LetRec({name=y.name; args=y.args; formal_fv=[]; body=ls},rs))
                                  (phi y.body) z)
-                     |_ -> ( let clos_name = (fst y.name)^"c" in (*Hashtbl.add closures y.name clos_name;*)
+                     |_ -> ( let clos_name = (fst y.name)^"c" in 
+                             Hashtbl.add closures (fst y.name) clos_name;
                              psi (fun ls->fun rs ->
                              LetRec({name=y.name; args=y.args; formal_fv=fv; body=ls},rs))
                                  (phi y.body) (LetCls(clos_name, (fst y.name), (List.map fst fv), z)))
@@ -345,9 +351,50 @@ and phi (ast:t) : t =
     |IfLE(u,v,y,z) -> psi (fun ls->fun rs->IfLE(u,v,ls,rs)) (phi y) z
     |LetCls(u,v,a,b) -> chi (fun ls->fun rs->LetCls(u,v,a,rs)) Unit (phi b)
     |AppD(a, b) when List.mem a !known -> AppD(a, b)
-    |AppD(a, b) -> let clos_name = a^"c" (*Hashtbl.find closures a*) in
+    |AppD(a, b) -> let clos_name = a^"c" in
                    AppC(clos_name, b)
     |_ -> ast
+
+
+let rec id_to_cls ast =
+    match ast with
+    |Let(x,y,z) -> Let(x,id_to_cls y, id_to_cls z)
+    |LetCls(x,l,y,z) -> LetCls(x, l, y, id_to_cls z) (*perhaps the only "useful" match*)
+    |LetRec(x,y) -> LetRec({name=x.name; args=x.args; formal_fv=x.formal_fv; body=id_to_cls x.body}, id_to_cls y)
+    |IfEq(u, v, x, y) -> IfEq(u, v, id_to_cls x, id_to_cls y)
+    |IfLE(u, v, x, y) -> IfLE(u, v, id_to_cls x, id_to_cls y)
+    |AppD(a, b) -> if Hashtbl.mem closures a then AppD(Hashtbl.find closures a, b) else AppD(a,b)
+    |AppC(a, b) -> if Hashtbl.mem closures a then AppC(Hashtbl.find closures a, b) else AppC(a,b)
+    |Var(a) -> if Hashtbl.mem closures a then Var(Hashtbl.find closures a) else Var(a)
+    |_ -> ast
+
+let rec add_prefix ast =
+    match ast with
+    |Let(x,y,z) -> Let(x,add_prefix y, add_prefix z)
+    |LetCls(x,l,y,z) -> LetCls(x, l, y, add_prefix z) 
+    |LetRec(x,y) -> LetRec({name=x.name; args=x.args; formal_fv=x.formal_fv; body=add_prefix x.body}, add_prefix y)
+    |IfEq(u, v, x, y) -> IfEq(u, v, add_prefix x, add_prefix y)
+    |IfLE(u, v, x, y) -> IfLE(u, v, add_prefix x, add_prefix y)
+    |AppD(a, b) -> if List.mem a (!predef) then AppD("_min_caml_"^a, b) else AppD(a,b)
+    |Var(a) -> if List.mem a (!predef) then Var("_min_caml_"^a) else Var(a)
+    |_ -> ast
+
+let add_undr_id a =
+    if Hashtbl.mem funs a then Hashtbl.find funs a else a
+
+let rec add_undr ast =
+    match ast with
+    |Let(x,y,z) -> Let(x,add_undr y, add_undr z)
+    |LetCls(x,l,y,z) -> LetCls(x, l, List.map add_undr_id y, add_undr z)
+    |LetRec(x,y) -> LetRec({name=(Hashtbl.find funs (fst x.name), snd x.name); args=x.args; formal_fv=x.formal_fv; body=add_undr x.body}, add_undr y)
+    |IfEq(u, v, x, y) -> IfEq(u, v, add_undr x, add_undr y)
+    |IfLE(u, v, x, y) -> IfLE(u, v, add_undr x, add_undr y)
+    |AppD(a, b) -> if Hashtbl.mem funs a then AppD(Hashtbl.find funs a, b) else AppD(a,b) (*TODO: add check on b*)
+    (*|AppC(a, b) -> if Hashtbl.mem funs a then AppC(Hashtbl.find funs a, b) else AppC(a,b)*)
+    |Var(a) -> if Hashtbl.mem funs a then Var(Hashtbl.find funs a) else Var(a)
+    |_ -> ast
+
+
 
 (*--------------------------------------------------------------------------*)
 
@@ -377,7 +424,7 @@ let clos_out k =
     let clos = (clos_exp (phi k)) in
     merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos)
     *)
-     phi (scan_fundef (clos_exp k))
+     add_prefix (add_undr (id_to_cls (phi ((*scan_fundef*) (clos_exp k)))))
 
 
 (** This function is for debugging purpose only, it returns its argument as a string *)

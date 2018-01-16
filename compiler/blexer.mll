@@ -60,6 +60,8 @@ rule token = parse
     { ELSE }
 | "call"
     { CALL }
+| "apply_closure"
+    { CALLCLO }
 | "nop" 
     { NOP }
 | "<-"
@@ -74,7 +76,7 @@ rule token = parse
     { UNDERSC }
 | underscore (digit|lower|upper|underscore)*
     { LABEL(Lexing.lexeme lexbuf) }
-| lower (digit|lower|upper|underscore)*
+| (lower|'%') (digit|lower|upper|underscore)*
     { IDENT(Lexing.lexeme lexbuf) }
 | _
     { failwith

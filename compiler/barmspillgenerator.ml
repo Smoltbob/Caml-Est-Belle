@@ -7,6 +7,7 @@ open List;;
 (** A hashtable: the keys are the name of variables and the contant of each key is a tuple (bool, int), if bool is equal to "true", then the variable is in the register and the int is the index of register, else the variable is in the memory, the int is the address . *)
 
 let frames_stack = Stack.create ()
+let self = ref ("void":Id.t)
 
 (** This function is to allocate 4 bytes for variable x and update the (Stack.top frames_table), and return the address
 @param variable_name the variable name in type id.t
@@ -35,12 +36,15 @@ let rec push_frame_table () =
 let rec pop_frame_table () =
     let _ = Stack.pop frames_stack in ()
 
+(** Counter used to associate unique identifiers to "if" labels *)
 let genif =
   let counter = ref (-1) in
   fun () ->
     incr counter;
     sprintf "%d" !counter
 
+(** Removes the first character of a string 
+ @param String to process *)
 let remove_underscore function_name =
     String.sub function_name 1 ((String.length function_name) - 1)
 
@@ -68,13 +72,13 @@ let rec store_in_stack register_id dest =
 let rec operation_to_arm op e1 e2 dest =
     let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position e1)) in
         (match e2 with
-         | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in
+        | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in
                     let return_result = sprintf "\t%s r6, r4, r5\n%s" op (store_in_stack 6 dest) in
                     sprintf "%s%s%s" store_arg1 store_arg2 return_result
-         | Int i -> let store_arg2 = sprintf "\tmov r5, #%i\n" i in
+        | Int i -> let store_arg2 = sprintf "\tmov r5, #%i\n" i in
                     let return_result = sprintf "\t%s r6, r4, r5\n%s" op (store_in_stack 6 dest) in
                     sprintf "%s%s%s" store_arg1 store_arg2 return_result
-         | _ -> failwith "Unauthorized type"
+        | _ -> failwith "Unauthorized type"
         )
 
 (** This function is to convert assignments into arm code 
@@ -83,16 +87,25 @@ let rec operation_to_arm op e1 e2 dest =
 @return unit*)
 let rec exp_to_arm exp dest =
     match exp with
+    | Neg id -> let store_string = store_in_stack 4 dest in
+                    sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
     | Int i -> let store_string = store_in_stack 4 dest in sprintf "\tmov r4, #%s\n%s" (string_of_int i) store_string
-    | Var id -> let store_string = store_in_stack 4 dest in
-            (match id with
-            | function_name when (function_name.[0] = '_') -> sprintf "\tldr r4, =%s\n%s" (remove_underscore function_name) store_string
-            | _ -> sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string)
+    | Var id -> (match id with 
+                | "%self" -> let store_string = store_in_stack 4 dest in
+                                sprintf "\tldr r4, =%s\n%s" (Id.to_string !self) store_string
+                | _ -> let store_string = store_in_stack 4 dest in
+                                sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
+                )
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
     | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (remove_underscore l) (store_in_stack 0 dest)
-    
+    | CallClo (l1, a1) -> self := l1;
+                          let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
+                          let load_addr = sprintf "\tldr r4, =%s\n" (let l = Id.to_string l1 in remove_underscore l) in
+                          let branch = sprintf "\tblx r4\n" in 
+                          sprintf "%s%s%s" prep_args load_addr branch 
+
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
                 | Var id -> let call = sprintf "%s\tbl min_caml_create_array\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
@@ -165,7 +178,7 @@ and asmt_to_arm asm dest =
     | Expression e -> sprintf "%s\tldr r0, [fp, #%i]\n" (exp_to_arm e dest) (fst (frame_position dest))
     | _ -> failwith "Unauthorized type"
 
-(* Helper functions for fundef *)
+(** Helper functions for fundef *)
 let rec pull_remaining_args l =
     match l with
     | [] -> ""

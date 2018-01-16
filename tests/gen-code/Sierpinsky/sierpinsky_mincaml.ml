@@ -25,7 +25,7 @@ let rec for1 y size =
     if y >= 0 then for1 y size else ()
 in
 
-let sierpinsky size =
+let rec sierpinsky size =
     let y = size - 1 in 
     for1 y size
 in
