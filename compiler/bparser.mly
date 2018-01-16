@@ -39,7 +39,6 @@ let addtyp x = (x, Btype.gentyp ())
 %token UNDERSC
 %token EOF
 %token NIL
-
 %type <Bsyntax.toplevel> toplevel
 %start toplevel
 %%

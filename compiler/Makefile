@@ -26,17 +26,23 @@ test_backend:
 	(cd ../ && ./scripts/autotest_backend.sh -p ./scripts/armgen -d tests/backend -t res -o ARM)
 
 test: all
+	(rm -f /tmp/compiltest && rm -f /tmp/compiltotal)
 	@echo "LAUNCHING TESTS"
 	@echo "ASML PARSING ..."
-	$(MAKE) test_asml
+	@$(MAKE) --no-print-directory test_asml
 	@echo "TYPE CHECKING ..."
-	$(MAKE) test_typecheck
+	@$(MAKE) --no-print-directory test_typecheck
 	@echo "CODE GENERATION ..."
-	$(MAKE) test_gencode
-	$(MAKE) test_backend
+	@$(MAKE) --no-print-directory test_gencode
+	@$(MAKE) --no-print-directory test_backend
 	@echo "END OF TESTS"
-	@echo "In case of KO, you can launch the scripts separately with the verbose (-v) option to see the outputs."
+	@$(MAKE) --no-print-directory stats
 
+stats:
+	@{ cpt1=$$(awk '{s+=$$1} END {print s}' /tmp/compiltest);\
+		cpt2=$$(awk '{s+=$$1} END {print s}' /tmp/compiltotal);\
+		echo -e \\e[33m$$cpt1 successful tests from $$cpt2 : \\e[36m $$(echo "100 * $$cpt1/$$cpt2" | bc)% success rate \\e[0m;\
+	}
 clean:
 	rm -rf _build
 	rm -f mincamlc
