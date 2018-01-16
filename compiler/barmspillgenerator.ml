@@ -91,9 +91,10 @@ let rec exp_to_arm exp dest =
     | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (remove_underscore l) (store_in_stack 0 dest)
     | CallClo (l1, a1) -> let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
-                          let load_addr = sprintf "\tldr r4, =%s\n" (Id.to_string l1) in
+                          let load_addr = sprintf "\tldr r4, =%s\n" (let l = Id.to_string l1 in remove_underscore l) in
                           let branch = sprintf "\tblx r4\n" in 
                           sprintf "%s%s%s" prep_args load_addr branch 
+
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
                 | Var id -> let call = sprintf "%s\tbl min_caml_create_array\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
