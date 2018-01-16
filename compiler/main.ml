@@ -4,6 +4,7 @@ let display_version = ref false
 let type_check_only = ref false
 let parse_only = ref false
 let asml_only = ref false
+let linear_scanning = ref false
 let version = ref "Version: Fancy Camembert"
 let output_file = ref "a.out"
 
@@ -35,9 +36,19 @@ let print_asml l =
     let prog = Fasmlgen.asml_head c in
     if !asml_only then
         Fasmlgen.toplevel_to_string prog
-    else
+    else if !linear_scanning then
+		(Bliveinterval.calcu_live_interval prog;
+		Bliveinterval.print_live_interval !Bliveinterval.live_interval_s;
+		Bliveinterval.print_live_interval !Bliveinterval.live_interval_e;
+		let live_interval_s_ht = Bliveinterval.to_hashtbl !Bliveinterval.live_interval_s in
+		let live_interval_e_ht = Bliveinterval.to_hashtbl !Bliveinterval.live_interval_e in
+		(*Blinearscan.registeralloc prog live_interval_s_ht live_interval_e_ht*)
+		(*Fasmlgen.toplevel_to_string (Blinearscan.registeralloc prog live_interval_s_ht live_interval_e_ht))*)
         (*Barmgenerator.toplevel_to_arm prog*)
+		Barmlineargenerator.toplevel_to_arm (Blinearscan.registeralloc prog live_interval_s_ht live_interval_e_ht))
+    else
         Barmspillgenerator.toplevel_to_arm prog
+
 
 let file fin fout =
     let inchan = open_in fin in
@@ -69,6 +80,7 @@ let () =
         ("-t", Arg.Set type_check_only, "Type check only");
         ("-p", Arg.Set parse_only, "Parse only");
         ("-asml", Arg.Set asml_only, "Output ASML only");
+        ("-linear", Arg.Set linear_scanning, "Use linear scanning");
         ("-h", Arg.Unit (fun _ -> ()), "Dislay this list of options (TODO)")
     ] in
 

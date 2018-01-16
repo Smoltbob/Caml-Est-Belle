@@ -1,6 +1,6 @@
-let print_ast l =
+(*let print_ast l =
   let s = (Bparser.toplevel Blexer.token l) in
-  print_string (Fasmlgen.toplevel_to_string s); print_newline ()
+  print_string (Bsyntax.to_string_top s); print_newline ()
 
 let file f =
     let inchan = open_in f in
@@ -17,4 +17,4 @@ let () =
     (Printf.sprintf "usage: %s filenames" Sys.argv.(0));
   List.iter
     (fun f -> ignore (file f))
-   !files
+    !files*)

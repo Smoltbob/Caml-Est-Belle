@@ -176,7 +176,7 @@ and asmt_to_arm asm dest =
     (* We want ex "ADD R1 R2 #4" -> "OP ...Imm" *)
     | Let (id, e, a) -> let exp_string = exp_to_arm e id in sprintf "%s%s" exp_string (asmt_to_arm a "")
     | Expression e -> sprintf "%s\tldr r0, [fp, #%i]\n" (exp_to_arm e dest) (fst (frame_position dest))
-    | _ -> failwith "Unauthorized type"
+    | _ -> failwith "asmt_to_arm: Unauthorized type"
 
 (** Helper functions for fundef *)
 let rec pull_remaining_args l =
