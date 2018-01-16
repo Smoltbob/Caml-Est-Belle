@@ -4,11 +4,12 @@ open Bsyntax;;
 open Printf;;
 open List;;
 
+let current_frame_size = ref 0
+
 let remove_underscore function_name =
     String.sub function_name 1 ((String.length function_name) - 1)
 
 (* get a value between underscores in the string code *)
-(* To be rewritten *)
 let rec parse_string_code string_code index current_value =
     if index = String.length string_code then
         current_value
@@ -17,21 +18,27 @@ let rec parse_string_code string_code index current_value =
         | '_' -> current_value
         | current_char -> parse_string_code string_code (index+1) (current_value ^ (String.make 1 current_char))
 
-(* To be rewritten *)
 let rec resolve_linear_scan_register string_code =
     if string_code.[0] = 'R' then
         sprintf "r%s" (remove_underscore string_code)
     else
         sprintf "r%s" (parse_string_code string_code 3 "")
 
-(* To be rewritten *)
 let rec resolve_store_load string_code =
     if string_code.[0] = 'f' then
         let reg_number = parse_string_code string_code 3 "" in
         let load_address = parse_string_code string_code (4 + (String.length reg_number)) "" in
         let store_address = parse_string_code string_code (5 + (String.length reg_number) + (String.length load_address)) "" in
         let load_string = if load_address = "" then "" else sprintf "\tldr r%s, [fp, #-%s]\n" reg_number load_address in
-        let store_string = if store_address = "" then "" else sprintf "\tstr r%s, [fp, #-%s]\n" reg_number store_address in
+        let store_string = if store_address = "" then
+            ""
+        else
+            if int_of_string store_address <= !current_frame_size then
+                sprintf "\tstr r%s, [fp, #-%s]\n" reg_number store_address
+            else
+                (* ocaml ??? *)
+                let out = sprintf "\tstmfd sp!, r%s\n" reg_number in current_frame_size := !current_frame_size + 4; out
+        in
         sprintf "%s%s" store_string load_string
     else
         ""
@@ -187,6 +194,7 @@ let rec epilogue args =
 @param fundef program in type fundef
 *)
 let rec fundef_to_arm fundef =
+    current_frame_size := 0;
     let arm_name = remove_underscore fundef.name in
     let label = sprintf "\t.globl %s\n%s:\n" arm_name arm_name in
     let prologue = sprintf "\t@prologue\n\tstmfd sp!, {fp, lr}\n" in
@@ -204,7 +212,7 @@ let rec fundef_to_arm fundef =
  * going through the list *)
 let rec fundefs_to_arm fundefs =
     match fundefs with
-    | [start] -> let start_string = sprintf "\t.globl _start\n_start:\n" in 
+    | [start] -> current_frame_size := 0; let start_string = sprintf "\t.globl _start\n_start:\n" in 
     let mov = sprintf "\tmov fp, sp\n\n" in
     let print_code = sprintf "%s\n" (asmt_to_arm start.body "") in 
     let print_exit = sprintf "\tbl min_caml_exit\n" in 
