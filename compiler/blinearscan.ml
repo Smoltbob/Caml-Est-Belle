@@ -247,6 +247,7 @@ let rec spill_args args live_interval_e_ht a =
 			 (sprintf "f_%s_%i_" (reg_id) (a)) :: (spill_args q live_interval_e_ht (a+4))
 	|[] -> []
 	
+(** This function *)
 let rec alloc_args args live_interval_e_ht =
 	let reg_args = ref [] in
 	if (List.length args) < 5 then
@@ -257,7 +258,9 @@ let rec alloc_args args live_interval_e_ht =
 		|_ -> failwith ("failwith alloc_args"));
 	!reg_args
 			
-
+(** This function does register allocation in a function
+@param fund the function need to be allocated
+@return function with registers*)
 let alloc_fund fund live_interval_s_ht live_interval_e_ht =
 	spill_counter := 0;	
 	free_reg := free_reg_pool;
@@ -267,12 +270,18 @@ let alloc_fund fund live_interval_s_ht live_interval_e_ht =
 	let reg_body = (alloc_asm fund.body live_interval_s_ht live_interval_e_ht) in
 	{name = fund.name; args = reg_args; body = reg_body}
 
+(** This function does register allocation in a list of functions
+@param funds function list
+@return function list with registers*)
 let rec alloc_funds funds live_interval_s_ht live_interval_e_ht= 
 	match funds with
 	|t::q -> let reg_fund = alloc_fund t live_interval_s_ht live_interval_e_ht in
 			 reg_fund :: (alloc_funds q live_interval_s_ht live_interval_e_ht)
 	|[] -> []
-	
+
+(** This function is to do register allocation in type toplevel
+@param topl program in type toplevel
+@return program in toplevel with registers*)	
 let registeralloc topl live_interval_s_ht live_interval_e_ht=
 	match topl with
 	|Fundefs funds -> Fundefs (alloc_funds funds live_interval_s_ht live_interval_e_ht)
