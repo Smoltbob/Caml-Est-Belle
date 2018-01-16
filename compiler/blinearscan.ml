@@ -6,11 +6,10 @@ open Printf;;
 
 let active = ref []
 let spill = ref []
-(*let free_reg = ref ["R0";"R1";"R2";"R3";"R4";"R5";"R6";"R7";"R8";"R9";"R10";"R12";]*)
-let free_reg = ref["R0";"R1";"R2"]
-let args_counter = ref 0
+let free_reg_pool = ["R0";"R1";"R2";"R3";"R4";"R5";"R6";"R7";"R8";"R9";"R10";"R12";]
+(*let free_reg_pool = ref["R0";"R1";"R2"]*)
+let free_reg = ref free_reg_pool
 let spill_counter = ref 0
-let spill_args_counter = ref 4
 
 let trd t = let a,b,c = t in c
 let snd_ning t = let a,b,c = t in b
@@ -234,20 +233,18 @@ and alloc_asm asm live_interval_s_ht live_interval_e_ht =
 let rec active_args args live_interval_e_ht =
 	match args with
 	|t::q -> if (not (Hashtbl.mem live_interval_e_ht t)) then failwith ("failure with finding arg in live_interval_e");
-			args_counter := !args_counter + 1;
-			let x:Id.t = sprintf "R%i" (!args_counter - 1) in 
+			let x:Id.t = sprintf "%s" (List.hd !free_reg) in 
 			free_reg := List.tl !free_reg;
 			active := add_to_active (t, x, (Hashtbl.find live_interval_e_ht t)) !active;
 			x :: (active_args q live_interval_e_ht)
 	|[] -> []
 	
-let rec spill_args args live_interval_e_ht =
+let rec spill_args args live_interval_e_ht a =
 	match args with
-	|t::q -> spill_args_counter := !spill_args_counter + 4;
-			 let reg_id = List.hd !free_reg in 
+	|t::q -> let reg_id = List.hd !free_reg in 
 			 free_reg := List.tl !free_reg ;
 			 active := add_to_active (t, reg_id, (Hashtbl.find live_interval_e_ht t)) !active;
-			 (sprintf "f_%s_%i_" (reg_id) (!spill_args_counter)) :: (spill_args q live_interval_e_ht)
+			 (sprintf "f_%s_%i_" (reg_id) (a)) :: (spill_args q live_interval_e_ht (a+4))
 	|[] -> []
 	
 let rec alloc_args args live_interval_e_ht =
@@ -256,13 +253,16 @@ let rec alloc_args args live_interval_e_ht =
 		reg_args := active_args args live_interval_e_ht
 	else
 		(match args with
-		|a::b::c::d::e -> reg_args := active_args (a::b::c::d::[]:Id.t list) live_interval_e_ht; reg_args := !reg_args @ (spill_args e live_interval_e_ht)
+		|a::b::c::d::e -> reg_args := active_args (a::b::c::d::[]:Id.t list) live_interval_e_ht; reg_args := !reg_args @ (spill_args e live_interval_e_ht 4)
 		|_ -> failwith ("failwith alloc_args"));
 	!reg_args
 			
 
 let alloc_fund fund live_interval_s_ht live_interval_e_ht =
-	spill_counter := 0;
+	spill_counter := 0;	
+	free_reg := free_reg_pool;
+	active := [];
+	spill := [];
 	let reg_args = (alloc_args fund.args live_interval_e_ht) in
 	let reg_body = (alloc_asm fund.body live_interval_s_ht live_interval_e_ht) in
 	{name = fund.name; args = reg_args; body = reg_body}

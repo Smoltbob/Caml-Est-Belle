@@ -43,9 +43,9 @@ let print_asml l =
 		let live_interval_s_ht = Bliveinterval.to_hashtbl !Bliveinterval.live_interval_s in
 		let live_interval_e_ht = Bliveinterval.to_hashtbl !Bliveinterval.live_interval_e in
 		(*Blinearscan.registeralloc prog live_interval_s_ht live_interval_e_ht*)
-		(*Fasmlgen.toplevel_to_string (Blinearscan.registeralloc prog live_interval_s_ht live_interval_e_ht))*)
+		Fasmlgen.toplevel_to_string (Blinearscan.registeralloc prog live_interval_s_ht live_interval_e_ht))
         (*Barmgenerator.toplevel_to_arm prog*)
-		Barmlineargenerator.toplevel_to_arm (Blinearscan.registeralloc prog live_interval_s_ht live_interval_e_ht))
+		(*Barmlineargenerator.toplevel_to_arm (Blinearscan.registeralloc prog live_interval_s_ht live_interval_e_ht))*)
     else
         Barmspillgenerator.toplevel_to_arm prog
 
