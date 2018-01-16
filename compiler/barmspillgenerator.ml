@@ -102,7 +102,7 @@ let rec exp_to_arm exp dest =
     | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (remove_underscore l) (store_in_stack 0 dest)
     | CallClo (l1, a1) -> self := l1;
                           let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
-                          let load_addr = sprintf "\tldr r4, =%s\n" (Id.to_string l1) in
+                          let load_addr = sprintf "\tldr r4, =%s\n" (Id.to_string l1) in (* remove underscore to branch? *)
                           let branch = sprintf "\tblx r4\n" in 
                           sprintf "%s%s%s" prep_args load_addr branch 
 
