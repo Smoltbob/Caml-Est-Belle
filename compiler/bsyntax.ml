@@ -37,7 +37,6 @@ and fundef = {
 type toplevel =
     | Fundefs of (fundef list) (* Once we implement functions we will have a list *)
 
-
 (** Prints the functions arguments. They are stored in a list.
    @param argu the list of arguments
 *)
@@ -100,6 +99,7 @@ let rec to_string_fundef fund =
 let rec to_string_top top =
     match top with
   | Fundefs f -> sprintf "(%s)" (to_string_fundef (hd f))
+
 
 let rec print_list_idx l i =
    match i with
