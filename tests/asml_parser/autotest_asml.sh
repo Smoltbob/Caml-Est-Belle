@@ -62,6 +62,6 @@ for folder in "$dir"/*/; do
         fi
     done
 done
-echo -e "\\e[4m->" "$okcounter" tests passed successfully from "$counter" "($((100 * okcounter/counter))%)" "\\e[24m"
+echo -e "\\e[4mAsml parsing ->" "$okcounter" tests passed successfully from "$counter" "($((100 * okcounter/counter))%)" "\\e[24m"
 echo "$okcounter" >> /tmp/compiltest
 echo "$counter" >> /tmp/compiltotal
