@@ -154,10 +154,13 @@ let rec knormal (ast:Fsyntax.t) : t =
                  let cnt = ref 0 in
                  let a' = List.map (fun x-> let c = !cnt in incr cnt; knormal (Put(Var r, Int c, x))) a in
                  let (aa, t) = newvar () in
+                 let (nn, t) = newvar () in
+                 Let((nn,t), Int(List.length a'), 
                  Let((aa,t), knormal (List.hd a), (*replace with anything?*)
-                     Let((r,t),
-                      Array(Int (List.length a'), (Var aa)),
+                     Let((r,t), 
+                      Array((Var nn) , (Var aa)),
                       List.fold_right (fun x->fun y->Let(("_", Ftype.gentyp ()), x, y)) a' (Var r)))
+                 )
                   
     |LetTuple (a, b, c) -> let (b', t) = newvar () in
                            let cnt = ref ((List.length a) - 1)  in
