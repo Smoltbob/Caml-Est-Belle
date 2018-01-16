@@ -66,7 +66,7 @@ let rec asml_t_triv t = match t with
             | _ -> failwith "not a list of variables. Maybe the argument is of type unit ?"
         in
         Call (f, trans l))
-    | AppC (c, l) -> CallC (c, to_fargs l)
+    | AppC (c, l) -> CallClo (c, to_fargs l)
     (*TODO check the requierments on types for get and put*)
     | Get (a, b) -> (match a, b with
                         | (Var a2, Var b2) -> MemAcc (a2, Var b2)
@@ -117,7 +117,7 @@ let rec expression_to_string exp = match exp with
     | Call (f, args) -> sprintf "call %s %s"
         f
         (infix_to_string (fun x->x) args " ")
-    | CallC (c, args) -> sprintf "callclo %s %s"
+    | CallClo (c, args) -> sprintf "callclo %s %s"
         c
         (infix_to_string (fun x->x) args " ")
     | New i -> sprintf "new %s" (expression_to_string i)

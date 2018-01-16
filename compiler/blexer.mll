@@ -60,6 +60,8 @@ rule token = parse
     { ELSE }
 | "call"
     { CALL }
+| "callclo"
+    { CALLCLO }
 | "nop" 
     { NOP }
 | "<-"
