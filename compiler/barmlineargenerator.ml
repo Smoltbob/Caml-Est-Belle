@@ -25,7 +25,6 @@ let rec resolve_linear_scan_register string_code =
         sprintf "r%s" (parse_string_code string_code 3 "")
 
 let rec resolve_store_load string_code =
-    print_string string_code; print_newline ();
     if string_code.[0] = 'f' then
         let reg_number = parse_string_code string_code 3 "" in
         let load_address = parse_string_code string_code (4 + (String.length reg_number)) "" in
