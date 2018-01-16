@@ -59,13 +59,11 @@ let rec asml_t_triv t = match t with
     | Sub (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Sub (x2, Var y2)
                         | _ -> failwith "matchfailure Sub")
-    | AppD (f, l) ->
-        (let rec trans (l:Fclosure.t list) :Bsyntax.formal_args = match l with
-            | [] -> []
-            | (Var x)::q -> (x:Id.t)::(trans q)
-            | _ -> failwith "not a list of variables. Maybe the argument is of type unit ?"
-        in
-        Call (f, trans l))
+    | AppD (f, l) -> (*if f.[0] = '_' then
+                        Call (f, to_fargs l)
+                     else
+                        Let (f^"aux", MemAcc (f, Int 0),*)
+                        Call (f, to_fargs l)
     | AppC (c, l) -> CallClo (c, to_fargs l)
     (*TODO check the requierments on types for get and put*)
     | Get (a, b) -> (match a, b with
@@ -77,7 +75,7 @@ let rec asml_t_triv t = match t with
     | Array (a, b) -> (match a, b with
                         | Var a2, Var b2 -> Call ("_min_caml_create_array", [a2; b2])
                         | _ -> failwith "matchfailure Array")
-    | IfEq (id1, id2, t1, t2) -> If (id1, Var id2, asml_exp t1, asml_exp t2, "eq")
+    | IfEq (id1, id2, t1, t2) -> If (id1, Var id2, asml_exp t1, asml_exp t2, "beq")
     | IfLE (id1, id2, t1, t2) -> If (id1, Var id2, asml_exp t1, asml_exp t2, "le")
     (* | IfBool (t1, t2, t3) -> If (id1, t, asmt, asmt, string) *)
     | _ -> failwith "asml_t_triv matchfailure not implemented"
@@ -117,7 +115,7 @@ let rec expression_to_string exp = match exp with
     | Call (f, args) -> sprintf "call %s %s"
         f
         (infix_to_string (fun x->x) args " ")
-    | CallClo (c, args) -> sprintf "callclo %s %s"
+    | CallClo (c, args) -> sprintf "apply_closure %s %s"
         c
         (infix_to_string (fun x->x) args " ")
     | New i -> sprintf "new %s" (expression_to_string i)
