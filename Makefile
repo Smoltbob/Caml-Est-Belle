@@ -1,5 +1,5 @@
 all:
-	(cd compiler && make)
+	(cd compiler && make -s)
 
 %:
-	(cd compiler && make $@)
+	(cd compiler && make -s $@)

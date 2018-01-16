@@ -14,8 +14,8 @@
 .endm
 
 .text
-.global talloc
-talloc:
+.global min_caml_create_array
+min_caml_create_array:
     stmfd sp!, {r4,r5,r6,r7,r8,lr}  @ Saving registers
     mov r5, r0              @ Saving r0 (size) to use it later
     @ Increases the heap size
