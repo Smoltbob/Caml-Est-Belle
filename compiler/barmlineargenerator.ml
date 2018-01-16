@@ -77,17 +77,6 @@ let rec operation_to_arm op e1 e2 dest =
          | _ -> failwith "Unauthorized type"
         )
 *)
-let rec operation_to_arm op e1 e2 dest =
-    let load_store_dest = resolve_store_load dest in
-    let register_number_dest = resolve_linear_scan_register dest in
-    let load_store_e1 = resolve_store_load e1 in
-    let register_number_e1 = resolve_linear_scan_register e1 in
-    match e2 with
-    | Var id ->
-        let load_store_id = resolve_store_load id in
-        let register_number_id = resolve_linear_scan_register id in
-        sprintf "%s%s%s\t%s %s, %s, %s" load_store_dest load_store_e1 load_store_id op register_number_dest register_number_e1 register_number_id
-    | Int i -> sprintf "%s%s\t%s, %s, #%i" load_store_dest load_store_e1 op register_number_dest register_number_e1 i
 
 (* get a value between underscores in the string code *)
 (* To be rewritten *)
@@ -97,7 +86,7 @@ let rec parse_string_code string_code index current_value =
     else
         match string_code.[index] with
         | '_' -> current_value
-        | current_char -> parse_string_code string_code (index+1) (current_value ^ (String.make current_char 1))
+        | current_char -> parse_string_code string_code (index+1) (current_value ^ (String.make 1 current_char))
 (* To be rewritten *)
 let rec resolve_linear_scan_register string_code =
     if string_code.[0] = 'R' then
@@ -110,9 +99,21 @@ let rec resolve_store_load string_code =
         let reg_number = parse_string_code string_code 3 "" in
         let store_address = parse_string_code string_code (4 + (String.length reg_number)) "" in
         let load_address = parse_string_code string_code (5 + (String.length reg_number) + (String.length store_address)) "" in
-        sprintf "\tstr r%s, [fp, #-%s]\n\tldr r%s, [fp, #-%s]\n" reg_number store_address load_address
+        sprintf "\tstr r%s, [fp, #-%s]\n\tldr r%s, [fp, #-%s]\n" reg_number store_address reg_number load_address
     else
         ""
+
+let rec operation_to_arm op e1 e2 dest =
+    let load_store_dest = resolve_store_load dest in
+    let register_number_dest = resolve_linear_scan_register dest in
+    let load_store_e1 = resolve_store_load e1 in
+    let register_number_e1 = resolve_linear_scan_register e1 in
+    match e2 with
+    | Var id ->
+        let load_store_id = resolve_store_load id in
+        let register_number_id = resolve_linear_scan_register id in
+        sprintf "%s%s%s\t%s %s, %s, %s" load_store_dest load_store_e1 load_store_id op register_number_dest register_number_e1 register_number_id
+    | Int i -> sprintf "%s%s\t%s %s, %s, #%i" load_store_dest load_store_e1 op register_number_dest register_number_e1 i
 
 (** This function is to convert assignments into arm code 
 @param exp expression in the assigment
