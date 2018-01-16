@@ -26,7 +26,7 @@ let rec register_args args =
     | arg::arg_list -> let top_frame_table = Stack.top frames_stack in if (not (Hashtbl.mem top_frame_table arg)) then
                             (let frame_index = -4 * (Hashtbl.length top_frame_table) - 4 in
                             Hashtbl.add top_frame_table arg frame_index);
-                       register_args arg_list
+                           register_args arg_list
 
 let rec push_frame_table () =
     let (new_frame_table:(string, int) Hashtbl.t) = Hashtbl.create 10 in
@@ -95,11 +95,11 @@ let rec exp_to_arm exp dest =
     
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
-                | Var id -> let call = sprintf "%s\tbl talloc\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
+                | Var id -> let call = sprintf "%s\tbl min_caml_create_array\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
                             in sprintf "%s" call
                 | Int i -> let store_string = store_in_stack 0 dest in 
                            let prepare_arg = sprintf "\tmov r0, #%s\n" (string_of_int i) in
-                           let call_alloc = sprintf "\tbl talloc\n%s" (store_in_stack 0 dest) in
+                           let call_alloc = sprintf "\tbl min_caml_create_array\n%s" (store_in_stack 0 dest) in
                                sprintf "%s%s%s" prepare_arg store_string call_alloc
                 | _ -> failwith "Unauthorized type"
     )
@@ -163,6 +163,7 @@ and asmt_to_arm asm dest =
     (* We want ex "ADD R1 R2 #4" -> "OP ...Imm" *)
     | Let (id, e, a) -> let exp_string = exp_to_arm e id in sprintf "%s%s" exp_string (asmt_to_arm a "")
     | Expression e -> sprintf "%s\tldr r0, [fp, #%i]\n" (exp_to_arm e dest) (fst (frame_position dest))
+    | _ -> failwith "Unauthorized type"
 
 (* Helper functions for fundef *)
 let rec pull_remaining_args l =

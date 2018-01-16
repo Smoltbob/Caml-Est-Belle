@@ -35,19 +35,21 @@ while getopts "vd:p:t:o:" opt; do
     esac
 done
 
-#shift $((OPTIND-1))
-#[ "$1" == "--" ] && shift
-
+# File counter
+counter=0
+# Success counter
+okcounter=0
 # Going through asml files in the folder to execute them
 for folder in "$dir"/*/; do
-    if [[ $(basename $folder) != "ARM" ]]; then
-        echo $(basename $folder)
+    if [[ "$(basename "$folder")" != "ARM" ]]; then
+        basename "$folder"
         for file in "$folder"*.ml; do
+            counter=$((counter + 1))
             # Removing extention from filename
             filename=$(basename "$file")
             filename="${filename%.*}"
             # Printing filename + path
-            echo -e "File: \e[34m$file\e[0m"
+            echo -e "File: \\e[34m$file\\e[0m"
             # Compiling
             if [[ $verb = 1 ]]; then
                 "$prog" "$file" -o "$outarm"/"$filename".s
@@ -59,18 +61,22 @@ for folder in "$dir"/*/; do
             RESULT=$(cd "$outarm" && qemu-arm ./"$filename".arm)
             # Printing output from parsing + ARM generation
             # Printing the expected output
-            EXP=$(cat "$folder"expected_$typ/"$filename".exp)
-            if [[ $verb = 1 ]] || [[ $EXP != $RESULT ]]; then
-                echo -e "\e[33mOutput  : $RESULT\e[0m"
-                echo -e "\e[35mExpected :$EXP\e[0m"
+            EXP=$(cat "$folder"expected_"$typ"/"$filename".exp)
+            if [[ $verb = 1 ]] || [[ "$EXP" != "$RESULT" ]]; then
+                echo -e "\\e[33mOutput  : $RESULT\\e[0m"
+                echo -e "\\e[35mExpected :$EXP\\e[0m"
                 echo ""
             fi
             # Comparison between the two
-            if [[ $RESULT == "$EXP" ]]; then
-                echo -e "\e[7mResult\e[27m \e[32mOK\e[0m"
+            if [[ "$RESULT" == "$EXP" ]]; then
+                echo -e "\\e[7mResult\\e[27m \\e[32mOK\\e[0m"
+                okcounter=$((okcounter + 1))
             else 
-                echo -e "\e[7mResult\e[27m \e[31mKO\e[0m"
+                echo -e "\\e[7mResult\\e[27m \\e[31mKO\\e[0m"
             fi
         done
     fi
 done
+echo -e "\\e[4mMinCaml compilation ->" "$okcounter" tests passed successfully from "$counter" "($((100 * okcounter/counter))%)" "\\e[24m"
+echo "$okcounter" >> /tmp/compiltest
+echo "$counter" >> /tmp/compiltotal

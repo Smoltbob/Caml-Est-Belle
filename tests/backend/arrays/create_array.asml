@@ -1,4 +1,4 @@
 let _ =
     let a = 2 in
     let b = 8 in
-    call _talloc a b 
+    call _min_caml_create_array a b 

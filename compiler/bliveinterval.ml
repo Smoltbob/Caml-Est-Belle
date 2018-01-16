@@ -36,6 +36,7 @@ let rec expire_asm_exp e counter =
 	| Eq (a, exp) -> modify_live_interval_e a counter; expire_asm_exp exp counter
 	| Call (a, b) -> modify_live_interval_e_list b counter
 	| If(a,b,c,d,e) -> modify_live_interval_e a counter; expire_asm_exp b counter; expire_fundef_body c; expire_fundef_body d
+	|Nop -> ()
 	| _ -> failwith ("match failure with bliveinterval expression")
 
 and expire_fundef_body asm =

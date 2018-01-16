@@ -49,6 +49,7 @@ let rec asml_t_triv t = match t with
     | Neg x -> (match x with
                         | (Var y) -> Neg y
                         | _ -> failwith "matchfailure Neg")
+
     (* | FNeg x -> (match x with
                         | (Var y) -> Fneg y
                         | _ -> failwith "matchfailure FNeg") *)
