@@ -10,6 +10,7 @@ let addtyp x = (x, Ftype.gentyp ())
 %token NOT
 %token MINUS
 %token PLUS
+%token LAND
 %token MINUS_DOT
 %token PLUS_DOT
 %token AST_DOT
@@ -83,6 +84,8 @@ exp: /* expressions */
     | e -> Neg(e) }
 | exp PLUS exp /* addition */
     { Add($1, $3) }
+| exp LAND exp /* addition */
+    { Land($1, $3) }
 | exp MINUS exp
     { Sub($1, $3) }
 | exp EQUAL exp

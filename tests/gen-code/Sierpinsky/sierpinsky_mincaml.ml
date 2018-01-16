@@ -1,7 +1,7 @@
 let rec for3 x y size =
     let c = land x y in
     let u = if x < size then
-        if c = 0 then print_int 10  else print_string 00 
+        if c = 0 then print_int 10 else print_string 00 
     else () in
     let x = x + 1 in
     let test = x + y in
@@ -10,7 +10,7 @@ in
 
 let rec for2 i y size =
     let u = 
-        if y > 0 then print_int 00 else () in
+        if y > 0 then print_char 32 else () in
     let i = i + 1 in 
         if i < y then for2 i y size else ()
 in

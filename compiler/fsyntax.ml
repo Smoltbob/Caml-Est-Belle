@@ -13,6 +13,7 @@ type t =
   | Land of t * t
 
   | Sub of t * t
+  | Land of t * t
   | FNeg of t
   | FAdd of t * t
   | FSub of t * t
@@ -47,6 +48,7 @@ let rec to_string exp =
   | Not e -> sprintf "(not %s)" (to_string e)
   | Neg e -> sprintf "(- %s)" (to_string e)
   | Add (e1, e2) -> sprintf "(%s + %s)" (to_string e1) (to_string e2)
+  | Land (e1, e2) -> sprintf "(%s && %s)" (to_string e1) (to_string e2)
   | Sub (e1, e2) -> sprintf "(%s - %s)" (to_string e1) (to_string e2)
   | FNeg e -> sprintf "(-. %s)" (to_string e)
   | FAdd (e1, e2) -> sprintf "(%s +. %s)" (to_string e1) (to_string e2)
