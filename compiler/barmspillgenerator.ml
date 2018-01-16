@@ -198,13 +198,9 @@ let rec get_args args =
  * otherwise it was. *)
 let rec epilogue args =
     if (List.length args <= 4) then
-        "\tmov sp, fp
-        \tldmfd sp!, {fp, pc}\n\n\n"
+        "\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n"
     else
-        sprintf "\tmov sp, fp
-                 \tldmfd sp!, {fp, lr}
-                 \tadd sp, sp, #%i
-                 \tbx lr\n\n\n" (4 * ((List.length args) - 4))
+        sprintf "\tmov sp, fp\n\tldmfd sp!, {fp, lr}\n\tadd sp, sp, #%i\n\tbx lr\n\n\n" (4 * ((List.length args) - 4))
 
 (** This function handles the printing of a given function
 @param fundef program in type fundef
