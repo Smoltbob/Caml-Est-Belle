@@ -1,6 +1,6 @@
 open Fknormal
 
-let threshold = ref 10
+let threshold = ref 0
 
 let rec find x env =
     match env with
@@ -15,6 +15,10 @@ let rec size x =
     |IfLE(x, y, a, b) -> 1 + (size a) + (size b)
     |_ -> 1
 
+let funmap x y = match x,y with
+    | (z, _), (Var y) -> (z,y)
+    | _ -> failwith "funmap matchfailure"
+
 let rec g env (k:Fknormal.t) : Fknormal.t =
     match k with
     |LetRec(a,b) -> let body' = g env a.body in (*not adding a.name to env in case of recursion*)
@@ -22,16 +26,15 @@ let rec g env (k:Fknormal.t) : Fknormal.t =
                 LetRec({name=a.name; args=a.args; body=body'}, g ((a.name, (a.args, body'))::env) b)
             else
                 LetRec({name=a.name; args=a.args; body=body'}, g env b)
-    |Let(a,b,c) -> Let(a, g env b, g env c) 
-    |IfEq(x, y, a, b) -> IfEq(x, y, g env a, g env b) 
-    |IfLE(x, y, a, b) -> IfLE(x, y, g env a, g env b) 
-    |Let(a,b,c) -> Let(a, g env b, g env c) 
+    |Let(a,b,c) -> Let(a, g env b, g env c)
+    |IfEq(x, y, a, b) -> IfEq(x, y, g env a, g env b)
+    |IfLE(x, y, a, b) -> IfLE(x, y, g env a, g env b)
+    |Let(a,b,c) -> Let(a, g env b, g env c)
     |App((Var x), ys) -> (match (find x env) with
                     |None -> App((Var x), ys)
-                    |Some (zs, e) -> let env' = List.map2 (fun (z,_) (Var y) -> (z,y)) zs ys in
+                    |Some (zs, e) -> let env' = List.map2 funmap zs ys in
                                      Falphaconversion.alpha_g env' e
                    )
     |_ -> k
 
 let f k = g [] k
-

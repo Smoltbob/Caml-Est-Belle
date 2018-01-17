@@ -21,9 +21,7 @@ type t =
     | Not of t
     | Neg of t
     | Add of t * t
-
     | Land of t * t
-
     | Sub of t * t
     | FNeg of t
     | FAdd of t * t
@@ -317,31 +315,7 @@ and psi cat ls rs =
     match ls with
     |LetRec(a,b) -> LetRec(a, (psi cat b rs)) (*it's a psi-cat, bros*)
     |_ -> chi cat ls (phi rs)
-(*
-and phi (ast:t) : t =
-     (*output: COND(output) *)
-    match ast with
-    |Let(x,y,z) -> psi (fun ls->fun rs->Let(x, ls, rs)) (phi y) z
-    |LetRec(y,z) ->(
-                     let fv = SS.elements (find_fv y.body (make_set y.args)) in
-                     match fv with
-                     |[] -> (known:=(fst y.name)::(!known);
-                             psi (fun ls->fun rs->
-                             LetRec({name=y.name; args=y.args; formal_fv=[]; body=ls},rs))
-                                 (phi y.body) z)
-                     |_ -> ( let clos_name = (fst y.name)^"c" in (*Hashtbl.add closures y.name clos_name;*)
-                             psi (fun ls->fun rs ->
-                             LetRec({name=y.name; args=y.args; formal_fv=fv; body=ls},rs))
-                                 (phi y.body) (LetCls(clos_name, (fst y.name), (List.map fst fv), z)))
-                   )
-    |IfEq(u,v,y,z) -> psi (fun ls->fun rs->IfEq(u,v,ls,rs)) (phi y) z
-    |IfLE(u,v,y,z) -> psi (fun ls->fun rs->IfLE(u,v,ls,rs)) (phi y) z
-    |LetCls(u,v,a,b) -> chi (fun ls->fun rs->LetCls(u,v,a,rs)) Unit (phi b)
-    |AppD(a, b) when List.mem a !known -> AppD(a, b)
-    |AppD(a, b) -> let clos_name = a^"c" (*Hashtbl.find closures a*) in
-                   AppC(clos_name, b)
-    |_ -> ast
-*)
+
 and phi (ast:t) : t =
      (*output: COND(output) *)
     match ast with
@@ -383,9 +357,9 @@ let rec id_to_cls ast =
     |LetRec(x,y) -> LetRec({name=x.name; args=x.args; formal_fv=x.formal_fv; body=id_to_cls x.body}, id_to_cls y)
     |IfEq(u, v, x, y) -> IfEq(u, v, id_to_cls x, id_to_cls y)
     |IfLE(u, v, x, y) -> IfLE(u, v, id_to_cls x, id_to_cls y)
-    |AppD(a, b) -> AppD(substitute closures a, List.map (substitute_var closures) b) 
-    |AppC(a, b) -> AppC(substitute closures a, List.map (substitute_var closures) b) 
-    |Var(_) -> substitute_var closures ast 
+    |AppD(a, b) -> AppD(substitute closures a, List.map (substitute_var closures) b)
+    |AppC(a, b) -> AppC(substitute closures a, List.map (substitute_var closures) b)
+    |Var(_) -> substitute_var closures ast
     |_ -> ast
 
 let rec add_prefix ast =
@@ -414,7 +388,7 @@ let rec add_undr ast =
     |IfLE(u, v, x, y) -> IfLE(u, v, add_undr x, add_undr y)
     |AppD(a, b) -> AppD(substitute funs a, List.map (substitute_var funs) b)
     (*|AppC(a, b) -> if Hashtbl.mem funs a then AppC(Hashtbl.find funs a, b) else AppC(a,b)*)
-    |Var(_) -> substitute_var funs ast 
+    |Var(_) -> substitute_var funs ast
     |_ -> ast
 
 
@@ -441,13 +415,30 @@ let rec merge_letrecs_lets letrecs lets = match letrecs with
 *)
 (*and chi fd = fd*)
 
+
+
+let rec reduc k = match k with
+    | LetRec (f, a) ->
+            LetRec ({ name = f.name; args = f.args ; formal_fv = f.formal_fv; body = (reduc f.body) },
+                reduc a)
+    | Let (x, a, b) -> (match a with
+        | Let (y, a2, b2) -> reduc (Let (y, a2, (reduc (Let (x, b2, b)))))
+        | _ -> Let (x, reduc a, reduc b))
+    | IfEq(x, y, a, b) -> IfEq(x, y, reduc a, reduc b)
+    | IfLE(x, y, a, b) -> IfLE(x, y, reduc a, reduc b)
+    | _ -> k
+ 
+
+
+
+
 let clos_out k =
     (*let clos = (clos_exp (the_cunning_psi k)) in*)
     (*
     let clos = (clos_exp (phi k)) in
     merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos)
     *)
-     add_prefix (add_undr (id_to_cls (phi ((*scan_fundef*) (clos_exp k)))))
+     add_prefix (add_undr (id_to_cls (reduc (phi ((*scan_fundef*) (clos_exp k))))))
 
 
 (** This function is for debugging purpose only, it returns its argument as a string *)

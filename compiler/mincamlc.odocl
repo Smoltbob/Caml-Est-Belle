@@ -1,9 +1,12 @@
 Bsyntax
 Barmgen
 Barmspillgenerator
+Blinearscan
+Bliveinterval
 Typechecking
 Falphaconversion
 Freduction
 Fknormal
 Fclosure
 Fasmlgen
+

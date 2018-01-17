@@ -28,4 +28,4 @@ let sierpinsky size =
     for1 y size
 
 let () = 
-    sierpinsky 20000
+    sierpinsky 2000

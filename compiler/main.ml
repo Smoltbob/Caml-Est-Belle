@@ -7,11 +7,12 @@ let asml_only = ref false
 let linear_scanning = ref false
 let version = ref "Version: Fancy Camembert"
 let output_file = ref "a.out"
+let optimize = ref false
 
 let catchfailwith funct x = try (funct x) with
     | Failure err -> (Printf.fprintf stdout "%s" err; exit 1)
     | _ -> funct x
-
+(*
 let writeInFile  file s=
     let input = ref "" in
     let oc = open_out  file in
@@ -49,32 +50,40 @@ let writeInFile  file s=
 
         Printf.fprintf oc "%s" !input;
         print_endline (Printf.sprintf "Successfully writeFile %s" file);
-    close_out oc
+    close_out oc *)
 
 let print_asml l =
     let s = Fparser.exp Flexer.token l in
-    writeInFile "b.out" s ;
-    let c = (
+    (* writeInFile "b.out" s ; *)
+    let c =
+    if !optimize
+    then
         Fclosure.clos_out
         (
-            (*
+        Freduction.reduc
+        (
+        Falphaconversion.alpha
+        (
+        Fknormal.knormal s
+        )))
+    else
+        Fclosure.clos_out
+        (
         Felim.f
         (
         Fconstfold.f
         (
-            *)
             (*
         Finline.f*)
         (
         Freduction.reduc
-        ((*
+        (
         Fbeta.f
         (
-            *)
         Falphaconversion.alpha
         (
         Fknormal.knormal s
-    )))))
+        )))))))
     in
     (* Fclosure.clos_to_string c *)
     let prog = Fasmlgen.asml_head c in
@@ -125,7 +134,8 @@ let () =
         ("-p", Arg.Set parse_only, "Parse only");
         ("-asml", Arg.Set asml_only, "Output ASML only");
         ("-linear", Arg.Set linear_scanning, "Use linear scanning");
-        ("-h", Arg.Unit (fun _ -> ()), "Dislay this list of options (TODO)")
+        ("-opt", Arg.Set optimize, "Use optimisation");
+        ("-h", Arg.Unit (fun _ -> ()), "-o: output file\n-h: display help\n-v: display version\n-t: type check only\n-p: parse only\n-asml: output ASML")
     ] in
 
     Arg.parse
