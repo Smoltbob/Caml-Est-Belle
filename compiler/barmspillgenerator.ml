@@ -90,7 +90,12 @@ let rec exp_to_arm exp dest =
     match exp with
     | Neg id -> let store_string = store_in_stack 4 dest in
                     sprintf "\tldr r4, [fp, #%i]\nmov r5, #0\n\tsub r4, r5, r4\n%s" (fst (frame_position id)) store_string
-    | Int i -> let store_string = store_in_stack 4 dest in sprintf "\tmov r4, #%s\n%s" (string_of_int i) store_string
+    | Int i -> let store_string = store_in_stack 4 dest in
+               let move_string = if i < 65536 then
+                   sprintf "\tmov r4, #%i\n" i
+               else
+                   sprintf "\tmovw r4, #:lower16:%i\n\tmovt r4, #:upper16:%i\n" i i
+               in move_string ^ store_string
     | Var id -> (match id with 
                 (* Here we want to treat labels and variable names differently *)
                 | _ -> let str = (Id.to_string id) in 
@@ -121,7 +126,7 @@ let rec exp_to_arm exp dest =
                             in sprintf "%s" call
                 | Int i -> let store_string = store_in_stack 0 dest in 
                            let prepare_arg = sprintf "\tmov r0, #%s\n" (string_of_int i) in
-                           let call_alloc = sprintf "\tmov r1, #0\nbl min_caml_create_array\n%s" (store_in_stack 0 dest) in
+                           let call_alloc = sprintf "\tmov r1, #0\n\tbl min_caml_create_array\n%s" (store_in_stack 0 dest) in
                                sprintf "%s%s%s" prepare_arg store_string call_alloc
                 | _ -> failwith "Unauthorized type"
     )
@@ -255,6 +260,6 @@ let rec fundefs_to_arm fundefs =
 @return unit*)
 let rec toplevel_to_arm toplevel =
     match toplevel with
-    | Fundefs functions_list -> let data_section = sprintf ".data\n.balign 4\nself: .word 0" in 
+    | Fundefs functions_list -> let data_section = sprintf "\t.data\n\t.balign 4\nself: .word 0" in 
                                 let word_declaration = sprintf "_self: .word self" in 
                                 sprintf "%s\n\n\t.text\n%s\n\n%s\n" data_section (fundefs_to_arm functions_list) word_declaration
