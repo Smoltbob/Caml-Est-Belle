@@ -57,15 +57,15 @@ let print_asml l =
     let c = (
         Fclosure.clos_out
         (
-        (*Felim.f*)
+        Felim.f
         (
-        (*Fconstfold.f*)
+        Fconstfold.f
         (
-        (*Finline.f*)
+        Finline.f
         (
         Freduction.reduc
         (
-        (*Fbeta.f*)
+        Fbeta.f
         (
         Falphaconversion.alpha
         (
