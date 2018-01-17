@@ -43,9 +43,7 @@ and fundef = {
                 body : t
             }
 
-(*type prog = Prog of fundef list * t*)
 
-(* type toplevel = fundef list *)
 
 val clos_out : Fknormal.t -> t
 (* val clos : Fknormal.t -> Fknormal.t *)
@@ -53,9 +51,4 @@ val clos_exp : Fknormal.t -> t
 (** This function is for debugging purpose only, it returns its argument as a string *)
 val clos_to_string : t -> string
 
-val hash_fundef: (Id.l, Id.t list) Hashtbl.t
-(* val clos_toplevel : Fknormal.t -> toplevel *)
-(* val fv = t -> S.t *)
 
-(* val toplevel : fundef list ref *)
-(* val g = Ftype.t M.t -> S.t -> Fsyntax.t -> t *)

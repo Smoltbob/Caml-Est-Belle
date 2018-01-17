@@ -1,12 +1,8 @@
 (** This module encapslates the K-normalization step.*)
 open Fsyntax;;
 open Printf;;
-(*open Fparser;;*)
 
-(*
-let addtyp x = (x, Ftype.gentyp ())
-let newid () = addtyp (Id.genid ())
-*)
+
 
 type t =
   | Unit
@@ -39,25 +35,12 @@ type t =
   | Put of t * t * t
 and fundef = { name : Id.t * Ftype.t; args : (Id.t * Ftype.t) list; body : t }
 
-(** Temporary solution to generate new labels. Revise later.*)
 let last = ref 0
-(*let newvar () = let res = ((String.make 1  (char_of_int !last)), Ftype.gentyp ()) in incr last; res*)
 let newvar () = let res = ("v"^(Printf.sprintf "%d" !last), Ftype.gentyp ()) in incr last; res
-(**Unused.*)
-let newfct args body = let res = {name = newvar (); args = args; body = body } in res
 
 
 
 let is_ident_or_const (ast:Fsyntax.t)  =
-    (*  (*uncomment when immediates in arithmetic operations are working in asmlgen*)
-    match ast with
-    |Unit -> true
-    |Bool _ -> true
-    |Int _ -> true
-    |Float _ -> true
-    |Var _ -> true
-    |_ -> false
-    *)
     match ast with
     |Var _ -> true
     |_ -> false
@@ -92,23 +75,9 @@ let rec knormal (ast:Fsyntax.t) : t =
     |FMul (a, b) -> knormal_binary_brute (fun x->fun y->FMul(x,y)) a b
     |FDiv (a, b) -> knormal_binary_brute (fun x->fun y->FDiv(x,y)) a b
     |Land (a, b) -> knormal_binary (fun x->fun y->Land(x,y)) a b
-    (*
-    |Eq (a, b) -> let (a',t) = newvar () in
-                   let (b',t) = newvar () in
-                   Let((a',t), knormal a,
-                    Let((b',t), knormal b,
-                        Eq (Var a', Var b'))
-                   )
-    |LE (a, b) -> let (a',t) = newvar () in
-                   let (b',t) = newvar () in
-                   Let((a',t), knormal a,
-                    Let((b',t), knormal b,
-                        LE (Var a', Var b'))
-                   )
-    *)
     |App (a,b) ->  (let rec aux (fname:Id.t) (vars_rem:Fsyntax.t list) (k_vars:t list) : t =
                     match vars_rem with
-                        |[] -> App(Var(fname), List.rev k_vars) (*a temporary solution to name external functions*)
+                        |[] -> App(Var(fname), List.rev k_vars) 
                         |h::q -> (match h with
                                  |Var(_) -> aux fname q ((knormal h)::k_vars)
                                  |_ -> let (x,t) = newvar () in Let((x,t), knormal h, aux fname q ((Var x)::k_vars))
@@ -118,7 +87,7 @@ let rec knormal (ast:Fsyntax.t) : t =
                         |Var(fct) -> aux fct b []
                         |_ -> let (f,t) = newvar () in Let((f, t), knormal a, aux f b [])
                   )
-    |If (a, b, c) ->(match a with  (*TODO: improve as the rest except for the 'true' in the default case*)
+    |If (a, b, c) ->(match a with  
                      | LE(x, y) -> let (x',t) = newvar () in
                                     let (y',t) = newvar () in
                                     Let((x',t), knormal x,
@@ -141,7 +110,7 @@ let rec knormal (ast:Fsyntax.t) : t =
 
     |Let (a, b, c) -> if is_ident_or_const b then Let(a, ident_or_const_to_k b, knormal c)
                         else Let(a, knormal b, knormal c)
-    |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b) (*later on, adding min_caml_ to external funtcions should be moved to fclosure.ml*)
+    |LetRec (a, b) ->  LetRec ({name=a.name; args=a.args; body=(knormal a.body)}, knormal b) 
     |Array (a, b) -> knormal_binary_brute (fun x->fun y->Array(x,y)) a b
     |Get (a, b) -> knormal_binary_brute (fun x->fun y->Get(x,y)) a b
     |Put (a, b, c) -> if is_ident_or_const a then
@@ -156,7 +125,7 @@ let rec knormal (ast:Fsyntax.t) : t =
                  let (aa, t) = newvar () in
                  let (nn, t) = newvar () in
                  Let((nn,t), Int(List.length a'),
-                 Let((aa,t), Int 0,  (*knormal (List.hd a), (*replace with anything?*)*)
+                 Let((aa,t), Int 0,  
                      Let((r,t),
                       Array((Var nn) , (Var aa)),
                       List.fold_right (fun x->fun y->Let(("?", Ftype.gentyp ()), x, y)) a' (Var r)))
@@ -168,21 +137,6 @@ let rec knormal (ast:Fsyntax.t) : t =
                            List.fold_right (fun x->fun y->let cn = !cnt in decr cnt; let (d',t) = newvar () in Let((d',t),Int cn,Let(x, Get(Var b', Var d'),y))) a (knormal c))
 
 
-    (* old version
-    |Tuple a -> (let rec tuple_aux (els:Fsyntax.t list) (vars:t list) =
-          (*tuples should be considered as unimplemented for now*)
-                  match els with
-                  |[] -> Tuple(List.rev vars)
-                  |h::q -> (match h with
-                            |Var(_) -> tuple_aux q ((knormal h)::vars)
-                            |_ -> let (x,t) = newvar () in Let((x,t), knormal h, tuple_aux q ((Var x)::vars))
-                           )
-                in tuple_aux a []
-                )
-    *)
-    (*
-
-   *)
     |_ -> failwith "knormal: NotImplementedYet"
 
 and knormal_binary (c:t->t->t) (a:Fsyntax.t) (b:Fsyntax.t) =
@@ -272,4 +226,3 @@ let rec k_to_string (exp:t) : string =
   | Tuple(l) -> sprintf "(%s)" (infix_to_string k_to_string l ", ")
   | Array(e1,e2) -> sprintf "(Array.create %s %s)"
        (k_to_string e1) (k_to_string e2)
-  (* | _ -> failwith "fknormal matchfailure" *)

@@ -19,9 +19,7 @@ type t =
     | Not of t
     | Neg of t
     | Add of t * t
-
     | Land of t * t
-
     | Sub of t * t
     | FNeg of t
     | FAdd of t * t
@@ -199,9 +197,9 @@ let rec id_to_cls ast =
     |LetRec(x,y) -> LetRec({name=x.name; args=x.args; formal_fv=x.formal_fv; body=id_to_cls x.body}, id_to_cls y)
     |IfEq(u, v, x, y) -> IfEq(u, v, id_to_cls x, id_to_cls y)
     |IfLE(u, v, x, y) -> IfLE(u, v, id_to_cls x, id_to_cls y)
-    |AppD(a, b) -> AppD(substitute closures a, List.map (substitute_var closures) b) 
-    |AppC(a, b) -> AppC(substitute closures a, List.map (substitute_var closures) b) 
-    |Var(_) -> substitute_var closures ast 
+    |AppD(a, b) -> AppD(substitute closures a, List.map (substitute_var closures) b)
+    |AppC(a, b) -> AppC(substitute closures a, List.map (substitute_var closures) b)
+    |Var(_) -> substitute_var closures ast
     |_ -> ast
 
 let rec add_prefix ast =
