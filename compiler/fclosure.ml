@@ -4,8 +4,6 @@ open Fknormal;;
 open Fsyntax;;
 open Printf;;
 
-let known = ref [] (*TODO: add the others*)
-let hash_fundef = Hashtbl.create 10
 
 type t =
     | Let of (Id.t * Ftype.t) * t * t
@@ -46,24 +44,6 @@ and fundef = {
                 body : t
             }
 
-(*type prog = Prog of fundef list * t*)
-
-(* type toplevel = fundef list *)
-
-
-let rec add_und (fund:fundef) = let (id,typ) = fund.name in
-    {name = ("_"^id,typ); args = fund.args; formal_fv = fund.formal_fv; body = scan_fundef fund.body}
-and scan_fundef clos :t = match clos with
-    | LetRec (fund, een) -> Hashtbl.add hash_fundef (fst fund.name) (List.map fst fund.formal_fv);
-                        LetRec (add_und fund, scan_fundef een)
-    | Let (x, valu, een) -> Let (x, scan_fundef valu, scan_fundef een)
-    | AppD (id, l) ->   if Hashtbl.mem hash_fundef id then
-                            AppD ("_"^id, l)
-                        else
-                            (known := ("_min_caml_"^id)::(!known);
-                            AppD ("_min_caml_"^id, l))
-    | AppC (id, l) -> AppC (id, l)
-    | _ -> clos
 
 (** This function transform unnested expressions into a"_" Fclosure.t *)
 let rec clos_exp (k:Fknormal.t) :t = match k with
@@ -88,13 +68,10 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
     | Var a -> Var a
     | IfEq (x, y, b, c) -> IfEq (x, y, clos_exp b, clos_exp c)
     | IfLE (x, y, b, c) -> IfLE (x, y, clos_exp b, clos_exp c)
-    (* |IfBool (a, b, c) -> IfBool (clos_exp a, clos_exp b, clos_exp c) *)
     | Tuple a -> Tuple (List.map clos_exp a)
-    (* |LetTuple (a, b, c) -> LetTuple (clos_exp a, clos_exp b, clos_exp c) *)
     | Array (a, b) -> Array (clos_exp a, clos_exp b)
     | Get (a, b) -> Get (clos_exp a, clos_exp b)
     | Put (a, b, c) -> Put (clos_exp a, clos_exp b, clos_exp c)
-    (* TODO remove let later *)(*TODO: Don't remove let*)
     | Let (x, a, b) -> Let (x, clos_exp a, clos_exp b)
     | LetRec (fundef, a) -> LetRec ({name = fundef.name; args = fundef.args; formal_fv = []; body = (clos_exp fundef.body)}, (clos_exp a))
     | App (f, l) -> (match f with
@@ -102,151 +79,14 @@ let rec clos_exp (k:Fknormal.t) :t = match k with
                         | _ -> failwith "matchfailure App")
     | _ -> failwith "match not exhaustive in clos_exp fclosure.ml"
 
-(* Ye Olde Buggy Version
-let rec the_savage_phi (fb:Fknormal.t) : (Fknormal.fundef option * Fknormal.t)  =
-    match fb with
-    |Let(a,b,c) -> (
-                    let recbody, newin = the_savage_phi c in
-                    match recbody with
-                    |None -> (None,  Let(a, b, newin)) ()
-                    |Some fbody -> (Some fbody, Let(a,b, newin))
-                    )
-    |LetRec(fbody, recin) -> (Some fbody, recin)
-    |_ -> (None, fb)
-
-and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
-    match ast with
-    |LetRec(fd, een) -> (
-                        let recbody, newin = the_savage_phi fd.body in
-                        match recbody with
-                        |None -> LetRec(fd, een)
-                        |Some fbody -> the_cunning_psi ( LetRec(fbody, the_cunning_psi (LetRec({name=fd.name; args=fd.args; body=newin}, een))))
-                        )
-    |Let(a,b,c) -> Let(a, the_cunning_psi b, the_cunning_psi c)
-    |_ -> ast
-*)
-
-(*Ye new version*)
-(*
-let rec the_savage_phi (fb:Fknormal.t) : (Fknormal.fundef option * Fknormal.t)  =
-    match fb with
-    |Let(a,b,c) -> (
-                    let recbody, newletbody = the_savage_phi b in
-                    match recbody with
-                    |None -> (let recbody', newin = the_savage_phi c in
-                              match recbody' with
-                              |None -> (None,  Let(a, b, c))
-                              |Some fbody -> (Some fbody, Let(a,b, newin))
-                             )
-                    |Some fbody -> (Some fbody, Let(a, newletbody, c))
-                   )
-    |LetRec(fbody, recin) -> (Some fbody, recin)
-    |IfEq(x, y, a, b) -> (let arecbody, anewbody = the_savage_phi a in
-                        match arecbody with
-                        |None ->  (let brecbody, bnewbody = the_savage_phi b in
-                                    match brecbody with
-                                    |None -> (None,  IfEq(x, y, a, b))
-                                    |Some fbody -> (Some fbody, IfEq(x, y, a, bnewbody))
-                                  )
-                        |Some fbody -> (Some fbody, IfEq(x, y, anewbody, b))
-                       )
-    |IfLE(x, y, a, b) -> (let arecbody, anewbody = the_savage_phi a in
-                        match arecbody with
-                        |None ->  (let brecbody, bnewbody = the_savage_phi b in
-                                    match brecbody with
-                                    |None -> (None,  IfLE(x, y, a, b))
-                                    |Some fbody -> (Some fbody, IfLE(x, y, a, bnewbody))
-                                  )
-                        |Some fbody -> (Some fbody, IfLE(x, y, anewbody, b))
-                       )
-    |_ -> (None, fb)
-
-and the_cunning_psi (ast : Fknormal.t) : Fknormal.t =
-    match ast with
-    |LetRec(fd, een) -> (
-                        let recbody, newin = the_savage_phi fd.body in
-                        match recbody with
-                        |None -> LetRec(fd, the_cunning_psi een)
-                        |Some fbody -> the_cunning_psi ( LetRec(fbody, (LetRec({name=fd.name; args=fd.args; body=newin}, een))))
-                        )
-    |Let(a,b,c) -> (
-                    let recbody, newin = the_savage_phi b in
-                    match recbody with
-                        |None -> Let(a, b, the_cunning_psi c)
-                        |Some fbody -> the_cunning_psi ( LetRec(fbody, Let(a, newin, c)))
-                   )
-    |_ -> ast
-*)
-
-(*--------THE-VERSION-BEFORE-TRUE-CLOSURE-----------------------------------*)
-(*
-let rec subphi cat (y:Fknormal.t) (z:Fknormal.t) lr : Fknormal.t =
-    match (phi y) with
-    |LetRec(a, b) -> phi (LetRec(a, cat b z))
-    |_ -> (match (phi z) with
-            |LetRec(a, b) when lr -> cat y (phi (LetRec(a, b)))
-            |LetRec(a, b) -> phi (LetRec(a, cat y b))
-            |_ -> cat y z)
-and phi (ast:Fknormal.t) : Fknormal.t =
-    match ast with
-    |Let(x,y,z) -> subphi (fun a->fun b->Let(x, a, b)) y z false
-    |LetRec(y,z) -> subphi (fun a->fun b->LetRec({name=y.name; args=y.args; body=a}, b)) y.body z true
-    |IfEq(u,v,y,z) -> subphi (fun a->fun b->IfEq(u,v,a,b)) y z false
-    |IfLE(u,v,y,z) -> subphi (fun a->fun b->IfLE(u,v,a,b)) y z false
-    |_ -> ast
-*)
-(*--------------------------------------------------------------------------*)
 
 
-(*------THE-VERSION-AFTER-TRUE-CLOSURE--------------------------------------*)
+
 let closures = Hashtbl.create 10
 let funs = Hashtbl.create 10
 let predef = ref ["print_int"; "print_newline"; "print_char"]
 let known = ref []
 let _ = known := !predef
-(* let known = ref ["_min_caml_print_int"; "_min_caml_print_newline"] (*TODO: add the others*) *)
-(* (a try at using sets, but couldn't be bothered to check if comparison works properly. Maybe come back later)
-module SS = Set.Make(struct
-                        let compare = fun (x,_)->fun (y,_)->Pervasives.compare x y
-                        type t = Id.t * Ftype.t
-                     end)
-
-let rec make_set l =
-    match l with
-    |[] -> SS.empty
-    |h::q -> SS.add h (make_set q)
-
-let test_var (x:Id.t) bv =
-    let t = Ftype.gentyp () in
-    if SS.mem (x, t) bv then
-        SS.singleton (x, t)
-    else
-        SS.empty
-
-let test_list l bv =
-    let rec test_list_aux y x =
-        match x with
-        |Var(a) -> SS.union (test_var a bv) y
-        |_ -> failwith "find_fv: wrong App"
-    in
-    List.fold_left test_list_aux SS.empty l
-
-let rec find_fv ast args =
-    match ast with
-    |Let (a,b,c) -> SS.union (find_fv b args) (find_fv c (SS.add a args))
-    |LetRec (a, b) -> SS.union (find_fv a.body (SS.add a.name args)) (find_fv b (SS.add a.name args))
-    |Unit -> SS.empty
-    |Bool b -> SS.empty
-    |Int i -> SS.empty
-    |Not e -> SS.empty
-    |Add (a, b) -> SS.union (find_fv a args) (find_fv b args)
-    |Sub (a, b) -> SS.union (find_fv a args) (find_fv b args)
-    |IfEq (x, y, a, b) -> SS.union (test_var x args) (SS.union (test_var y args) (SS.union (find_fv a args) (find_fv b args)))
-    |IfLE (x, y, a, b) -> SS.union (test_var x args) (SS.union (test_var y args) (SS.union (find_fv a args) (find_fv b args)))
-    |Var id -> test_var id args
-    |AppD (a, b) -> SS.union (test_var a args) (test_list b args)
-    | _-> failwith "Fclosure:find_fv NotYetImplemented"
-*)
 
 
 let rec memv x l =
@@ -353,7 +193,7 @@ let substitute_var tbl a =
 let rec id_to_cls ast =
     match ast with
     |Let(x,y,z) -> Let(x,id_to_cls y, id_to_cls z)
-    |LetCls(x,l,y,z) -> LetCls(x, l, y, id_to_cls z) (*perhaps the only "useful" match*)
+    |LetCls(x,l,y,z) -> LetCls(x, l, y, id_to_cls z) 
     |LetRec(x,y) -> LetRec({name=x.name; args=x.args; formal_fv=x.formal_fv; body=id_to_cls x.body}, id_to_cls y)
     |IfEq(u, v, x, y) -> IfEq(u, v, id_to_cls x, id_to_cls y)
     |IfLE(u, v, x, y) -> IfLE(u, v, id_to_cls x, id_to_cls y)
@@ -387,33 +227,8 @@ let rec add_undr ast =
     |IfEq(u, v, x, y) -> IfEq(u, v, add_undr x, add_undr y)
     |IfLE(u, v, x, y) -> IfLE(u, v, add_undr x, add_undr y)
     |AppD(a, b) -> AppD(substitute funs a, List.map (substitute_var funs) b)
-    (*|AppC(a, b) -> if Hashtbl.mem funs a then AppC(Hashtbl.find funs a, b) else AppC(a,b)*)
-    |Var(_) -> substitute_var funs ast
+    |Var(_) -> substitute_var funs ast 
     |_ -> ast
-
-
-
-(*--------------------------------------------------------------------------*)
-
-
-(*not really needed anymore*)
-(*
-let rec letrecs_at_top clos = match clos with
-    | LetRec (f, een) -> LetRec (f, letrecs_at_top een)
-    | Let (id, a, een) -> letrecs_at_top (een)
-    | _ -> Unit
-
-let rec lets_at_bot clos = match clos with
-    | Let (id, a, een) -> Let (id, a, lets_at_bot een)
-    | LetRec (f, een) -> lets_at_bot (een)
-    | _ -> clos
-
-let rec merge_letrecs_lets letrecs lets = match letrecs with
-    | LetRec (f, een) -> LetRec (f, merge_letrecs_lets een lets)
-    | Unit -> lets
-    | _ -> failwith "merge_letrecs_lets: error matchfailure"
-*)
-(*and chi fd = fd*)
 
 
 
@@ -430,15 +245,9 @@ let rec reduc k = match k with
  
 
 
-
-
+(** Main function of the module. First we do trivial type conversion. Then we unnest the LetRecs. Then we redo the unnesting of Lets. Then we correct the names of closures. Then we add "_" to labels. Finally we add th "_min_caml" prefix to the library functions*)
 let clos_out k =
-    (*let clos = (clos_exp (the_cunning_psi k)) in*)
-    (*
-    let clos = (clos_exp (phi k)) in
-    merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos)
-    *)
-     add_prefix (add_undr (id_to_cls (reduc (phi ((*scan_fundef*) (clos_exp k))))))
+     add_prefix (add_undr (id_to_cls (reduc (phi  (clos_exp k)))))
 
 
 (** This function is for debugging purpose only, it returns its argument as a string *)

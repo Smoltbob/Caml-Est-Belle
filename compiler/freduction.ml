@@ -11,13 +11,6 @@ let rec reduc k = match k with
     | Let (x, a, b) -> (match a with
         | Let (y, a2, b2) -> reduc (Let (y, a2, (reduc (Let (x, b2, b)))))
         | _ -> Let (x, reduc a, reduc b))
-    (*(*args are Vars*)
-    | App (f, l) -> (* f cannot be a Var so it's not an App nor a Let (see previous part knorm) *)
-        let rec reduc_args l = match l with
-            | [] -> []
-            | t::q -> (reduc t)::(reduc_args q)
-        in App (f, reduc_args l)
-    *)
     | IfEq(x, y, a, b) -> IfEq(x, y, reduc a, reduc b)
     | IfLE(x, y, a, b) -> IfLE(x, y, reduc a, reduc b)
     | _ -> k

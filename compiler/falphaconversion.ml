@@ -89,68 +89,6 @@ let rec alpha_g env (k_t:Fknormal.t) : Fknormal.t  =
     |Put (a, b, c) -> Put (alpha_g env a, alpha_g env b,  alpha_g env c)
     |App (a,b) -> App (alpha_g env a, List.map (alpha_g env) b)
     |_ -> failwith "AlphaConv:g Match failure"
-    (*
-    |Tuple a -> Tuple(List.map (alpha_g env) a)
-    |LetTuple (a, b, c) -> LetTuple ( a, alpha_g env b,  alpha_g env c )
-    *)
 
 let alpha k = alpha_g [] k
 
-(* old version
-let rec alpha (k_t:Fknormal.t) : Fknormal.t  =
-    match k_t with
-    |Let (a, b, c) -> (push a);
-                      let l=Let ((convert !alphaMap  (fst a), (snd a)), alpha b , alpha c )
-                      in pop ();l
-
-    |LetRec (a, b) ->( push a.name;
-                       List.iter push a.args;
-                       let newname = ((convert !alphaMap (fst a.name)), (snd a.name)) in
-                       let newargs = List.map (fun x -> (convert !alphaMap (fst x)), snd x) a.args in
-                       let newbody = alpha a.body in
-                       List.iter (fun x ->pop ()) a.args;
-                       LetRec ({name=newname; args=newargs ; body=newbody}, alpha b)
-                     )
-    |Var a -> Var (convert !alphaMap a)
-
-    |Unit -> Unit
-    |Bool a -> Bool a
-    |Int a ->  Int a
-    |Float a -> Float a
-    |Not b -> Not (alpha b)
-    |Neg b -> Neg (alpha  b)
-    |Sub (a, b) -> Sub(alpha  a, alpha  b)
-    |Add (a, b) -> Add(alpha  a, alpha b)
-    |FAdd (a, b) -> FAdd(alpha  a, alpha b)
-    |FNeg b -> FNeg (alpha  b)
-    |FSub (a, b) -> FSub(alpha a, alpha b)
-    |FMul (a, b) -> FMul(alpha a, alpha b)
-    |FDiv (a, b) -> FDiv (alpha a, alpha b)
-    |Eq (a, b) -> Eq (alpha a, alpha b)
-    |LE (a, b) -> LE (alpha a, alpha b)
-    |IfEq (x, y, b, c) -> (let n = List.length !alphaMap in
-                            let x' = convert !alphaMap x in
-                            let y' = convert !alphaMap y in
-                            let b' = alpha b in
-                            for i = n+1 to List.length !alphaMap do pop () done;
-                            let c' = alpha c in
-                            for i = n+1 to List.length !alphaMap do pop () done;
-                            IfEq(x', y', b', c') 
-                          )
-    |IfLE (x, y, b, c) -> (let n = List.length !alphaMap in
-                            let x' = convert !alphaMap x in
-                            let y' = convert !alphaMap y in
-                            let b' = alpha b in
-                            for i = n+1 to List.length !alphaMap do pop () done;
-                            let c' = alpha c in
-                            for i = n+1 to List.length !alphaMap do pop () done;
-                            IfLE(x', y', b', c') 
-                          )
-    |Tuple a -> Tuple(List.map alpha a)
-    |LetTuple (a, b, c) -> LetTuple ( a, alpha b,  alpha c )
-    |Array (a, b) -> Array (alpha a, alpha b)
-    |Get (a, b) -> Get (alpha a, alpha b)
-    |Put (a, b, c) -> Put (alpha a, alpha b,  alpha c)
-    |App (Var(a),b) -> let a' =  Var(convert !alphaMap a) in App (a', List.map alpha b)
-    |App (_, b) -> failwith "Falphaconversion.alpha: wrong App"
-     *)

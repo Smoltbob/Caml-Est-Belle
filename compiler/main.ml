@@ -73,8 +73,8 @@ let print_asml l =
         (
         Fconstfold.f
         (
-            (*
-        Finline.f*)
+            
+        Finline.f
         (
         Freduction.reduc
         (
