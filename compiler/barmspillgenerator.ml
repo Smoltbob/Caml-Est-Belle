@@ -121,7 +121,7 @@ let rec exp_to_arm exp dest =
                        sprintf "%s\tbl %s\n%s" args_string function_call_name store_string
 
     (* Closure application. We have to store the closure address into the word "_self", prepare the arguments and call the closure. *)
-    | CallClo (l1, a1) -> let store_closure = sprintf "ldr r6, [fp, #%i]\n\tldr r5, _self\n\tstr r6, [r5]\n" (fst(frame_position l1)) in
+    | CallClo (l1, a1) -> let store_closure = sprintf "\tldr r6, [fp, #%i]\n\tldr r5, _self\n\tstr r6, [r5]\n" (fst(frame_position l1)) in
                           let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
                           let load_addr = sprintf "\tldr r4, [fp, #%i]\n\tldr r4, [r4]\n" (fst (frame_position l1)) in 
                           let branch = sprintf "\tblx r4\n" in 
