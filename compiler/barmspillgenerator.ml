@@ -112,7 +112,7 @@ let rec exp_to_arm exp dest =
                        let store_string = (store_in_stack 0 dest) in
                        sprintf "%s\tbl %s\n%s" args_string function_call_name store_string
     | CallClo (l1, a1) -> self := l1;
-                          let store_closure = sprintf "%s\n\tldr r5, _self\n\tstr r4, [r5]" (store_in_stack 4 l1) in
+                          let store_closure = sprintf "%s\n\tldr r5, _self\n\tstr r4, [r5]\n" (store_in_stack 4 l1) in
                           let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
                           let load_addr = sprintf "\tldr r4, =%s\n" (Id.to_string l1) in (* remove underscore to branch? *)
                           let branch = sprintf "\tblx r4\n" in 
@@ -124,7 +124,7 @@ let rec exp_to_arm exp dest =
                             in sprintf "%s" call
                 | Int i -> let store_string = store_in_stack 0 dest in 
                            let prepare_arg = sprintf "\tmov r0, #%s\n" (string_of_int i) in
-                           let call_alloc = sprintf "\tmov r1, #0\nbl min_caml_create_array\n%s" (store_in_stack 0 dest) in
+                           let call_alloc = sprintf "\tmov r1, #0\n\tbl min_caml_create_array\n%s" (store_in_stack 0 dest) in
                                sprintf "%s%s%s" prepare_arg store_string call_alloc
                 | _ -> failwith "Unauthorized type"
     )
@@ -255,6 +255,6 @@ let rec fundefs_to_arm fundefs =
 @return unit*)
 let rec toplevel_to_arm toplevel =
     match toplevel with
-    | Fundefs functions_list -> let data_section = sprintf ".data\n.balign 4\nself: .word 0" in 
+    | Fundefs functions_list -> let data_section = sprintf "\t.data\n\t.balign 4\nself: .word 0" in 
                                 let word_declaration = sprintf "_self: .word self" in 
                                 sprintf "%s\n\n\t.text\n%s\n\n%s\n" data_section (fundefs_to_arm functions_list) word_declaration
