@@ -83,6 +83,7 @@ let rec operation_to_arm op e1 e2 dest =
         let register_number_id = resolve_linear_scan_register id in
         sprintf "%s%s%s\t%s %s, %s, %s\n" load_store_dest load_store_e1 load_store_id op register_number_dest register_number_e1 register_number_id
     | Int i -> sprintf "%s%s\t%s %s, %s, #%i\n" load_store_dest load_store_e1 op register_number_dest register_number_e1 i
+    | _ -> failwith "Error while parsing arguments"
 
 (** This function is to convert assignments into arm code 
 @param exp expression in the assigment

@@ -88,14 +88,17 @@ let rec operation_to_arm op e1 e2 dest =
 @return unit*)
 let rec exp_to_arm exp dest =
     match exp with
+    (* To create negative values we substract them to 0 *)
     | Neg id -> let store_string = store_in_stack 4 dest in
                     sprintf "\tldr r4, [fp, #%i]\nmov r5, #0\n\tsub r4, r5, r4\n%s" (fst (frame_position id)) store_string
+    (* Storing immediates with support for big ints *)
     | Int i -> let store_string = store_in_stack 4 dest in
                let move_string = if i < 65536 then
                    sprintf "\tmov r4, #%i\n" i
                else
                    sprintf "\tmovw r4, #:lower16:%i\n\tmovt r4, #:upper16:%i\n" i i
                in move_string ^ store_string
+    (* Loading variables from the frame table *)
     | Var id -> (match id with 
                 (* Here we want to treat labels and variable names differently *)
                 | _ -> let str = (Id.to_string id) in 
@@ -105,21 +108,27 @@ let rec exp_to_arm exp dest =
                             else 
                                 sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
                 )
+    (* Binary operations *)
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
-    | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
+    (* Function calls. We have to prepare the function arguments, then call the function and return the value into the destination
+     * register. *)
+    | Land (e1, e2) -> operation_to_arm "and" e1 e2 dest
     | Call (l1, a1) -> let l = (Id.to_string l1) in
                        let args_string = (to_arm_formal_args a1 0) in
                        let function_call_name = (remove_underscore l) in
                        let store_string = (store_in_stack 0 dest) in
                        sprintf "%s\tbl %s\n%s" args_string function_call_name store_string
 
+    (* Closure application. We have to store the closure address into the word "_self", prepare the arguments and call the closure. *)
     | CallClo (l1, a1) -> let store_closure = sprintf "ldr r6, [fp, #%i]\n\tldr r5, _self\n\tstr r6, [r5]\n" (fst(frame_position l1)) in
                           let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
-                          let load_addr = sprintf "\tldr r4, [fp, #%i]\n\tldr r4, [r4]\n" (fst (frame_position l1)) in (* remove underscore to branch? *)
+                          let load_addr = sprintf "\tldr r4, [fp, #%i]\n\tldr r4, [r4]\n" (fst (frame_position l1)) in 
                           let branch = sprintf "\tblx r4\n" in 
                           sprintf "%s%s%s%s" store_closure prep_args load_addr branch 
 
+    (* New allocates space on the heap. It's bascially a macro for min_caml_create_array.
+     * If we call it with an int, we put it first in a register and then call the function. *)
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
                 | Var id -> let call = sprintf "%s\tmov r1, #0\nbl min_caml_create_array\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
@@ -130,7 +139,11 @@ let rec exp_to_arm exp dest =
                                sprintf "%s%s%s" prepare_arg store_string call_alloc
                 | _ -> failwith "Unauthorized type"
     )
-
+    
+    (* Memory access for an array in the heap. We want to make a special case for the base address%self, 
+     * in which case we will need to load it from the word "_self".
+     * Otherwise we take the base address id1 and add to it the offset id2 that we shift 2 bits to the left (LSL #2).
+     * It makes the final address of the cell from which we can read. *)
     | MemAcc (id1, id2) ->
             let store_arg1 = 
                 match id1 with
@@ -140,6 +153,7 @@ let rec exp_to_arm exp dest =
             in
             let load = sprintf "\tldr r4, [r4, r5, LSL #2]\n" in
             let mov = sprintf "%s" (store_in_stack 4 dest) in
+                (* If we have an int, we want to first put it into a register. *)
                 (match id2 with
                 | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in
                             sprintf "%s%s%s%s" store_arg1 store_arg2 load mov 
@@ -148,7 +162,9 @@ let rec exp_to_arm exp dest =
                 | _ -> failwith "Unauthorized type"
                 );
 
-                
+    (* Memory affectation. Works with the same mechanisms as memory access. Only difference : we need a new register
+     * r7 to store the value to put in the array. To make sure we don't perturb the rest of the code, we save it on
+     * the stack with stmfd before using it, and when we are done we restore it with ldmfd. *) 
     | MemAff (id1, id2, id3) ->
             let saver7 = sprintf "\tstmfd sp!, {r7}\n" in
             let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
@@ -162,13 +178,18 @@ let rec exp_to_arm exp dest =
                         sprintf "%s%s%s%s%s%s" saver7 store_arg1 store_arg2 prepstore store restorer7
             | _ -> failwith "Unauthorized type"
             )
-
+            
+    (* If statement. We create one label called "if" followed by a unique number. It contains the first asmt. If we don't
+     * branch into it we want to execute the second asmt.
+     * Because we can have different comparison operators in an if, we put them in the variable comp. It can be "ble", "beq"
+     * "beg". *)
     | If (id1, e1, asmt1, asmt2, comp) ->
             let counter = genif() in 
             let store_arg1 = sprintf "\tldr r4, [fp, #%i] @%s\n" (fst (frame_position id1)) id1 in
             let store_arg2 = match e1 with
                              | Var id -> sprintf "\tldr r5, [fp, #%i] @%s\n" (fst (frame_position id)) id
                              | Int i  -> sprintf "\tmov r5,#%i\n" i 
+                             | _ -> failwith "Unauthorized type" 
             in
             let cmpop = sprintf "\tcmp r4, r5\n" in
             let branch1 = sprintf "\t%s if%s\n" comp counter in
@@ -177,6 +198,7 @@ let rec exp_to_arm exp dest =
             let codeif = sprintf "if%s:\n%s\n" counter (asmt_to_arm asmt1 dest) in
             let endop = sprintf "end%s:\n" counter in
             sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
+
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
@@ -196,7 +218,6 @@ and asmt_to_arm asm dest =
                       let return_value_string = sprintf "\tldr r0, [fp, #%i]\n" (fst (frame_position dest)) in
                       exp_string ^ return_value_string
     )
-    | _ -> failwith "asmt_to_arm: Unauthorized type"
 
 (** Helper functions for fundef *)
 let rec pull_remaining_args l =

@@ -44,7 +44,7 @@ let addtyp x = (x, Ftype.gentyp ())
 %right LESS_MINUS
 %left COMMA
 %left EQUAL LESS_GREATER LESS GREATER LESS_EQUAL GREATER_EQUAL
-%left PLUS MINUS PLUS_DOT MINUS_DOT
+%left PLUS MINUS PLUS_DOT MINUS_DOT LAND
 %left AST_DOT SLASH_DOT
 %right prec_unary_minus
 %left prec_app
@@ -84,7 +84,7 @@ exp: /* expressions */
     | e -> Neg(e) }
 | exp PLUS exp /* addition */
     { Add($1, $3) }
-| exp LAND exp /* addition */
+| exp LAND exp /* land */
     { Land($1, $3) }
 | exp MINUS exp
     { Sub($1, $3) }
