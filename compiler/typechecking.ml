@@ -357,7 +357,7 @@ let rec checkArray lst tp1 tp2 =
                   | _ -> []
 
 
-(** this function is to replace the occurrences of type in a list of types
+(** This function is to replace the occurrences of type in a list of types
   @param ls list of types 
   @param tp1 first type t
   @param tp2 second type t
@@ -371,7 +371,7 @@ let rec checkArray lst tp1 tp2 =
                                 h::replcaeinList t tp1 tp2
                     | _ -> []  
 
-(** this function is to replace the occurrences of type in a function, array or tuple equation
+(** This function is to replace the occurrences of type in a function, array or tuple equation
   @param t  equation pair 
   @param tp1 first type t
   @param tp2 second type t
@@ -389,7 +389,7 @@ let rec advReplace t tp1 tp2=
 
      
 
-(** this function is to replace the occurrences of type in all equations list 
+(** This function is to replace the occurrences of type in all equations list 
   @param lst list of equations 
   @param tp1 first type t
   @param tp2 second type t
@@ -432,7 +432,7 @@ let rec replace lst tp1 tp2 =
 
 
 
-(** this function is to solve the tree of equations
+(** This function is to solve the tree of equations
   @param lst list of equations to be solved
   @return  well typed message if everything is correct or failwith 
 *)
