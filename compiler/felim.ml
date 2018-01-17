@@ -7,7 +7,7 @@ let rec effect ast =
     |IfLE(u, v, a, b) -> (effect a) || (effect b)
     |LetTuple (a, b, c) ->  (effect b) || (effect c)
     |Put (a, b, c) -> true 
-    |App (a, b) -> true (*improvement: access the body of*)
+    |App (a, b) -> true (*improvement: access the body of a*)
     |_ -> false
 
 

@@ -1,6 +1,8 @@
+(** This module encapsulates the inline expansion*)
 open Fknormal
 
-let threshold = ref 0
+
+let threshold = ref 10
 
 let rec find x env =
     match env with
@@ -29,7 +31,6 @@ let rec g env (k:Fknormal.t) : Fknormal.t =
     |Let(a,b,c) -> Let(a, g env b, g env c)
     |IfEq(x, y, a, b) -> IfEq(x, y, g env a, g env b)
     |IfLE(x, y, a, b) -> IfLE(x, y, g env a, g env b)
-    |Let(a,b,c) -> Let(a, g env b, g env c)
     |App((Var x), ys) -> (match (find x env) with
                     |None -> App((Var x), ys)
                     |Some (zs, e) -> let env' = List.map2 funmap zs ys in
