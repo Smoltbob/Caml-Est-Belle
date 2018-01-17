@@ -116,7 +116,7 @@ let rec exp_to_arm exp dest =
 
     | CallClo (l1, a1) -> let store_closure = sprintf "ldr r6, [fp, #%i]\n\tldr r5, _self\n\tstr r6, [r5]\n" (fst(frame_position l1)) in
                           let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
-                          let load_addr = sprintf "\tldr r4, =%s\n" (Id.to_string l1) in (* remove underscore to branch? *)
+                          let load_addr = sprintf "\tldr r4, [fp, #%i]\n\tldr r4, [r4]\n" (fst (frame_position l1)) in (* remove underscore to branch? *)
                           let branch = sprintf "\tblx r4\n" in 
                           sprintf "%s%s%s%s" store_closure prep_args load_addr branch 
 
