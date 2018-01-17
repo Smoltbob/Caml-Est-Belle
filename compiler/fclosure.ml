@@ -441,13 +441,30 @@ let rec merge_letrecs_lets letrecs lets = match letrecs with
 *)
 (*and chi fd = fd*)
 
+
+
+let rec reduc k = match k with
+    | LetRec (f, a) ->
+            LetRec ({ name = f.name; args = f.args ; formal_fv = f.formal_fv; body = (reduc f.body) },
+                reduc a)
+    | Let (x, a, b) -> (match a with
+        | Let (y, a2, b2) -> reduc (Let (y, a2, (reduc (Let (x, b2, b)))))
+        | _ -> Let (x, reduc a, reduc b))
+    | IfEq(x, y, a, b) -> IfEq(x, y, reduc a, reduc b)
+    | IfLE(x, y, a, b) -> IfLE(x, y, reduc a, reduc b)
+    | _ -> k
+ 
+
+
+
+
 let clos_out k =
     (*let clos = (clos_exp (the_cunning_psi k)) in*)
     (*
     let clos = (clos_exp (phi k)) in
     merge_letrecs_lets (letrecs_at_top clos) (lets_at_bot clos)
     *)
-     add_prefix (add_undr (id_to_cls (phi ((*scan_fundef*) (clos_exp k)))))
+     add_prefix (add_undr (id_to_cls (reduc (phi ((*scan_fundef*) (clos_exp k))))))
 
 
 (** This function is for debugging purpose only, it returns its argument as a string *)
