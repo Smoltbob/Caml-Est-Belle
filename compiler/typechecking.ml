@@ -108,7 +108,6 @@ let rec printEq lst =
 let rec toArray eq = 
    match eq with
    | (a,b)::tl -> (Array(a),b)::tl
-   |[(a,b)] -> [(Array(a),b)]
    | _ -> []
 
 
@@ -265,7 +264,6 @@ let rec genEquations  env (expr:Fsyntax.t)  tp  =
   | Array(e1,e2) -> 
                     let eq2 =genEquations env e2 tp in
                     let eq1= genEquations env e1 Int in
-
                     append  (toArray eq2) eq1
 
   |_ ->print_string "there is a type not implemented yet\n";!eq
