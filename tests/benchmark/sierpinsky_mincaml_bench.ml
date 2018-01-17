@@ -30,4 +30,4 @@ let rec sierpinsky size =
     for1 y size
 in
 
-sierpinsky 10000
+sierpinsky 20000
