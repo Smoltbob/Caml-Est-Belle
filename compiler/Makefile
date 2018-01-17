@@ -28,6 +28,12 @@ test_typecheck:
 test_backend:
 	(cd ../ && ./scripts/autotest_backend.sh -p ./scripts/armgen -d tests/backend -t res -o ARM)
 
+sierpinsky:
+	(cd ../tests/Sierpinsky && ./launch_sierpinsky.sh)
+
+benchmark:
+	(cd ../tests/benchmark && ./launch_benchmark.sh)
+
 test: all
 	(rm -f /tmp/compiltest && rm -f /tmp/compiltotal)
 	@echo "LAUNCHING TESTS"
