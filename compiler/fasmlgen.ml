@@ -51,21 +51,6 @@ let rec asml_t_triv t = match t with
     | Neg x -> (match x with
                         | (Var y) -> Neg y
                         | _ -> failwith "matchfailure Neg")
-    (* | FNeg x -> (match x with
-                        | (Var y) -> Fneg y
-                        | _ -> failwith "matchfailure FNeg") *)
-    (* | FSub (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Fsub (x2, y2)
-                        | _ -> failwith "matchfailure FSub")
-    | FAdd (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Fadd (x2, y2)
-                        | _ -> failwith "matchfailure FAdd")
-    | FMul (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Fmul (x2, y2)
-                        | _ -> failwith "matchfailure FMul")
-    | FDiv (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Fdiv (x2, y2)
-                        | _ -> failwith "matchfailure FDiv") *)
     | Land (x, y) -> (match x, y with
                         | (Var x2, _) -> Land (x2, asml_t_triv y)
                         | _ -> failwith "matchfailure Land")
