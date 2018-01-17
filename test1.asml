@@ -1,5 +1,0 @@
-let _  =
-	let x1 = 42 in
-	call _min_caml_print_int x1
-
-
