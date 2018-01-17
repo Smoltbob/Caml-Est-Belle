@@ -111,9 +111,9 @@ let rec exp_to_arm exp dest =
     (* Binary operations *)
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
-    | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
     (* Function calls. We have to prepare the function arguments, then call the function and return the value into the destination
      * register. *)
+    | Land (e1, e2) -> operation_to_arm "and" e1 e2 dest
     | Call (l1, a1) -> let l = (Id.to_string l1) in
                        let args_string = (to_arm_formal_args a1 0) in
                        let function_call_name = (remove_underscore l) in
@@ -189,6 +189,7 @@ let rec exp_to_arm exp dest =
             let store_arg2 = match e1 with
                              | Var id -> sprintf "\tldr r5, [fp, #%i] @%s\n" (fst (frame_position id)) id
                              | Int i  -> sprintf "\tmov r5,#%i\n" i 
+                             | _ -> failwith "Unauthorized type" 
             in
             let cmpop = sprintf "\tcmp r4, r5\n" in
             let branch1 = sprintf "\t%s if%s\n" comp counter in
@@ -217,7 +218,6 @@ and asmt_to_arm asm dest =
                       let return_value_string = sprintf "\tldr r0, [fp, #%i]\n" (fst (frame_position dest)) in
                       exp_string ^ return_value_string
     )
-    | _ -> failwith "asmt_to_arm: Unauthorized type"
 
 (** Helper functions for fundef *)
 let rec pull_remaining_args l =

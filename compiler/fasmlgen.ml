@@ -67,7 +67,7 @@ let rec asml_t_triv t = match t with
                         | (Var x2, Var y2) -> Fdiv (x2, y2)
                         | _ -> failwith "matchfailure FDiv") *)
     | Land (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Add (x2, Var y2)
+                        | (Var x2, Var y2) -> Land (x2, Var y2)
                         | _ -> failwith "matchfailure Land")
     | Add (x, y) -> (match x, y with
                         | (Var x2, Var y2) -> Add (x2, Var y2)
