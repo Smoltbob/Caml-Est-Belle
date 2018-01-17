@@ -6,6 +6,9 @@ open Ftype;;
 (** list of equations , it has a type of (Ftype.t* Ftype.t) list *)
 let  eq = ref []
 
+
+(** the predefined environment that contains the used predefined functions
+    it has a type of (Fid.t* Ftype.t) list *)
 let preDefEnv = 
 [("print_int" ,Fun( [Int] , Unit ));
 ("print_float" ,Fun( [Float] , Unit ));
@@ -26,7 +29,6 @@ let preDefEnv =
           else return a failwith message "Unbound value x"
 *)
 let rec findVar lst x =
-
   match lst with
     |(id, t)::tl -> if id =  x then  t
                     else  findVar tl  x
@@ -67,6 +69,10 @@ let rec getfunType a b =
   | _ -> "RETURN " ^b
   
 
+(**This is just a helpful function to display tuple equation content
+  @param a tuple arguments list
+  @return the equivalent string 
+*)
 let rec getTupleType a  =  
   match a with
   | h::t -> h^","^getTupleType t 
@@ -84,7 +90,7 @@ let rec getTypeString t=
     | Int->  "int"
     | Float->  "float"
     | Fun (a,b)-> let out= getTypeString b in 
-    let l = List.map getTypeString a in 
+                  let l = List.map getTypeString a in 
                  "FUN " ^getfunType l out
     | Tuple  a-> let l = List.map getTypeString a in 
                  "Tuple " ^getTupleType l 
@@ -103,13 +109,17 @@ let rec printEq lst =
                      print_string(getTypeString t2);
                      print_string "\n";
                      printEq tl  
-    |_ -> print_string "!!!done\n"  
+    |_ -> print_string "done\n"  
 
+
+(**This function is to convert type to Array(type)
+  @param lst equations list
+  @return equation list after converting first element type 
+*)
 let rec toArray eq = 
    match eq with
    | (a,b)::tl -> (Array(a),b)::tl
    | _ -> []
-
 
 
 (** This function is  generate the the equation list 
@@ -157,16 +167,12 @@ let rec genEquations  env (expr:Fsyntax.t)  tp  =
                         let eq2 = genEquations env e2 Float in 
                         append ((Float, tp)::eq1) eq2 
 
-
-
     | Let ((id,t), e1, e2) -> 
                               let eq1= genEquations  env e1 t in
                               let eq2 = genEquations ((id, t)::env) e2 tp in 
                               append eq1 eq2                         
 
-    | Var x -> 
-    let t= findVar env x in
-  
+    | Var x -> let t= findVar env x in
                [(t, tp)] 
 
 
@@ -175,19 +181,16 @@ let rec genEquations  env (expr:Fsyntax.t)  tp  =
                          let eq2 = genEquations ((a, Fun( List.map snd fd.args , b ))::(append fd.args env)) fd.body b in 
                          append eq1 eq2
 
-    | App (e1, le2) -> 
-        let ts = generateTypes le2 in 
-       
-        let eq1 = genEquations env e1 (Fun( ts , tp )) in   
-  
-        let eq2 = 
-          let rec gen l1 l2 =
-            match l1, l2 with
-            |[h1],[h2]->genEquations env h1 h2
-            | h1::t1, h2::t2 -> append (genEquations env h1 h2) (gen t1 t2)
-            |_->[]
-          in gen le2 ts
-        in append eq1 eq2
+    | App (e1, le2) -> let ts = generateTypes le2 in 
+                       let eq1 = genEquations env e1 (Fun( ts , tp )) in   
+                       let eq2 = 
+                          let rec gen l1 l2 =
+                            match l1, l2 with
+                            |[h1],[h2]->genEquations env h1 h2
+                            | h1::t1, h2::t2 -> append (genEquations env h1 h2) (gen t1 t2)
+                            |_->[]
+                          in gen le2 ts
+                        in append eq1 eq2
 
     | If (e1, e2, e3) ->  let eq1=  genEquations env e1 Bool in 
                           let eq2=  genEquations env e2 tp in 
@@ -204,51 +207,35 @@ let rec genEquations  env (expr:Fsyntax.t)  tp  =
                      let eq2= genEquations env e2 ts in  
                      append eq1 eq2          
 
-   | LetTuple (l, e1, e2)-> 
-                            let eq1= genEquations  env e1 (Tuple(List.map snd l)) in
+   | LetTuple (l, e1, e2)-> let eq1= genEquations  env e1 (Tuple(List.map snd l)) in
                             let eq2 = genEquations (append l env) e2 tp in 
                             append eq1 eq2    
             
-    | Tuple(l) ->  
-        let ts = generateTypes l in (*create special case for predef*)
-        let eq1= (Tuple(ts), tp )::!eq in 
-        let eq2 = 
-          let rec gen l1 l2 =
-            match l1, l2 with
-            |[h1],[h2]->genEquations env h1 h2
-            | h1::t1, h2::t2 -> append (genEquations env h1 h2) (gen t1 t2)
-            |_->[]
-          in gen l ts
-        in append eq1 eq2
+    | Tuple(l) ->   let ts = generateTypes l in 
+                    let eq1= (Tuple(ts), tp )::!eq in 
+                    let eq2 = 
+                      let rec gen l1 l2 =
+                        match l1, l2 with
+                        |[h1],[h2]->genEquations env h1 h2
+                        | h1::t1, h2::t2 -> append (genEquations env h1 h2) (gen t1 t2)
+                        |_->[]
+                      in gen l ts
+                    in append eq1 eq2
 
-  | Get(e1, e2) ->  
-                    let eq1 = genEquations env e1 (Array(tp)) in 
+  | Get(e1, e2) ->  let eq1 = genEquations env e1 (Array(tp)) in 
                     let eq2 = genEquations env e2 Int in 
-                 
                     append ( eq1) eq2
 
-  | Put(e1, e2, e3) ->  
-
-                        let eq1= genEquations env e2 Int in
+  | Put(e1, e2, e3) ->  let eq1= genEquations env e2 Int in
                         let t= 
-                           match e1 with
-                          | Var x -> 
-                         findVar env x 
-                        
-                                        
-                          | _ -> 
-                                Ftype.gentyp()
-                        in
-                        let eq2= genEquations env e3 t in 
+                          match e1 with
+                          | Var x -> findVar env x                  
+                          | _ ->  Ftype.gentyp()
+                        in let eq2= genEquations env e3 t in 
+                       (*let eq2= genEquations env e3 (Ftype.gentyp()) in*)                           
+                        append eq1 (toArray eq2)
 
-                       
-                        (*let eq2= genEquations env e3 (Ftype.gentyp()) in*)
-                      
-                        
-                          (append eq1 (toArray eq2))
-
-  | Array(e1,e2) -> 
-                    let eq2 =genEquations env e2 tp in
+  | Array(e1,e2) -> let eq2 =genEquations env e2 tp in
                     let eq1= genEquations env e1 Int in
                     append  (toArray eq2) eq1
 
@@ -256,7 +243,7 @@ let rec genEquations  env (expr:Fsyntax.t)  tp  =
 
 
 
-(**This function is to check if x is of type  Var
+(**This function is to check if x is of type Var
   @param x type to be checked
   @return true if the type is var 
           false everything else
@@ -278,11 +265,21 @@ let isFun x=
    | _ -> false
 
 
+(**This function is to check if x is of type Tuple
+  @param x type to be checked
+  @return true if the type is a Tuple 
+          false everything else
+*)
 let isTup x=
    match x with
    |Tuple a-> true
    | _ -> false
 
+(**This function is to check if x is of type Array
+  @param x type to be checked
+  @return true if the type is a Array 
+          false everything else
+*)
 let isArray x=
    match x with
    |Array a-> true
@@ -298,8 +295,8 @@ let isSimple x=
    match x with
    | Var a -> false
    | Fun (a,b)-> false
-   |Tuple a-> false
-   |Array a-> false
+   | Tuple a-> false
+   | Array a-> false
    | _ -> true
 
 
@@ -325,6 +322,13 @@ let rec checkFun lst tp1 tp2 =
                     end     
                   | _ -> []
 
+
+(**This function is to map between types (Tuple( [args1] ) -> Tuple( [args2] ))
+  @param lst list of equations 
+  @param tp1 first Tuple type Tuple( t*list  )
+  @param tp2 second Tuple type Tuple( t*list )
+  @return list of equations with the new generated pairs
+*)
 let rec checkTuple lst tp1 tp2 = 
   match tp1 ,tp2 with
                   | Tuple a1 ,Tuple a2-> 
@@ -341,12 +345,24 @@ let rec checkTuple lst tp1 tp2 =
                     end     
                   | _ -> []
 
+(**This function is to map between types (Array( t ) -> Array( t ))
+  @param lst list of equations 
+  @param tp1 first Array type Array( t )
+  @param tp2 second Array type Array( t )
+  @return list of equations with the new generated pairs
+*)
 let rec checkArray lst tp1 tp2 = 
   match tp1 ,tp2 with
                   | Array a1 ,Array a2->  (a1,a2)::lst   
                   | _ -> []
 
 
+(** this function is to replace the occurrences of type in a list of types
+  @param ls list of types 
+  @param tp1 first type t
+  @param tp2 second type t
+  @return  types list with occurrences of var replaced by t
+*)
  let rec replcaeinList ls tp1 tp2 = 
      match ls with
                     | h::t -> if h= tp2 then 
@@ -355,7 +371,12 @@ let rec checkArray lst tp1 tp2 =
                                 h::replcaeinList t tp1 tp2
                     | _ -> []  
 
-
+(** this function is to replace the occurrences of type in a function, array or tuple equation
+  @param t  equation pair 
+  @param tp1 first type t
+  @param tp2 second type t
+  @return  equation pair with occurrences of var replaced by t
+*)
 let rec advReplace t tp1 tp2= 
     match t with
       |Fun (a,b) -> if b=tp2 then Fun((replcaeinList a tp1 tp2),tp1)
@@ -420,8 +441,7 @@ match lst with
 | [] ->   print_string "well typed\n";()
 | (t1,t2)::tl-> (
                 if t1= t2 then 
-                begin
-                  
+                begin                  
                    unification tl
                  end
                 else      
@@ -433,38 +453,33 @@ match lst with
                    end
                 else if ( (isFun t1) &&  (isFun t2))then 
                   begin
-                     let lst2 = checkFun tl t1 t2 in
-                    
+                     let lst2 = checkFun tl t1 t2 in                   
                      unification lst2
                   end
                 else if ( (isTup t1) &&  (isTup t2))then 
                   begin
                      let lst2 = checkTuple tl t1 t2 in
-                   
                      unification lst2
                   end  
                 else if ( (isArray t1) &&  (isArray t2))then 
                   begin
-                     let lst2 = checkArray tl t1 t2 in
-                     
+                     let lst2 = checkArray tl t1 t2 in                
                      unification lst2
                   end      
                 else if (not (isVar t1) && not (isVar t2))then
                    begin
                      let s1= getTypeString t1 in let s2= getTypeString t2 in 
-                    failwith (Printf.sprintf "Expression has type %s but an expression was 
-                    expected of type  %s" s1 s2)
+                     failwith (Printf.sprintf "Expression has type %s but an expression was 
+                     expected of type  %s" s1 s2)
                    end
               else if (isVar t2) then      
                 begin        
-                  let lst2= replace tl t1 t2 in 
-                 
+                  let lst2= replace tl t1 t2 in                 
                      unification lst2
                 end
               else if (isVar t1) then      
                 begin                    
-                  let lst2= replace tl t2 t1 in 
-               
+                  let lst2= replace tl t2 t1 in             
                   unification lst2
                 end
 )
