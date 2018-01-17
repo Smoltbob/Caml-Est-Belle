@@ -136,7 +136,6 @@ let () =
         ("-linear", Arg.Set linear_scanning, "Use linear scanning");
         ("-opt", Arg.Set optimize, "Use optimisation");
         ("-h", Arg.Unit (fun _ -> ()), "-o: output file\n-h: display help\n-v: display version\n-t: type check only\n-p: parse only\n-asml: output ASML")
-=======
     ] in
 
     Arg.parse
