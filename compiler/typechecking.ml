@@ -111,20 +111,6 @@ let rec toArray eq =
    | _ -> []
 
 
-let rec h (x:Fsyntax.t) = 
-  match x with 
-  | Unit->"unit"
-  | Bool a -> "bool\n"
-  | Int a->"int\n"
-  | Float a-> "float\n"
-  | Let (a,b,c)->"let\n"
-  | Var a-> "var\n"
-  | LetRec (a,b)->"letrec\n"
-  | App (a,b)->"app\n"
-  | Array (a,b)->"array\n"
-  | Get (a,b)->"get\n"
-  | Put (a,b,c)-> "put\n"
-  |_->"else\n"
 
 (** This function is  generate the the equation list 
   @param env  the environment in which the program is type checked (Fid.t* Ftype.t) list
@@ -218,12 +204,12 @@ let rec genEquations  env (expr:Fsyntax.t)  tp  =
                      let eq2= genEquations env e2 ts in  
                      append eq1 eq2          
 
-   | LetTuple (l, e1, e2)-> print_string "letTupe\n";
+   | LetTuple (l, e1, e2)-> 
                             let eq1= genEquations  env e1 (Tuple(List.map snd l)) in
                             let eq2 = genEquations (append l env) e2 tp in 
                             append eq1 eq2    
             
-    | Tuple(l) ->   print_string "Tuple\n"; 
+    | Tuple(l) ->  
         let ts = generateTypes l in (*create special case for predef*)
         let eq1= (Tuple(ts), tp )::!eq in 
         let eq2 = 
@@ -268,24 +254,7 @@ let rec genEquations  env (expr:Fsyntax.t)  tp  =
 
   |_ ->print_string "there is a type not implemented yet\n";!eq
 
-(*   
- let eq1= genEquations env e1 Int in  
-                      let eq2 = genEquations env e2 Int in 
-                      append ((Int, tp)::eq1) eq2
-   | Array of t
-| Let ((id,t), e1, e2) -> 
-                              let eq1= genEquations  env e1 t in
-                              let eq2 = genEquations ((id, t)::env) e2 tp in 
-                              append eq1 eq2                         
 
-
-
-      | Array of t * t
-  | Get of t * t
-  | Put of t * t * t
-
-
-*)
 
 (**This function is to check if x is of type  Var
   @param x type to be checked
@@ -432,14 +401,11 @@ let rec replace lst tp1 tp2 =
                           (advReplace t1 tp1 tp2,advReplace t2 tp1 tp2)::replace tl tp1 tp2  
                       else if isArray t1 then 
                       begin
-
                           (advReplace t1 tp1 tp2,t2)::replace tl tp1 tp2
                       end
                       else if isArray t2 then  begin
-
                         (t1,advReplace t2 tp1 tp2)::replace tl tp1 tp2
                       end
-
                       else
                         (t1,t2)::replace tl tp1 tp2
 
