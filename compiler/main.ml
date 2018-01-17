@@ -57,21 +57,24 @@ let print_asml l =
     let c = (
         Fclosure.clos_out
         (
+            (*
         Felim.f
         (
         Fconstfold.f
         (
+            *)
             (*
         Finline.f*)
         (
         Freduction.reduc
-        (
+        ((*
         Fbeta.f
         (
+            *)
         Falphaconversion.alpha
         (
         Fknormal.knormal s
-    ))))))))
+    )))))
     in
     (* Fclosure.clos_to_string c *)
     let prog = Fasmlgen.asml_head c in
