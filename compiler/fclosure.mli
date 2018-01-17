@@ -16,6 +16,9 @@ type t =
     | Not of t
     | Neg of t
     | Add of t * t
+
+    | Land of t * t
+
     | Sub of t * t
     | FNeg of t
     | FAdd of t * t

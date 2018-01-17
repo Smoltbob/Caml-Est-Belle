@@ -59,6 +59,7 @@ for folder in "$dir"/*/; do
                 (cd "$outarm" && make "$filename".arm) >> /dev/null
             fi
             RESULT=$(cd "$outarm" && qemu-arm ./"$filename".arm)
+            (cd "$outarm" && rm "$filename".s && rm "$filename".arm) 
             # Printing output from parsing + ARM generation
             # Printing the expected output
             EXP=$(cat "$folder"expected_"$typ"/"$filename".exp)

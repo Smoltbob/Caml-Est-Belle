@@ -22,6 +22,9 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
     |Neg a -> Neg (g m a) 
     |Sub (a, b) -> Sub (g m a, g m b) 
     |Add (a, b) -> Add (g m a, g m b) 
+
+    |Land (a, b) -> Land (g m a, g m b) 
+
     |FAdd (a, b) -> FAdd (g m a, g m b) 
     |FNeg a -> FNeg (g m a) 
     |FSub (a, b) -> FSub (g m a, g m b)  

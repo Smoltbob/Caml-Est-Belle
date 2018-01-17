@@ -32,6 +32,8 @@ rule token = parse
     { MINUS }
 | '+'
     { PLUS }
+| "land"
+    { LAND }
 | "-."
     { MINUS_DOT }
 | "+."

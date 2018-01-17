@@ -16,7 +16,6 @@ all: ${PRG}
 
 .PHONY: clean test echo
 clean:
-	rm *.core
 	rm *.arm
 
 echo:

@@ -7,7 +7,6 @@ open List;;
 (** A hashtable: the keys are the name of variables and the contant of each key is a tuple (bool, int), if bool is equal to "true", then the variable is in the register and the int is the index of register, else the variable is in the memory, the int is the address . *)
 
 let frames_stack = Stack.create ()
-let self = ref ("void":Id.t)
 
 (** This function is to allocate 4 bytes for variable x and update the (Stack.top frames_table), and return the address
 @param variable_name the variable name in type id.t
@@ -51,7 +50,7 @@ let remove_underscore function_name =
 let rec stack_remaining_arguments args =
     match args with
     | [] -> ""
-    | arg::arg_list -> sprintf "%s\tldr r4, [fp, #%i]\n\tstmfd sp!, {r4}\n" (stack_remaining_arguments arg_list) (fst (frame_position arg))
+    | arg::arg_list -> sprintf "\tldr r4, [fp, #%i]\n\tstmfd sp!, {r4}\n%s" (fst (frame_position arg)) (stack_remaining_arguments arg_list)
 
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
 @param args the list of arguments, in type string
@@ -59,7 +58,9 @@ let rec stack_remaining_arguments args =
 let rec to_arm_formal_args args i =
     match args with
     | [] -> sprintf ""
-    | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (fst (frame_position (List.hd l))) (to_arm_formal_args (List.tl l) (i+1))
+    | l when (List.length l <= 4) -> let frame_offset, need_push = frame_position (List.hd l) in
+                                     let push_stack = if need_push then "\tadd sp, sp, #-4\n" else "" in
+                                     sprintf "%s\tldr r%i, [fp, #%i]\n%s" push_stack i frame_offset (to_arm_formal_args (List.tl l) (i+1))
     | a1::a2::a3::a4::l -> sprintf "%s%s" (to_arm_formal_args (a1::a2::a3::a4::[]:string list)  0) (stack_remaining_arguments l)
     | _ -> failwith "Error while parsing arguments"
 
@@ -67,7 +68,7 @@ let rec to_arm_formal_args args i =
 let rec store_in_stack register_id dest =
     let frame_offset, need_push = frame_position dest in
     let push_stack = if need_push then "\tadd sp, sp, #-4\n" else "" in
-    sprintf "%s\tstr r%i, [fp, #%i]\n" push_stack register_id frame_offset
+    sprintf "%s\tstr r%i, [fp, #%i] @%s\n" push_stack register_id frame_offset dest
 
 let rec operation_to_arm op e1 e2 dest =
     let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position e1)) in
@@ -87,44 +88,72 @@ let rec operation_to_arm op e1 e2 dest =
 @return unit*)
 let rec exp_to_arm exp dest =
     match exp with
+    (* To create negative values we substract them to 0 *)
     | Neg id -> let store_string = store_in_stack 4 dest in
-                    sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
-    | Int i -> let store_string = store_in_stack 4 dest in sprintf "\tmov r4, #%s\n%s" (string_of_int i) store_string
+                    sprintf "\tldr r4, [fp, #%i]\nmov r5, #0\n\tsub r4, r5, r4\n%s" (fst (frame_position id)) store_string
+    (* Storing immediates with support for big ints *)
+    | Int i -> let store_string = store_in_stack 4 dest in
+               let move_string = if i < 65536 then
+                   sprintf "\tmov r4, #%i\n" i
+               else
+                   sprintf "\tmovw r4, #:lower16:%i\n\tmovt r4, #:upper16:%i\n" i i
+               in move_string ^ store_string
+    (* Loading variables from the frame table *)
     | Var id -> (match id with 
-                | "%self" -> let store_string = store_in_stack 4 dest in
-                                sprintf "\tldr r4, =%s\n%s" (Id.to_string !self) store_string
-                | _ -> let store_string = store_in_stack 4 dest in
+                (* Here we want to treat labels and variable names differently *)
+                | _ -> let str = (Id.to_string id) in 
+                       let store_string = store_in_stack 4 dest in
+                       if str.[0] = '_' then 
+                                sprintf "\tldr r4, =%s\n%s" (remove_underscore str) store_string
+                            else 
                                 sprintf "\tldr r4, [fp, #%i]\n%s" (fst (frame_position id)) store_string
                 )
+    (* Binary operations *)
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
-    | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
-    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (remove_underscore l) (store_in_stack 0 dest)
-    | CallClo (l1, a1) -> self := l1;
-                          let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
-                          let load_addr = sprintf "\tldr r4, =%s\n" (let l = Id.to_string l1 in remove_underscore l) in
-                          let branch = sprintf "\tblx r4\n" in 
-                          sprintf "%s%s%s" prep_args load_addr branch 
+    (* Function calls. We have to prepare the function arguments, then call the function and return the value into the destination
+     * register. *)
+    | Land (e1, e2) -> operation_to_arm "and" e1 e2 dest
+    | Call (l1, a1) -> let l = (Id.to_string l1) in
+                       let args_string = (to_arm_formal_args a1 0) in
+                       let function_call_name = (remove_underscore l) in
+                       let store_string = (store_in_stack 0 dest) in
+                       sprintf "%s\tbl %s\n%s" args_string function_call_name store_string
 
+    (* Closure application. We have to store the closure address into the word "_self", prepare the arguments and call the closure. *)
+    | CallClo (l1, a1) -> let store_closure = sprintf "\tldr r6, [fp, #%i]\n\tldr r5, _self\n\tstr r6, [r5]\n" (fst(frame_position l1)) in
+                          let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
+                          let load_addr = sprintf "\tldr r4, [fp, #%i]\n\tldr r4, [r4]\n" (fst (frame_position l1)) in 
+                          let branch = sprintf "\tblx r4\n" in 
+                          sprintf "%s%s%s%s" store_closure prep_args load_addr branch 
+
+    (* New allocates space on the heap. It's bascially a macro for min_caml_create_array.
+     * If we call it with an int, we put it first in a register and then call the function. *)
     | New (e1) -> (match e1 with
                 (* We want to call min_caml_create_array on the id and return the adress *)
-                | Var id -> let call = sprintf "%s\tbl min_caml_create_array\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
+                | Var id -> let call = sprintf "%s\tmov r1, #0\nbl min_caml_create_array\n%s" (to_arm_formal_args [id] 0) (store_in_stack 0 dest)
                             in sprintf "%s" call
                 | Int i -> let store_string = store_in_stack 0 dest in 
                            let prepare_arg = sprintf "\tmov r0, #%s\n" (string_of_int i) in
-                           let call_alloc = sprintf "\tbl min_caml_create_array\n%s" (store_in_stack 0 dest) in
+                           let call_alloc = sprintf "\tmov r1, #0\n\tbl min_caml_create_array\n%s" (store_in_stack 0 dest) in
                                sprintf "%s%s%s" prepare_arg store_string call_alloc
                 | _ -> failwith "Unauthorized type"
     )
-
+    
+    (* Memory access for an array in the heap. We want to make a special case for the base address%self, 
+     * in which case we will need to load it from the word "_self".
+     * Otherwise we take the base address id1 and add to it the offset id2 that we shift 2 bits to the left (LSL #2).
+     * It makes the final address of the cell from which we can read. *)
     | MemAcc (id1, id2) ->
             let store_arg1 = 
                 match id1 with
-                | function_name when (function_name.[0] = '%') -> sprintf "\tldr r4, =%s\n" (remove_underscore function_name)
+                (*| function_name when (function_name.[0] = '%') -> sprintf "\tldr r4, =%s\n" (remove_underscore function_name)*)
+                | function_name when (function_name = "%self") -> sprintf "\tldr r4, _self\n\t ldr r4, [r4]\n"
                 | _ -> sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1))
             in
             let load = sprintf "\tldr r4, [r4, r5, LSL #2]\n" in
             let mov = sprintf "%s" (store_in_stack 4 dest) in
+                (* If we have an int, we want to first put it into a register. *)
                 (match id2 with
                 | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in
                             sprintf "%s%s%s%s" store_arg1 store_arg2 load mov 
@@ -133,7 +162,9 @@ let rec exp_to_arm exp dest =
                 | _ -> failwith "Unauthorized type"
                 );
 
-                
+    (* Memory affectation. Works with the same mechanisms as memory access. Only difference : we need a new register
+     * r7 to store the value to put in the array. To make sure we don't perturb the rest of the code, we save it on
+     * the stack with stmfd before using it, and when we are done we restore it with ldmfd. *) 
     | MemAff (id1, id2, id3) ->
             let saver7 = sprintf "\tstmfd sp!, {r7}\n" in
             let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
@@ -147,23 +178,27 @@ let rec exp_to_arm exp dest =
                         sprintf "%s%s%s%s%s%s" saver7 store_arg1 store_arg2 prepstore store restorer7
             | _ -> failwith "Unauthorized type"
             )
-
+            
+    (* If statement. We create one label called "if" followed by a unique number. It contains the first asmt. If we don't
+     * branch into it we want to execute the second asmt.
+     * Because we can have different comparison operators in an if, we put them in the variable comp. It can be "ble", "beq"
+     * "beg". *)
     | If (id1, e1, asmt1, asmt2, comp) ->
             let counter = genif() in 
-            let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
+            let store_arg1 = sprintf "\tldr r4, [fp, #%i] @%s\n" (fst (frame_position id1)) id1 in
+            let store_arg2 = match e1 with
+                             | Var id -> sprintf "\tldr r5, [fp, #%i] @%s\n" (fst (frame_position id)) id
+                             | Int i  -> sprintf "\tmov r5,#%i\n" i 
+                             | _ -> failwith "Unauthorized type" 
+            in
             let cmpop = sprintf "\tcmp r4, r5\n" in
             let branch1 = sprintf "\t%s if%s\n" comp counter in
             let codeelse = sprintf "%s" (asmt_to_arm asmt2 dest) in
             let branch2 = sprintf "\tb end%s\n\n" counter in
             let codeif = sprintf "if%s:\n%s\n" counter (asmt_to_arm asmt1 dest) in
             let endop = sprintf "end%s:\n" counter in
-            (match e1 with
-            | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in 
-                        sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
-            | Int i  -> let store_arg2 = sprintf "\tmov r5,#%i\n" i in 
-                        sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
-            | _ -> failwith "Unauthorized type"
-            )
+            sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
+
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
@@ -174,9 +209,15 @@ let rec exp_to_arm exp dest =
 and asmt_to_arm asm dest =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP ...Imm" *)
-    | Let (id, e, a) -> let exp_string = exp_to_arm e id in sprintf "%s%s" exp_string (asmt_to_arm a "")
-    | Expression e -> sprintf "%s\tldr r0, [fp, #%i]\n" (exp_to_arm e dest) (fst (frame_position dest))
-    | _ -> failwith "asmt_to_arm: Unauthorized type"
+    | Let (id, e, a) -> let exp_string = exp_to_arm e id in
+                        let next_asmt_string = asmt_to_arm a dest in
+                        exp_string ^ next_asmt_string
+    | Expression e -> (match e with
+                    |CallClo(l, a) -> sprintf "%s" (exp_to_arm e dest)
+                    | _ -> let exp_string = exp_to_arm e dest in
+                      let return_value_string = sprintf "\tldr r0, [fp, #%i]\n" (fst (frame_position dest)) in
+                      exp_string ^ return_value_string
+    )
 
 (** Helper functions for fundef *)
 let rec pull_remaining_args l =
@@ -189,7 +230,7 @@ let rec get_args args =
     | [] -> sprintf ""
     | l when (List.length l = 1) -> sprintf "\tstmfd sp!, {r0}\n\n"
     | l when (List.length l <= 4) -> sprintf "\tstmfd sp!, {r0-r%i}\n\n" ((List.length l)-1)
-    | a1::a2::a3::a4::l -> sprintf "\tmov r5, fp\n\tadd r5, r5, #%i\n%s%s" (4*(List.length l) + 8) (pull_remaining_args l) (get_args (a1::a2::a3::a4::[]:string list))
+    | a1::a2::a3::a4::l -> sprintf "\tmov r5, fp\n\tadd r5, r5, #8\n%s%s" (pull_remaining_args l) (get_args (a1::a2::a3::a4::[]:string list))
     | _ -> failwith "Error while pushing arguments to the stack"
 
 (** Puts the stack pointer where it was before a function call in order to free
@@ -198,13 +239,9 @@ let rec get_args args =
  * otherwise it was. *)
 let rec epilogue args =
     if (List.length args <= 4) then
-        "\tmov sp, fp
-        \tldmfd sp!, {fp, pc}\n\n\n"
+        "\tmov sp, fp\n\tldmfd sp!, {fp, pc}\n\n\n"
     else
-        sprintf "\tmov sp, fp
-                 \tldmfd sp!, {fp, lr}
-                 \tadd sp, sp, #%i
-                 \tbx lr\n\n\n" (4 * ((List.length args) - 4))
+        sprintf "\tmov sp, fp\n\tldmfd sp!, {fp, lr}\n\tadd sp, sp, #%i\n\tbx lr\n\n\n" (4 * ((List.length args) - 4))
 
 (** This function handles the printing of a given function
 @param fundef program in type fundef
@@ -244,4 +281,6 @@ let rec fundefs_to_arm fundefs =
 @return unit*)
 let rec toplevel_to_arm toplevel =
     match toplevel with
-    | Fundefs functions_list -> sprintf "\t.text\n%s" (fundefs_to_arm functions_list)
+    | Fundefs functions_list -> let data_section = sprintf "\t.data\n\t.balign 4\nself: .word 0" in 
+                                let word_declaration = sprintf "_self: .word self" in 
+                                sprintf "%s\n\n\t.text\n%s\n\n%s\n" data_section (fundefs_to_arm functions_list) word_declaration

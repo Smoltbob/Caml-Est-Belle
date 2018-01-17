@@ -1,0 +1,5 @@
+let _ =
+	let x = 3 in
+	let y = 2 in
+    let z = land x y in
+    call _min_caml_print_int z

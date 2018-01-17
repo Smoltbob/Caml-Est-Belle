@@ -53,7 +53,7 @@ let rename x =
 let rec alpha_g env (k_t:Fknormal.t) : Fknormal.t  =
     match k_t with
     |Let ((a,t), b, c) -> let a' = rename a in
-            Let ((a', t), alpha_g ((a,a')::env) b, alpha_g ((a,a')::env) c) 
+            Let ((a', t), alpha_g env b, alpha_g ((a,a')::env) c) 
     |LetRec (a, b) -> let name' = (rename (fst a.name), snd a.name) in
                       let args' = List.map (fun (x,t)->(rename x,t)) a.args in
                       let inenv = (fst a.name, fst name')::env in
@@ -68,6 +68,9 @@ let rec alpha_g env (k_t:Fknormal.t) : Fknormal.t  =
     |Neg b -> Neg (alpha_g env  b)
     |Sub (a, b) -> Sub(alpha_g env  a, alpha_g env  b)
     |Add (a, b) -> Add(alpha_g env  a, alpha_g env b)
+
+    |Land (a, b) -> Land(alpha_g env  a, alpha_g env b)
+
     |FAdd (a, b) -> FAdd(alpha_g env  a, alpha_g env b)
     |FNeg b -> FNeg (alpha_g env  b)
     |FSub (a, b) -> FSub(alpha_g env a, alpha_g env b)

@@ -65,6 +65,9 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
                    if (is_constant a') && (is_constant b') then
                        Int((get_int a') + (get_int b'))
                    else let a', b' = order a' b' in Add(a',b')
+
+    |Land (a, b) -> Land(a,b) 
+
     |FNeg a -> let a' = g m a in if is_constant a' then Float(-. (get_float a')) else FNeg a'
 
     |FAdd (a, b) -> let a' = g m a in
@@ -99,13 +102,22 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
                        Bool(apply_polymorph {f=(<=)} a' b')
                    else LE(a',b')
     *)
-    |App (a,b) ->  (match a with |Var(a') -> let a = (if Hashtbl.mem m a' then Hashtbl.find m a' else a) in App (a, b)
-                                 |_->failwith "ConstFold.g: bad App")
+    |App (a,b) ->  (match a with
+                                |Var(a') -> let a = (if Hashtbl.mem m a' then Hashtbl.find m a' else a) in App (a, b)
+                                |_->failwith "ConstFold.g: bad App")
 
-    |IfEq (x, y, b, c) -> match (g m (Var y)) with |Var y' -> IfEq (x, y', g m b, g m c)
-                                      |_ -> assert false
-    |IfLE (x, y, b, c) -> match (g m (Var y)) with |Var y' -> IfLE (x, y', g m b, g m c)
-                                      |_ -> assert false
+    |IfEq (x, y, b, c) ->
+    (* (match (g m (Var y)) with
+                                    |Var y' -> IfEq (x, y', g m b, g m c)
+                                    |_ -> failwith "ConstFold.g: bad ifeq") *)
+                                    IfEq (x, y, g m b, g m c)
+
+    |IfLE (x, y, b, c) ->
+    (* (match (g m (Var y)) with
+                                    |Var y' -> IfLE (x, y', g m b, g m c)
+                                    |_ -> failwith "ConstFold.g: bad ifle") *)
+                                    IfLE (x, y, g m b, g m c)
+
     |Array (a, b) -> Array (a, b)
     |Get (a, b) -> Get (a, b)
     |Put (a, b, c) -> Put (a, b, c)

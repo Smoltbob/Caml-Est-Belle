@@ -4,7 +4,7 @@ open Printf;;
 
 (* f_Ri_load_store*)
 
-let active = ref []
+let active = ref [("a","b",1);]
 let spill = ref []
 let free_reg_pool = ["R0";"R1";"R2";"R3";"R4";"R5";"R6";"R7";"R8";"R9";"R10";"R12";]
 (*let free_reg_pool = ref["R0";"R1";"R2"]*)
@@ -15,12 +15,12 @@ let trd t = let a,b,c = t in c
 let snd_ning t = let a,b,c = t in b
 let fst_ning t = let a,b,c = t in a
 
-let rec print_active l =
-	Printf.fprintf stdout "start list\n";
+(*let rec print_active l =
+	(*Printf.fprintf stdout "start list\n";*)
 	(match l with
-	|t::q -> Printf.fprintf stdout "%s %s %i\n" (Id.to_string (fst_ning t)) (snd_ning t) (trd t); print_active q
+	|t::q -> let str = ref sprintf "%s %s %i\n" (Id.to_string (fst_ning t)) (snd_ning t) (trd t) in ; print_active q
 	| [] -> ());
-	Printf.fprintf stdout "end list\n"
+	(*Printf.fprintf stdout "end list\n"*)*)
 	
 let rec print_spill l =
 	Printf.fprintf stdout "start spill list\n";
@@ -160,7 +160,7 @@ let alloc_id_def id live_interval_s_ht live_interval_e_ht =
 			else
 				reg_id) in
 	active := add_to_active (id, id_pre, (Hashtbl.find live_interval_e_ht id)) !active;
-	print_active !active;
+	(*print_active !active;*)
 	reg_id
 
 let rec remove_from_free_reg l_free=
@@ -228,7 +228,6 @@ and alloc_asm asm live_interval_s_ht live_interval_e_ht =
 					   let reg_asm = alloc_asm a live_interval_s_ht live_interval_e_ht in
 					   Let (reg_id, reg_e, reg_asm)
 	|Expression e -> let reg_e = alloc_exp e live_interval_s_ht live_interval_e_ht in Expression reg_e 
-	| _ -> failwith ("match failure with register alloc in closure")
 	
 let rec active_args args live_interval_e_ht =
 	match args with
@@ -247,6 +246,7 @@ let rec spill_args args live_interval_e_ht a =
 			 (sprintf "f_%s_%i_" (reg_id) (a)) :: (spill_args q live_interval_e_ht (a+4))
 	|[] -> []
 	
+(** This function *)
 let rec alloc_args args live_interval_e_ht =
 	let reg_args = ref [] in
 	if (List.length args) < 5 then
@@ -257,7 +257,9 @@ let rec alloc_args args live_interval_e_ht =
 		|_ -> failwith ("failwith alloc_args"));
 	!reg_args
 			
-
+(** This function does register allocation in a function
+@param fund the function need to be allocated
+@return function with registers*)
 let alloc_fund fund live_interval_s_ht live_interval_e_ht =
 	spill_counter := 0;	
 	free_reg := free_reg_pool;
@@ -267,12 +269,18 @@ let alloc_fund fund live_interval_s_ht live_interval_e_ht =
 	let reg_body = (alloc_asm fund.body live_interval_s_ht live_interval_e_ht) in
 	{name = fund.name; args = reg_args; body = reg_body}
 
+(** This function does register allocation in a list of functions
+@param funds function list
+@return function list with registers*)
 let rec alloc_funds funds live_interval_s_ht live_interval_e_ht= 
 	match funds with
 	|t::q -> let reg_fund = alloc_fund t live_interval_s_ht live_interval_e_ht in
 			 reg_fund :: (alloc_funds q live_interval_s_ht live_interval_e_ht)
 	|[] -> []
-	
+
+(** This function is to do register allocation in type toplevel
+@param topl program in type toplevel
+@return program in toplevel with registers*)	
 let registeralloc topl live_interval_s_ht live_interval_e_ht=
 	match topl with
 	|Fundefs funds -> Fundefs (alloc_funds funds live_interval_s_ht live_interval_e_ht)

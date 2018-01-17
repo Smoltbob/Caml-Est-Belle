@@ -24,6 +24,9 @@ let rec fv x ast =
     |Neg b -> fv x b 
     |Sub (a, b) -> (fv x a) || (fv x b)
     |Add (a, b) -> (fv x a) || (fv x b)
+
+    |Land (a, b) -> (fv x a) || (fv x b)
+
     |FAdd (a, b) -> (fv x a) || (fv x b)
     |FNeg b ->  fv x b 
     |FSub (a, b) -> (fv x a) || (fv x b) 
