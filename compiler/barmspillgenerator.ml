@@ -7,7 +7,6 @@ open List;;
 (** A hashtable: the keys are the name of variables and the contant of each key is a tuple (bool, int), if bool is equal to "true", then the variable is in the register and the int is the index of register, else the variable is in the memory, the int is the address . *)
 
 let frames_stack = Stack.create ()
-let self = ref ("void":Id.t)
 
 (** This function is to allocate 4 bytes for variable x and update the (Stack.top frames_table), and return the address
 @param variable_name the variable name in type id.t
@@ -93,8 +92,6 @@ let rec exp_to_arm exp dest =
                     sprintf "\tldr r4, [fp, #%i]\nmov r5, #0\n\tsub r4, r5, r4\n%s" (fst (frame_position id)) store_string
     | Int i -> let store_string = store_in_stack 4 dest in sprintf "\tmov r4, #%s\n%s" (string_of_int i) store_string
     | Var id -> (match id with 
-                | "%self" -> let store_string = store_in_stack 4 dest in
-                                sprintf "\tldr r4, =%s\n%s" (Id.to_string !self) store_string
                 (* Here we want to treat labels and variable names differently *)
                 | _ -> let str = (Id.to_string id) in 
                        let store_string = store_in_stack 4 dest in
@@ -111,8 +108,8 @@ let rec exp_to_arm exp dest =
                        let function_call_name = (remove_underscore l) in
                        let store_string = (store_in_stack 0 dest) in
                        sprintf "%s\tbl %s\n%s" args_string function_call_name store_string
-    | CallClo (l1, a1) -> self := l1;
-                          let store_closure = sprintf "%s\n\tldr r5, _self\n\tstr r4, [r5]" (store_in_stack 4 l1) in
+
+    | CallClo (l1, a1) -> let store_closure = sprintf "ldr r6, [fp, #%i]\n\tldr r5, _self\n\tstr r6, [r5]\n" (fst(frame_position l1)) in
                           let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
                           let load_addr = sprintf "\tldr r4, =%s\n" (Id.to_string l1) in (* remove underscore to branch? *)
                           let branch = sprintf "\tblx r4\n" in 
@@ -133,7 +130,7 @@ let rec exp_to_arm exp dest =
             let store_arg1 = 
                 match id1 with
                 (*| function_name when (function_name.[0] = '%') -> sprintf "\tldr r4, =%s\n" (remove_underscore function_name)*)
-                | function_name when (function_name = "%self") -> sprintf "\tldr r4, =_self\n\t ldr r4, [r4]\n"
+                | function_name when (function_name = "%self") -> sprintf "\tldr r4, _self\n\t ldr r4, [r4]\n"
                 | _ -> sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1))
             in
             let load = sprintf "\tldr r4, [r4, r5, LSL #2]\n" in
@@ -188,9 +185,12 @@ and asmt_to_arm asm dest =
     | Let (id, e, a) -> let exp_string = exp_to_arm e id in
                         let next_asmt_string = asmt_to_arm a dest in
                         exp_string ^ next_asmt_string
-    | Expression e -> let exp_string = exp_to_arm e dest in
+    | Expression e -> (match e with
+                    |CallClo(l, a) -> sprintf "%s" (exp_to_arm e dest)
+                    | _ -> let exp_string = exp_to_arm e dest in
                       let return_value_string = sprintf "\tldr r0, [fp, #%i]\n" (fst (frame_position dest)) in
                       exp_string ^ return_value_string
+    )
     | _ -> failwith "asmt_to_arm: Unauthorized type"
 
 (** Helper functions for fundef *)
