@@ -1,6 +1,8 @@
+(** This module encapsulates the inline expansion*)
 open Fknormal
 
-let threshold = ref 0
+
+let threshold = ref 10
 
 let rec find x env =
     match env with

@@ -4,12 +4,18 @@ open Bsyntax;;
 open Printf;;
 open List;;
 
+(** A reference to the current frame size to know if we need to allocate the stack on storing *)
 let current_frame_size = ref 0
 
+(** An helper function to remove the first character of a string *)
 let remove_underscore function_name =
     String.sub function_name 1 ((String.length function_name) - 1)
 
-(* get a value between underscores in the string code *)
+(** Get a value between underscores in the string code
+@param string_code the string_code to parse
+@param index the index of the starting character of the part we want to get (usually just after an underscore)
+@param current_value call it with 0, it's used to build the parsed string
+@return the string contained between two underscores *)
 let rec parse_string_code string_code index current_value =
     if index = String.length string_code then
         current_value
@@ -18,12 +24,16 @@ let rec parse_string_code string_code index current_value =
         | '_' -> current_value
         | current_char -> parse_string_code string_code (index+1) (current_value ^ (String.make 1 current_char))
 
+(** Gets the register involved in the variable
+@param string_code the string_code of the variable
+@return the string representing the register in ARM *)
 let rec resolve_linear_scan_register string_code =
     if string_code.[0] = 'R' then
         sprintf "r%s" (remove_underscore string_code)
     else
         sprintf "r%s" (parse_string_code string_code 3 "")
 
+(** Perform the load and store operations if needed when accessing a variable *)
 let rec resolve_store_load string_code =
     if string_code.[0] = 'f' then
         let reg_number = parse_string_code string_code 3 "" in
@@ -62,7 +72,7 @@ let rec stack_remaining_arguments args =
                         let register_arg = resolve_linear_scan_register arg in
                         sprintf "%s%s\tstmfd sp!, {r%s}\n" (stack_remaining_arguments remaining) load_store_arg register_arg
 
-(** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
+(** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments
 @param args the list of arguments, in type string
 @return unit *)
 let rec to_arm_formal_args args i =

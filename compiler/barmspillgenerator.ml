@@ -4,8 +4,7 @@ open Bsyntax;;
 open Printf;;
 open List;;
 
-(** A hashtable: the keys are the name of variables and the contant of each key is a tuple (bool, int), if bool is equal to "true", then the variable is in the register and the int is the index of register, else the variable is in the memory, the int is the address . *)
-
+(** The frames are managed on a frame stack where we always access the top one. For an obscure reason having a simple frame and reseting it after the translation of each function wasn't working *)
 let frames_stack = Stack.create ()
 
 (** This function is to allocate 4 bytes for variable x and update the (Stack.top frames_table), and return the address
@@ -20,6 +19,7 @@ let rec frame_position variable_name =
     else
     (Hashtbl.find top_frame_table variable_name, false)
 
+(** Has to be called when entering a function, it adds the arguments in registers and in the stack to the frame *)
 let rec register_args args =
     match args with
     | [] -> ()
@@ -27,11 +27,11 @@ let rec register_args args =
                             (let frame_index = -4 * (Hashtbl.length top_frame_table) - 4 in
                             Hashtbl.add top_frame_table arg frame_index);
                            register_args arg_list
-
+(** Has to be called before everything when calling a function, it creates a fresh frame table for the current function*)
 let rec push_frame_table () =
     let (new_frame_table:(string, int) Hashtbl.t) = Hashtbl.create 10 in
     Stack.push new_frame_table frames_stack
-
+(** Is called at the end of a function, it shouldn't be needed but we use it for reseting the top frame *)
 let rec pop_frame_table () =
     let _ = Stack.pop frames_stack in ()
 
@@ -47,12 +47,13 @@ let genif =
 let remove_underscore function_name =
     String.sub function_name 1 ((String.length function_name) - 1)
 
+(** The caller adds the arguments that doesn't fit in registers to the stack to be pulled by callee function *)
 let rec stack_remaining_arguments args =
     match args with
     | [] -> ""
     | arg::arg_list -> sprintf "\tldr r4, [fp, #%i]\n\tstmfd sp!, {r4}\n%s" (fst (frame_position arg)) (stack_remaining_arguments arg_list)
 
-(** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments(TO BE DONE)
+(** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments
 @param args the list of arguments, in type string
 @return unit *)
 let rec to_arm_formal_args args i =
@@ -65,11 +66,18 @@ let rec to_arm_formal_args args i =
     | _ -> failwith "Error while parsing arguments"
 
 (* Helpers for 3-addresses operation (like add or sub) *)
+(** When storing in the stack, this function checks if we need to allocate some space or not *)
 let rec store_in_stack register_id dest =
     let frame_offset, need_push = frame_position dest in
     let push_stack = if need_push then "\tadd sp, sp, #-4\n" else "" in
     sprintf "%s\tstr r%i, [fp, #%i] @%s\n" push_stack register_id frame_offset dest
 
+(** Helper function for 3 address code operation
+ @param op the assembly directive of the operation
+ @param e1 the first operand (needs to be a register
+ @param e2 the second operand (can be a register or a 16bits immediate
+ @param dest the destination register
+ @return a string representing the assembly code to perform the operation *)
 let rec operation_to_arm op e1 e2 dest =
     let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position e1)) in
         (match e2 with
@@ -219,12 +227,13 @@ and asmt_to_arm asm dest =
                       exp_string ^ return_value_string
     )
 
-(** Helper functions for fundef *)
+(** Pulls the arguments that doesn't fit in the first registers from the stack and copy them in the local frame (callee) *)
 let rec pull_remaining_args l =
     match l with
     | [] -> ""
     | arg::args -> sprintf "\tldmfd r5!, {r4}\n\tstmfd sp!, {r4}\n%s" (pull_remaining_args args)
 
+(** Loads the arguments from r0 to r3 (callee) *)
 let rec get_args args =
     match args with
     | [] -> sprintf ""
@@ -276,7 +285,7 @@ let rec fundefs_to_arm fundefs =
     | h::l -> sprintf "%s%s" (fundef_to_arm h) (fundefs_to_arm l)
     | _ -> failwith "No main function found"
 
-(** This function is a recursive function to conver tpye toplevel into type fundef
+(** This function is a function to conver type toplevel into type fundef
 @param toplevel program in type toplevel
 @return unit*)
 let rec toplevel_to_arm toplevel =
