@@ -249,4 +249,4 @@ let rec toplevel_to_arm toplevel =
     match toplevel with
     | Fundefs functions_list -> let data_section = sprintf ".data\n.balign 4\nself: .word 0" in 
                                 let word_declaration = sprintf "_self: .word self" in 
-                                sprintf "%s\n\n\t.text\n%s\n\n%s" data_section (fundefs_to_arm functions_list) word_declaration
+                                sprintf "%s\n\n\t.text\n%s\n\n%s\n" data_section (fundefs_to_arm functions_list) word_declaration
