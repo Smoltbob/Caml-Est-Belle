@@ -39,6 +39,25 @@ A basic usage of the compiler is
 ```
 $ mincamlc mincaml_program.ml -o program.s
 ```
+to print an asml file use `./mincamlc -asml simple.ml -o simple.asml`
+to output arm `./mincamlc simple.ml -o simple.s`
+Other options : 
+
+`-o` Specify output file (default a.out)
+
+`-v` Display the version
+
+`-t` Type check only
+
+`-p` Parse only
+
+`-asml` Output ASML only
+
+`-linear` Use linear 
+
+`-opt` Use optimisation
+
+`-h` print help
 
 ## Running the tests
 To run all the tests :
