@@ -364,8 +364,7 @@ and phi (ast:t) : t =
     |IfLE(u,v,y,z) -> psi (fun ls->fun rs->IfLE(u,v,ls,rs)) (phi y) z
     |LetCls(u,v,a,b) -> chi (fun ls->fun rs->LetCls(u,v,a,rs)) Unit (phi b)
     |AppD(a, b) when List.mem a !known -> AppD(a, b)
-    |AppD(a, b) -> let clos_name = a^"c" in
-                   AppC(clos_name, b)
+    |AppD(a, b) -> AppC(a, b)
     |_ -> ast
 
 
