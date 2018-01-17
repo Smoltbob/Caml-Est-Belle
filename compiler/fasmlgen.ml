@@ -23,7 +23,7 @@ let rec to_fargs (l:Fclosure.t list) = match l with
 let rec mem_fv_letrec (name:Id.t) fv count call = match fv with
     | t::q -> Let (
                 t,
-                MemAcc ("%"^name, Int count),
+                MemAcc ("%self", Int count),
                 mem_fv_letrec name q (count+1) call)
     | [] -> call
 
