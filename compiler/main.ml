@@ -73,7 +73,8 @@ let print_asml l =
         (
         Fconstfold.f
         (
-        Finline.f
+            (*
+        Finline.f*)
         (
         Freduction.reduc
         (
@@ -134,7 +135,8 @@ let () =
         ("-asml", Arg.Set asml_only, "Output ASML only");
         ("-linear", Arg.Set linear_scanning, "Use linear scanning");
         ("-opt", Arg.Set optimize, "Use optimisation");
-        ("-h", Arg.Unit (fun _ -> ()), "Dislay this list of options (TODO)")
+        ("-h", Arg.Unit (fun _ -> ()), "-o: output file\n-h: display help\n-v: display version\n-t: type check only\n-p: parse only\n-asml: output ASML")
+=======
     ] in
 
     Arg.parse
