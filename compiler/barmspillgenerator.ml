@@ -59,7 +59,9 @@ let rec stack_remaining_arguments args =
 let rec to_arm_formal_args args i =
     match args with
     | [] -> sprintf ""
-    | l when (List.length l <= 4) -> sprintf "\tldr r%i, [fp, #%i]\n%s" i (fst (frame_position (List.hd l))) (to_arm_formal_args (List.tl l) (i+1))
+    | l when (List.length l <= 4) -> let frame_offset, need_push = frame_position (List.hd l) in
+                                     let push_stack = if need_push then "\tadd sp, sp, #-4\n" else "" in
+                                     sprintf "%s\tldr r%i, [fp, #%i]\n%s" push_stack i frame_offset (to_arm_formal_args (List.tl l) (i+1))
     | a1::a2::a3::a4::l -> sprintf "%s%s" (to_arm_formal_args (a1::a2::a3::a4::[]:string list)  0) (stack_remaining_arguments l)
     | _ -> failwith "Error while parsing arguments"
 
@@ -67,7 +69,7 @@ let rec to_arm_formal_args args i =
 let rec store_in_stack register_id dest =
     let frame_offset, need_push = frame_position dest in
     let push_stack = if need_push then "\tadd sp, sp, #-4\n" else "" in
-    sprintf "%s\tstr r%i, [fp, #%i]\n" push_stack register_id frame_offset
+    sprintf "%s\tstr r%i, [fp, #%i] @%s\n" push_stack register_id frame_offset dest
 
 let rec operation_to_arm op e1 e2 dest =
     let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position e1)) in
@@ -104,7 +106,11 @@ let rec exp_to_arm exp dest =
     | Add (e1, e2) -> operation_to_arm "add" e1 e2 dest
     | Sub (e1, e2) -> operation_to_arm "sub" e1 e2 dest
     | Land (e1, e2) -> operation_to_arm "land" e1 e2 dest
-    | Call (l1, a1) -> let l = (Id.to_string l1) in sprintf "%s\tbl %s\n%s" (to_arm_formal_args a1 0) (remove_underscore l) (store_in_stack 0 dest)
+    | Call (l1, a1) -> let l = (Id.to_string l1) in
+                       let args_string = (to_arm_formal_args a1 0) in
+                       let function_call_name = (remove_underscore l) in
+                       let store_string = (store_in_stack 0 dest) in
+                       sprintf "%s\tbl %s\n%s" args_string function_call_name store_string
     | CallClo (l1, a1) -> self := l1;
                           let store_closure = sprintf "%s\n\tldr r5, _self\n\tstr r4, [r5]" (store_in_stack 4 l1) in
                           let prep_args = sprintf "%s" (to_arm_formal_args a1 0) in
@@ -157,20 +163,18 @@ let rec exp_to_arm exp dest =
 
     | If (id1, e1, asmt1, asmt2, comp) ->
             let counter = genif() in 
-            let store_arg1 = sprintf "\tldr r4, [fp, #%i]\n" (fst (frame_position id1)) in
+            let store_arg1 = sprintf "\tldr r4, [fp, #%i] @%s\n" (fst (frame_position id1)) id1 in
+            let store_arg2 = match e1 with
+                             | Var id -> sprintf "\tldr r5, [fp, #%i] @%s\n" (fst (frame_position id)) id
+                             | Int i  -> sprintf "\tmov r5,#%i\n" i 
+            in
             let cmpop = sprintf "\tcmp r4, r5\n" in
             let branch1 = sprintf "\t%s if%s\n" comp counter in
             let codeelse = sprintf "%s" (asmt_to_arm asmt2 dest) in
             let branch2 = sprintf "\tb end%s\n\n" counter in
             let codeif = sprintf "if%s:\n%s\n" counter (asmt_to_arm asmt1 dest) in
             let endop = sprintf "end%s:\n" counter in
-            (match e1 with
-            | Var id -> let store_arg2 = sprintf "\tldr r5, [fp, #%i]\n" (fst (frame_position id)) in 
-                        sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
-            | Int i  -> let store_arg2 = sprintf "\tmov r5,#%i\n" i in 
-                        sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
-            | _ -> failwith "Unauthorized type"
-            )
+            sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
     | Nop -> sprintf "\tnop\n"
     | _ -> failwith "Error while generating ARM from ASML"
 
@@ -181,8 +185,12 @@ let rec exp_to_arm exp dest =
 and asmt_to_arm asm dest =
     match asm with
     (* We want ex "ADD R1 R2 #4" -> "OP ...Imm" *)
-    | Let (id, e, a) -> let exp_string = exp_to_arm e id in sprintf "%s%s" exp_string (asmt_to_arm a "")
-    | Expression e -> sprintf "%s\tldr r0, [fp, #%i]\n" (exp_to_arm e dest) (fst (frame_position dest))
+    | Let (id, e, a) -> let exp_string = exp_to_arm e id in
+                        let next_asmt_string = asmt_to_arm a dest in
+                        exp_string ^ next_asmt_string
+    | Expression e -> let exp_string = exp_to_arm e dest in
+                      let return_value_string = sprintf "\tldr r0, [fp, #%i]\n" (fst (frame_position dest)) in
+                      exp_string ^ return_value_string
     | _ -> failwith "asmt_to_arm: Unauthorized type"
 
 (** Helper functions for fundef *)

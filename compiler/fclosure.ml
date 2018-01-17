@@ -203,7 +203,7 @@ and phi (ast:Fknormal.t) : Fknormal.t =
 (*------THE-VERSION-AFTER-TRUE-CLOSURE--------------------------------------*)
 let closures = Hashtbl.create 10
 let funs = Hashtbl.create 10
-let predef = ref ["print_int"; "print_newline"]
+let predef = ref ["print_int"; "print_newline"; "print_char"]
 let known = ref []
 let _ = known := !predef
 (* let known = ref ["_min_caml_print_int"; "_min_caml_print_newline"] (*TODO: add the others*) *)
