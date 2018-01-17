@@ -354,7 +354,7 @@ and phi (ast:t) : t =
                              psi (fun ls->fun rs->
                              LetRec({name=y.name; args=y.args; formal_fv=[]; body=ls},rs))
                                  (phi y.body) z)
-                     |_ -> ( let clos_name = (fst y.name) in
+                     |_ -> ( let clos_name = (fst y.name)^"c" in
                              Hashtbl.add closures (fst y.name) clos_name;
                              psi (fun ls->fun rs ->
                              LetRec({name=y.name; args=y.args; formal_fv=fv; body=ls},rs))
