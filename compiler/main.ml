@@ -49,7 +49,6 @@ let writeInFile  file s=
              Fclosure.clos_to_string s8;
 
         Printf.fprintf oc "%s" !input;
-        print_endline (Printf.sprintf "Successfully writeFile %s" file);
     close_out oc *)
 
 let print_asml l =
@@ -119,7 +118,6 @@ let file fin fout =
      else
          begin
             Printf.fprintf outchan "%s" (print_asml (Lexing.from_channel inchan));
-            print_endline (Printf.sprintf "Successfully created file %s" !output_file);
         end;
     close_in inchan;
     close_out outchan
