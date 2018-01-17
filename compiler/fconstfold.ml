@@ -90,42 +90,20 @@ let rec g (m: (Id.t, Fknormal.t) Hashtbl.t) (k:Fknormal.t) : Fknormal.t  =
                    if (is_constant a') && (is_constant b') then
                        Float((get_float a') /. (get_float b'))
                    else FDiv(a,b)
-    (*
-    |Eq (a, b) -> let a' = g m a in
-                   let b' = g m b in
-                   if (is_constant a') && (is_constant b') then
-                       Bool(apply_polymorph {f=(=)} a' b')
-                   else Eq(a',b')
-    |LE (a, b) -> let a' = g m a in
-                   let b' = g m b in
-                   if (is_constant a') && (is_constant b') then
-                       Bool(apply_polymorph {f=(<=)} a' b')
-                   else LE(a',b')
-    *)
     |App (a,b) ->  (match a with
                                 |Var(a') -> let a = (if Hashtbl.mem m a' then Hashtbl.find m a' else a) in App (a, b)
                                 |_->failwith "ConstFold.g: bad App")
 
     |IfEq (x, y, b, c) ->
-    (* (match (g m (Var y)) with
-                                    |Var y' -> IfEq (x, y', g m b, g m c)
-                                    |_ -> failwith "ConstFold.g: bad ifeq") *)
                                     IfEq (x, y, g m b, g m c)
 
     |IfLE (x, y, b, c) ->
-    (* (match (g m (Var y)) with
-                                    |Var y' -> IfLE (x, y', g m b, g m c)
-                                    |_ -> failwith "ConstFold.g: bad ifle") *)
                                     IfLE (x, y, g m b, g m c)
 
     |Array (a, b) -> Array (a, b)
     |Get (a, b) -> Get (a, b)
     |Put (a, b, c) -> Put (a, b, c)
     |_ -> failwith "ConstFold.g: NotYetImplemented"
-    (*
-    |Tuple a -> Tuple(List.map alpha a)
-    |LetTuple (a, b, c) -> LetTuple ( a, alpha b,  alpha c )
-    *)
 
 let f (k:Fknormal.t) =
     let expected_number = 100 in
