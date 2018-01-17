@@ -5,8 +5,8 @@ Private compiler project repository.</br>
 
 ## State of the project
 So far we are handling a subset of ML such that :
-* Arithmetic expressions
-* Calls to external functions (print_int)
+* Everything up to closures is working
+* Some cases for closures are not working (for example closures in function)
 are supported.
 We are using the *spill everything* register allocation algorithm.
 
