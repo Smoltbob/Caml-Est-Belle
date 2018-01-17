@@ -39,8 +39,9 @@ A basic usage of the compiler is
 ```
 $ mincamlc mincaml_program.ml -o program.s
 ```
-to print an asml file use `./mincamlc -asml simple.ml -o simple.asml`
+Other examples :to print an asml file use `./mincamlc -asml simple.ml -o simple.asml`
 to output arm `./mincamlc simple.ml -o simple.s`
+
 Other options : 
 
 `-o` Specify output file (default a.out)
