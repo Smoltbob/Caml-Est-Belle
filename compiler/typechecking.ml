@@ -220,6 +220,7 @@ let rec genEquations  env (expr:Fsyntax.t)  tp  =
   | Array(e1,e2) -> let eq2 =genEquations env e2 (tp) in
                     let eq1= genEquations env e1 Int in
                     append eq1 (toArray eq2)
+  | _ -> failwith "Type error"
 
 
 
