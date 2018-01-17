@@ -23,7 +23,7 @@ let rec to_fargs (l:Fclosure.t list) = match l with
 let rec mem_fv_letrec (name:Id.t) fv count call = match fv with
     | t::q -> Let (
                 t,
-                MemAcc ("%"^name, Int count),
+                MemAcc ("%self", Int count),
                 mem_fv_letrec name q (count+1) call)
     | [] -> call
 
@@ -67,13 +67,13 @@ let rec asml_t_triv t = match t with
                         | (Var x2, Var y2) -> Fdiv (x2, y2)
                         | _ -> failwith "matchfailure FDiv") *)
     | Land (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Add (x2, Var y2)
+                        | (Var x2, _) -> Land (x2, asml_t_triv y)
                         | _ -> failwith "matchfailure Land")
     | Add (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Add (x2, Var y2)
+                        | (Var x2, _) -> Add (x2, asml_t_triv y)
                         | _ -> failwith "matchfailure Add")
     | Sub (x, y) -> (match x, y with
-                        | (Var x2, Var y2) -> Sub (x2, Var y2)
+                        | (Var x2, _) -> Sub (x2, asml_t_triv y)
                         | _ -> failwith "matchfailure Sub")
     | AppD (f, l) -> (*if f.[0] = '_' then
                         Call (f, to_fargs l)
@@ -85,7 +85,7 @@ let rec asml_t_triv t = match t with
                         | Var a2 -> MemAcc (a2, asml_t_triv b)
                         | _ -> failwith "matchfailure Get")
     | Put (a, b, c) -> (match a, c with
-                        | (Var a2, Var c2) -> MemAff (a2, asml_t_triv b, c2)
+                        | Var a2, Var c2 -> MemAff (a2, asml_t_triv b, c2)
                         | _ -> failwith "matchfailure Put")
     | Array (a, b) -> (match a, b with
                         | Var a2, Var b2 -> Call ("_min_caml_create_array", [a2; b2])

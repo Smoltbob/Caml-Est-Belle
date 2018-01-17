@@ -327,8 +327,7 @@ and alloc_asm asm live_interval_s_ht live_interval_e_ht =
 					   Let (reg_id, reg_e, reg_asm)
 					   
 	|Expression e -> let reg_e = alloc_exp e live_interval_s_ht live_interval_e_ht in Expression reg_e 
-	
-	| _ -> failwith ("match failure with register alloc in closure")
+
 	
 	
 	

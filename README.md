@@ -1,9 +1,5 @@
 # Caml-Est-Belle
 Private compiler project repository.</br>
-```diff
-- Please do not commit on master branch /compiler if it doesn't work
-- "master branch passes all tests" should be an invariant.
-```
 
 **Feel free to read the [wiki](https://github.com/Smoltbob/Caml-Est-Belle/wiki) for more documentation.**
 
@@ -23,7 +19,6 @@ Organization of the repository:</br>
 | __ARM/__ | arm source example and compilation with libmincaml |
 | __asml/__ | asml examples |
 | __compiler/__ | compiler source files |
-| __compiler\_very\_basic/__ | compiler with very basic register allocation |
 | __doc/__ | all the documentation, start with index.html |
 | __mincaml/__ | MinCaml examples |
 | __ocaml/__ | MinCaml parser in OCaml |
@@ -55,4 +50,15 @@ To run specific tests :
 $ make test_asml
 $ make test_gencode
 $ make test_typecheck
+$ make test_teacher
+```
+
+## Additional features
+To generate the Sierpinsky triangle :
+```
+$ make sierpinsky
+```
+To benchmark the compiler against ocamlbuild :
+```
+$ make benchmark
 ```

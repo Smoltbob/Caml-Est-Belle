@@ -57,15 +57,16 @@ let print_asml l =
     let c = (
         Fclosure.clos_out
         (
-        (*Felim.f*)
+        Felim.f
         (
-        (*Fconstfold.f*)
+        Fconstfold.f
         (
-        (*Finline.f*)
+            (*
+        Finline.f*)
         (
         Freduction.reduc
         (
-        (*Fbeta.f*)
+        Fbeta.f
         (
         Falphaconversion.alpha
         (
@@ -121,7 +122,7 @@ let () =
         ("-p", Arg.Set parse_only, "Parse only");
         ("-asml", Arg.Set asml_only, "Output ASML only");
         ("-linear", Arg.Set linear_scanning, "Use linear scanning");
-        ("-h", Arg.Unit (fun _ -> ()), "Dislay this list of options (TODO)")
+        ("-h", Arg.Unit (fun _ -> ()), "-o: output file\n-h: display help\n-v: display version\n-t: type check only\n-p: parse only\n-asml: output ASML")
     ] in
 
     Arg.parse

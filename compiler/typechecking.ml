@@ -6,6 +6,18 @@ open Ftype;;
 (** list of equations , it has a type of (Ftype.t* Ftype.t) list *)
 let  eq = ref []
 
+let preDefEnv = 
+[("print_int" ,Fun( [Int] , Unit ));
+("print_float" ,Fun( [Float] , Unit ));
+("float_of_int" ,Fun( [Int] , Float ));
+("int_of_float" ,Fun( [Float] , Int ));
+("sin" ,Fun( [Float] , Float ));
+("cos" ,Fun( [Float] , Float ));
+("sqrt" ,Fun( [Float] , Float ));
+("abs_float" ,Fun( [Float] , Float ));
+("truncate" ,Fun( [Float] , Int ));
+("print_newline" ,Fun( [Unit] , Unit ));
+]
 
 (**This fuction is to search for a variable in the environment
   @param lst the environment list ((Fid.t* Ftype.t) list)
@@ -14,6 +26,7 @@ let  eq = ref []
           else return a failwith message "Unbound value x"
 *)
 let rec findVar lst x =
+
   match lst with
     |(id, t)::tl -> if id =  x then  t
                     else  findVar tl  x
@@ -97,6 +110,8 @@ let rec toArray eq =
    | (a,b)::tl -> (Array(a),b)::tl
    | _ -> []
 
+
+
 (** This function is  generate the the equation list 
   @param env  the environment in which the program is type checked (Fid.t* Ftype.t) list
   @param expr the parsed program that we want to check
@@ -151,6 +166,7 @@ let rec genEquations  env (expr:Fsyntax.t)  tp  =
 
     | Var x -> 
     let t= findVar env x in
+  
                [(t, tp)] 
 
 
@@ -160,17 +176,17 @@ let rec genEquations  env (expr:Fsyntax.t)  tp  =
                          append eq1 eq2
 
     | App (e1, le2) -> 
-        let ts = generateTypes le2 in (*create special case for predef??*)
+        let ts = generateTypes le2 in 
        
         let eq1 = genEquations env e1 (Fun( ts , tp )) in   
-      
+  
         let eq2 = 
           let rec gen l1 l2 =
             match l1, l2 with
             |[h1],[h2]->genEquations env h1 h2
             | h1::t1, h2::t2 -> append (genEquations env h1 h2) (gen t1 t2)
             |_->[]
-          in  gen le2 ts
+          in gen le2 ts
         in append eq1 eq2
 
     | If (e1, e2, e3) ->  let eq1=  genEquations env e1 Bool in 
@@ -208,19 +224,35 @@ let rec genEquations  env (expr:Fsyntax.t)  tp  =
   | Get(e1, e2) ->  
                     let eq1 = genEquations env e1 (Array(tp)) in 
                     let eq2 = genEquations env e2 Int in 
-                    append eq1 eq2
+                 
+                    append ( eq1) eq2
 
-  | Put(e1, e2, e3) -> 
-  let eq1= genEquations env e2 Int in    
-                        let eq2= genEquations env e3 tp in
-                        let eq3= genEquations env e1 tp in
-                    
-                        append eq3 (append eq1 (toArray eq2)) 
+  | Put(e1, e2, e3) ->  
 
-  | Array(e1,e2) -> let eq2 =genEquations env e2 (tp) in
+                        let eq1= genEquations env e2 Int in
+                        let t= 
+                           match e1 with
+                          | Var x -> 
+                         findVar env x 
+                        
+                                        
+                          | _ -> 
+                                Ftype.gentyp()
+                        in
+                        let eq2= genEquations env e3 t in 
+
+                       
+                        (*let eq2= genEquations env e3 (Ftype.gentyp()) in*)
+                      
+                        
+                          (append eq1 (toArray eq2))
+
+  | Array(e1,e2) -> 
+                    let eq2 =genEquations env e2 tp in
                     let eq1= genEquations env e1 Int in
-                    append eq1 (toArray eq2)
+                    append  (toArray eq2) eq1
 
+  |_ ->print_string "there is a type not implemented yet\n";!eq
 
 
 
@@ -329,7 +361,7 @@ let rec advReplace t tp1 tp2=
       |Fun (a,b) -> if b=tp2 then Fun((replcaeinList a tp1 tp2),tp1)
                     else Fun((replcaeinList a tp1 tp2),b)
       |Tuple (a) -> Tuple(replcaeinList a tp1 tp2)
-      |Array a -> if a= tp2 then Array tp1 else Array a
+      |Array a -> if a= tp2 then Array tp1 else Array(advReplace a tp1 tp2)
       | _ -> t
 
 
@@ -369,16 +401,11 @@ let rec replace lst tp1 tp2 =
                           (advReplace t1 tp1 tp2,advReplace t2 tp1 tp2)::replace tl tp1 tp2  
                       else if isArray t1 then 
                       begin
-                      
-
                           (advReplace t1 tp1 tp2,t2)::replace tl tp1 tp2
                       end
                       else if isArray t2 then  begin
-                    
-
                         (t1,advReplace t2 tp1 tp2)::replace tl tp1 tp2
                       end
-
                       else
                         (t1,t2)::replace tl tp1 tp2
 
@@ -394,14 +421,12 @@ match lst with
 | (t1,t2)::tl-> (
                 if t1= t2 then 
                 begin
-            
-                
+                  
                    unification tl
                  end
                 else      
                 if  ((isSimple t1)&&(isSimple t2) )then
                     begin
-                     
                      let s1= getTypeString t1 in let s2= getTypeString t2 in 
                     failwith (Printf.sprintf "Expression has type %s but an expression was 
                     expected of type  %s" s1 s2)
@@ -409,25 +434,23 @@ match lst with
                 else if ( (isFun t1) &&  (isFun t2))then 
                   begin
                      let lst2 = checkFun tl t1 t2 in
-                 
+                    
                      unification lst2
                   end
                 else if ( (isTup t1) &&  (isTup t2))then 
                   begin
                      let lst2 = checkTuple tl t1 t2 in
-                      
+                   
                      unification lst2
                   end  
                 else if ( (isArray t1) &&  (isArray t2))then 
                   begin
-                    
                      let lst2 = checkArray tl t1 t2 in
-                   
+                     
                      unification lst2
                   end      
                 else if (not (isVar t1) && not (isVar t2))then
                    begin
-                    
                      let s1= getTypeString t1 in let s2= getTypeString t2 in 
                     failwith (Printf.sprintf "Expression has type %s but an expression was 
                     expected of type  %s" s1 s2)
@@ -435,13 +458,13 @@ match lst with
               else if (isVar t2) then      
                 begin        
                   let lst2= replace tl t1 t2 in 
-                    
+                 
                      unification lst2
                 end
               else if (isVar t1) then      
                 begin                    
                   let lst2= replace tl t2 t1 in 
-             
+               
                   unification lst2
                 end
 )

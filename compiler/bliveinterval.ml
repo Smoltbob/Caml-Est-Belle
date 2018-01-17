@@ -71,7 +71,6 @@ and expire_fundef_body asm =
 	match asm with
 	|Let (id, e, a) -> asm_counter := !asm_counter + 1; prepend_live_interval !asm_counter id; expire_asm_exp e !asm_counter; expire_fundef_body a
 	|Expression e -> asm_counter := !asm_counter + 1; expire_asm_exp e !asm_counter
-	|_ -> failwith ("match failure with bliveinterval asm")
 
 
 
