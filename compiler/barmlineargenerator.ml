@@ -70,7 +70,7 @@ let rec stack_remaining_arguments args =
     | [] -> ""
     | arg::remaining -> let load_store_arg = resolve_store_load arg in
                         let register_arg = resolve_linear_scan_register arg in
-                        sprintf "%s%s\tstmfd sp!, {r%s}\n" (stack_remaining_arguments remaining) load_store_arg register_arg
+                        sprintf "%s%s\tstmfd sp!, {%s}\n" (stack_remaining_arguments remaining) load_store_arg register_arg
 
 (** This function is to call function movegen when the arguments are less than 4, to return empty string when there's no argument, to put arguments into stack when there're more than 4 arguments
 @param args the list of arguments, in type string
@@ -168,9 +168,9 @@ let rec exp_to_arm exp dest =
             (match e1 with
             | Var id -> let store_arg2 = resolve_store_load id in
                         let register_arg2 = resolve_linear_scan_register id in
-                        let cmpop = sprintf "\tcmp r%s, r%s\n" register_arg1 register_arg2 in
+                        let cmpop = sprintf "\tcmp %s, %s\n" register_arg1 register_arg2 in
                         sprintf "%s%s%s%s%s%s%s%s" store_arg1 store_arg2 cmpop branch1 codeelse branch2 codeif endop
-            | Int i  -> let cmpop = sprintf "\tcmp r%s, #%i\n" register_arg1 i in
+            | Int i  -> let cmpop = sprintf "\tcmp %s, #%i\n" register_arg1 i in
                         sprintf "%s%s%s%s%s%s%s" store_arg1 cmpop branch1 codeelse branch2 codeif endop
             | _ -> failwith "Unauthorized type"
             )
