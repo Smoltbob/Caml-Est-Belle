@@ -2,7 +2,8 @@
 Private compiler project repository.</br>
 
 **Feel free to read the [wiki](https://github.com/Smoltbob/Caml-Est-Belle/wiki) for more documentation.**
-
+## Presentation of of the project
+[Link](https://docs.google.com/presentation/d/1mcwFavKK3CO0_qeNZzbXF11gr_fbLXeQeeXawVu4I0Y/edit?usp=sharing)
 ## State of the project
 So far we are handling a subset of ML such that :
 * Everything up to closures is working
