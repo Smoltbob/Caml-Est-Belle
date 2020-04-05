@@ -1,5 +1,5 @@
 # Caml-Est-Belle
-Private compiler project repository.</br>
+Public compiler project repository.</br>
 
 **Feel free to read the [wiki](https://github.com/Smoltbob/Caml-Est-Belle/wiki) for more documentation.**
 ## Presentation of of the project
