@@ -1,5 +1,5 @@
 # Caml-Est-Belle
-Public compiler project repository.</br>
+MinCaml to ARM compiler.</br>
 
 **Feel free to read the [wiki](https://github.com/Smoltbob/Caml-Est-Belle/wiki) for more documentation.**
 ## Presentation of of the project
